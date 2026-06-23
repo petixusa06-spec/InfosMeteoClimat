@@ -488,18 +488,18 @@ const REGIONS_OLD_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fea
    4. Remplis les 3 valeurs ci-dessous.
    5. Ajoute les comptes autorisés dans EDITORS (hash SHA-256 du mdp).
    ══════════════════════════════════════════════════════════════════════ */
-const EJS_PUBLIC_KEY   = '-XZdr0BU0Bw1vtS71';    // ← ton Public Key EmailJS
-const EJS_SERVICE_ID   = 'service_5y7fzdj';    // ← ID de ton service email
-const EJS_TPL_LOGIN    = 'template_login';    // ← template tentative de connexion
-const EJS_TPL_REQUEST  = 'template_request';  // ← template demande d'accès
+const EJS_PUBLIC_KEY   = '-XZdr0BU0Bw1vtS71';
+const EJS_SERVICE_ID   = 'service_5y7fzdj';
+const EJS_TPL_LOGIN    = 'template_zlgkreo';  // template connexion
+const EJS_TPL_REQUEST  = 'template_request';  // template demande d'accès (à créer si besoin)
 
-const ADMIN = { user: 'admin', hash: '8981ad44b8ddaa021f7d3d3f98e3538041acf66353a46b05ef7296782dd1e636' }; // mdp par défaut : change-moi
+const ADMIN = { user: 'admin', hash: 'fe3fbef0c1529bebc9ff874b02b697707a71f29761b5efafb35c99e3c01c20b9' };
 const EDITORS = [];  // { user:'pseudo', hash:'sha256-du-mdp' }  ← ajoute ici les comptes validés
 
 let currentRole = 'visitor';
 
 (async () => {
-  if (EJS_PUBLIC_KEY !== 'TON_PUBLIC_KEY') emailjs.init({ publicKey: EJS_PUBLIC_KEY });
+  emailjs.init({ publicKey: EJS_PUBLIC_KEY });
 })();
 
 async function sha256(str) {
@@ -532,11 +532,9 @@ async function doLogin() {
   const ok = u === ADMIN.user && h === ADMIN.hash ? 'admin'
            : EDITORS.find(e => e.user===u && e.hash===h) ? 'editor' : null;
   // Email de notification (tentative de connexion)
-  if (EJS_PUBLIC_KEY !== 'TON_PUBLIC_KEY') {
-    emailjs.send(EJS_SERVICE_ID, EJS_TPL_LOGIN, {
-      user: u, time: new Date().toLocaleString('fr-FR'), status: ok ? '✅ Succès' : '❌ Échec'
-    }).catch(() => {});
-  }
+  emailjs.send(EJS_SERVICE_ID, EJS_TPL_LOGIN, {
+    user: u, time: new Date().toLocaleString('fr-FR'), status: ok ? '✅ Succès' : '❌ Échec'
+  }).catch(() => {});
   if (ok) {
     currentRole = ok;
     document.body.className = 'role-' + ok;
@@ -569,16 +567,12 @@ async function sendRequest() {
   const msg = document.getElementById('req-msg').value.trim();
   const okEl = document.getElementById('req-ok'), errEl = document.getElementById('req-err');
   if (!name || !email) { errEl.textContent = 'Remplis au minimum ton nom et ton email.'; errEl.style.display='block'; return; }
-  if (EJS_PUBLIC_KEY !== 'TON_PUBLIC_KEY') {
-    try {
-      await emailjs.send(EJS_SERVICE_ID, EJS_TPL_REQUEST, { name, email, msg });
-      okEl.textContent = '✓ Demande envoyée ! Tu seras contacté(e) dès validation.';
-      okEl.style.display = 'block'; errEl.style.display = 'none';
-    } catch {
-      errEl.textContent = "Erreur d'envoi. Configure EmailJS d'abord."; errEl.style.display='block';
-    }
-  } else {
-    errEl.textContent = "EmailJS non configuré — l'admin doit renseigner EJS_PUBLIC_KEY."; errEl.style.display='block';
+  try {
+    await emailjs.send(EJS_SERVICE_ID, EJS_TPL_REQUEST, { name, email, msg });
+    okEl.textContent = '✓ Demande envoyée ! Tu seras contacté(e) dès validation.';
+    okEl.style.display = 'block'; errEl.style.display = 'none';
+  } catch {
+    errEl.textContent = "Erreur d'envoi. Vérifie ta connexion ou contacte l'administrateur."; errEl.style.display='block';
   }
 }
 
@@ -633,6 +627,7 @@ let activeLevel  = 'vert';
 let activePicto  = null;
 let probLevel    = null;   // null = mode normal, sinon = niveau probable actif
 let deptData     = { today: {}, tomorrow: {} };
+let neighborData = { today: {}, tomorrow: {} }; // alertes sur BE/CH/LU/BW (même structure que deptData)
 let subVisible   = false;
 let subLvl       = 'vert';
 let dvActive     = false;
@@ -1270,6 +1265,7 @@ function switchDay(d) {
   document.getElementById('dtab-today').classList.toggle('on', d === 'today');
   document.getElementById('dtab-tomorrow').classList.toggle('on', d === 'tomorrow');
   redrawMap();
+  redrawAllNeighbors();
   renderGauges(zoomedDept);
 }
 function toggleSub() {
@@ -1290,7 +1286,44 @@ function toggleDV() {
 }
 function resetAll() {
   deptData[activeDay] = {};
+  neighborData[activeDay] = {};
   redrawMap();
+  redrawAllNeighbors();
+}
+
+/* ── VOISINS : RENDU ── */
+function redrawNeighborPath(sel, name) {
+  const nd = neighborData[activeDay]['nb:'+name];
+  if (nd) {
+    sel.attr('fill', LEVELS[nd.level].color)
+       .attr('stroke', 'rgba(0,0,0,.3)').attr('stroke-width', 0.7);
+  } else {
+    sel.attr('fill', DFILL)
+       .attr('stroke', 'rgba(255,255,255,.28)').attr('stroke-width', 0.6);
+  }
+}
+function redrawNeighborPictos() {
+  if (!svgSel) return;
+  svgSel.select('.neighbor-picto-layer').selectAll('*').remove();
+  const pLayer = svgSel.select('.neighbor-picto-layer');
+  Object.entries(neighborData[activeDay]).forEach(([key, nd]) => {
+    if (!nd.picto) return;
+    const name = key.slice(3); // strip 'nb:'
+    const feat = NEIGHBORS_GEOJSON.features.find(f => f.properties.name === name);
+    if (!feat) return;
+    const b = geoPath.bounds(feat);
+    const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
+    const sz = Math.max(10, Math.min(Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])*0.45, 26));
+    placeIcoImg(pLayer, nd.picto, cx, cy, sz);
+  });
+}
+function redrawAllNeighbors() {
+  if (!svgSel) return;
+  svgSel.selectAll('path.neighbor').each(function(d) {
+    redrawNeighborPath(d3.select(this), d.properties.name);
+  });
+  redrawNeighborPictos();
+  updateLeg();
 }
 
 /* ── RENDU CARTE ── */
@@ -1423,7 +1456,9 @@ function drawSub() {
 function updateLeg() {
   const el = document.getElementById('leg');
   const data = curData();
-  const vals = Object.values(data);
+  const nbData = neighborData[activeDay] || {};
+  const allVals = [...Object.values(data), ...Object.values(nbData)];
+  const vals = allVals;
   const lvls = [...new Set(vals.filter(d=>!d.probable).map(d=>d.level).filter(l=>l!=='vert'))];
   const probs = [...new Set(vals.filter(d=>d.probable).map(d=>d.level))];
   const pics = [...new Set(vals.map(d=>d.picto).filter(Boolean))];
@@ -1733,24 +1768,66 @@ buildProbSidebar();
   defs0.append('filter').attr('id','dvShadow').attr('x','-60%').attr('y','-60%').attr('width','220%').attr('height','220%')
     .append('feDropShadow').attr('dx',0).attr('dy',0.6).attr('stdDeviation',1).attr('flood-color','#000').attr('flood-opacity',0.5);
 
-  /* ── Calque voisins (Belgique, Suisse, Luxembourg, Baden-Württemberg) ──
-     Rendu avant le calque des départements pour que les frontières FR restent au-dessus.
-     Couleur légèrement différente de DFILL pour les distinguer visuellement. */
-  const NEIGHBOR_FILL   = '#1a1f2e';
-  const NEIGHBOR_STROKE = 'rgba(255,255,255,.18)';
-  svg.append('g').attr('class','neighbor-layer')
-    .selectAll('path.neighbor')
+  /* ── Calque voisins interactif (BE/CH/LU/BW) ──
+     Rendu avant le calque depts → frontières FR au-dessus.
+     Cliquable : même sélecteur niveau + picto que les départements.
+     Données stockées dans neighborData[day] avec clé "nb:<name>" pour éviter
+     tout conflit avec les départements français de même nom (Jura, Luxembourg…). */
+  const nbLayer = svg.append('g').attr('class','neighbor-layer');
+  nbLayer.selectAll('path.neighbor')
     .data(NEIGHBORS_GEOJSON.features)
     .join('path')
       .attr('class', 'neighbor')
       .attr('d', d => geoPath(d))
-      .attr('fill', NEIGHBOR_FILL)
-      .attr('stroke', NEIGHBOR_STROKE)
-      .attr('stroke-width', 0.5)
-      .attr('pointer-events', 'none')
-    .append('title').text(d => d.properties.name);
+      .attr('fill', DFILL)
+      .attr('stroke', 'rgba(255,255,255,.28)')
+      .attr('stroke-width', 0.6)
+      .style('cursor','pointer')
+      .on('mousemove', function(event, d) {
+        const nm = d.properties.name;
+        const country = d.properties.country;
+        const dd = neighborData[activeDay]['nb:'+nm];
+        tip.style.display = 'block';
+        const r = mapDiv.getBoundingClientRect();
+        tip.style.left = (event.clientX-r.left+14)+'px';
+        tip.style.top  = (event.clientY-r.top-36)+'px';
+        const countryLabel = {BE:'Belgique',CH:'Suisse',LU:'Luxembourg',DE:'Allemagne'}[country]||country;
+        tip.textContent = nm + ' (' + countryLabel + ')' + (dd ? ' — ' + LEVELS[dd.level].label : '');
+        d3.select(this).attr('stroke','rgba(255,255,255,.7)').attr('stroke-width',1.2);
+      })
+      .on('mouseleave', function(event, d) {
+        tip.style.display = 'none';
+        redrawNeighborPath(d3.select(this), d.properties.name);
+      })
+      .on('click', function(event, d) {
+        if (!requireAuth()) return;
+        const nm = d.properties.name;
+        const key = 'nb:'+nm;
+        const nd = neighborData[activeDay];
+        if (nd[key] && nd[key].level===activeLevel && nd[key].picto===(activePicto||null)) {
+          delete nd[key];
+        } else {
+          nd[key] = { level: activeLevel, picto: activePicto||null };
+        }
+        redrawNeighborPath(d3.select(this), nm);
+        redrawNeighborPictos();
+        updateLeg();
+      })
+      .on('dblclick', function(event, d) {
+        event.stopPropagation();
+        if (!svgSel || !geoPath) return;
+        const [,, W, H] = svgEl.getAttribute('viewBox').split(' ').map(Number);
+        const b = geoPath.bounds(d);
+        const dx = b[1][0]-b[0][0], dy = b[1][1]-b[0][1];
+        const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
+        const sc = Math.min(0.82*W/dx, 0.82*H/dy, 6);
+        layerSel.transition().duration(480).ease(d3.easeCubicInOut)
+          .attr('transform', `translate(${W/2-sc*cx},${H/2-sc*cy}) scale(${sc})`);
+      });
 
   layerSel = svg.append('g').attr('class','dept-layer');
+  // calque pictos voisins (au-dessus du calque depts)
+  svg.append('g').attr('class','neighbor-picto-layer');
 
   layerSel.selectAll('path.dept').data(features).join('path')
     .attr('class','dept')
