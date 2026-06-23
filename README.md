@@ -488,8 +488,8 @@ const REGIONS_OLD_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fea
    4. Remplis les 3 valeurs ci-dessous.
    5. Ajoute les comptes autorisés dans EDITORS (hash SHA-256 du mdp).
    ══════════════════════════════════════════════════════════════════════ */
-const EJS_PUBLIC_KEY   = 'TON_PUBLIC_KEY';    // ← ton Public Key EmailJS
-const EJS_SERVICE_ID   = 'TON_SERVICE_ID';    // ← ID de ton service email
+const EJS_PUBLIC_KEY   = '-XZdr0BU0Bw1vtS71';    // ← ton Public Key EmailJS
+const EJS_SERVICE_ID   = 'service_5y7fzdj';    // ← ID de ton service email
 const EJS_TPL_LOGIN    = 'template_login';    // ← template tentative de connexion
 const EJS_TPL_REQUEST  = 'template_request';  // ← template demande d'accès
 
