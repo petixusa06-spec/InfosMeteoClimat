@@ -60,6 +60,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);min-hei
 #map-next-col{flex:1;min-width:0;position:relative}
 #map-next{width:100%;aspect-ratio:1/1.04;border-radius:12px;overflow:hidden;background:#1a1d27;border:1px solid rgba(20,184,196,.2);position:relative}
 .next-sidebar-note{font-size:10px;color:var(--t3);line-height:1.5;padding:8px;background:rgba(20,184,196,.07);border:1px solid rgba(20,184,196,.18);border-radius:8px;margin-bottom:2px}
+.risk-tool{width:36px;height:36px;border:1px solid var(--b2);border-radius:7px;background:transparent;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .12s;color:var(--t2)}
+.risk-tool.on{background:rgba(249,115,22,.15);border-color:#f97316;color:#f97316}
+.risk-tool:hover{background:var(--surf2)}
 /* ── Auth widget ── */
 .auth-panel{position:absolute;top:40px;right:0;width:260px;background:var(--surf);border:1px solid var(--b2);border-radius:10px;padding:16px;box-shadow:0 8px 28px rgba(0,0,0,.6);z-index:100}
 .auth-input{width:100%;margin-bottom:8px;padding:7px 10px;background:var(--surf2);border:1px solid var(--b2);border-radius:7px;color:var(--t1);font-size:12px;font-family:inherit;box-sizing:border-box;resize:vertical;outline:none}
@@ -177,6 +180,8 @@ body.role-visitor .lock-hint{display:block}
         <button class="vtab" id="vtab-next" onclick="switchView('nextday')" style="color:#14b8c4;border-color:rgba(20,184,196,.3)">→ Prochain jour (régions)</button>
         <span class="vtab-sep"></span>
         <button class="vtab" id="vtab-prob" onclick="switchView('probable')" style="color:#7c6a9a;border-color:rgba(124,58,237,.3)">↗ Évolution probable</button>
+        <span class="vtab-sep"></span>
+        <button class="vtab" id="vtab-risk" onclick="switchView('risk')" style="color:#f97316;border-color:rgba(249,115,22,.3)">🌡 Cartes de risque</button>
       </div>
       <!-- Sélecteur de jour (masqué en mode probable) -->
       <div class="day-tabs" id="day-tabs-wrap">
@@ -318,6 +323,56 @@ body.role-visitor .lock-hint{display:block}
     </div>
   </div>
 
+  <!-- VUE CARTES DE RISQUE -->
+  <div class="top" id="view-risk" style="display:none">
+    <div id="map-risk-col" style="flex:1;min-width:0;position:relative">
+      <!-- Conteneur carte risque : SVG de référence + Canvas de dessin superposés -->
+      <div id="map-risk-wrap" style="width:100%;border-radius:12px;overflow:hidden;background:#1a1d27;border:1px solid rgba(249,115,22,.2);position:relative">
+        <div id="map-risk-svg" style="width:100%;position:relative"></div>
+        <canvas id="map-risk-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;touch-action:none"></canvas>
+      </div>
+    </div>
+    <div class="sb">
+      <p class="lock-hint">🔒 Connecte-toi pour modifier</p>
+      <div class="edit-zone">
+        <div class="card" style="border-color:rgba(249,115,22,.2)">
+          <p class="stitle" style="color:#f97316">Phénomène</p>
+          <div id="risk-phenom-btns" style="display:flex;flex-direction:column;gap:4px;margin-top:6px"></div>
+        </div>
+        <div class="card" style="border-color:rgba(249,115,22,.2)">
+          <p class="stitle" style="color:#f97316" id="risk-scale-title">Intensité</p>
+          <div id="risk-scale-btns" style="margin-top:6px"></div>
+        </div>
+        <div class="card" style="border-color:rgba(249,115,22,.2)">
+          <p class="stitle" style="color:#f97316">Outils</p>
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+            <button class="risk-tool on" id="rt-brush" onclick="setRiskTool('brush')" title="Pinceau libre">🖌</button>
+            <button class="risk-tool" id="rt-fill" onclick="setRiskTool('fill')" title="Remplissage">🪣</button>
+            <button class="risk-tool" id="rt-eraser" onclick="setRiskTool('eraser')" title="Gomme">◻</button>
+          </div>
+          <div style="margin-top:8px">
+            <p style="font-size:10px;color:var(--t3);margin-bottom:4px">Taille</p>
+            <input type="range" id="risk-brush-size" min="4" max="60" value="18"
+              style="width:100%;accent-color:#f97316"
+              oninput="riskBrushSz=+this.value;document.getElementById('risk-sz-lbl').textContent=this.value+'px'">
+            <span id="risk-sz-lbl" style="font-size:10px;color:var(--t3)">18px</span>
+          </div>
+          <div style="margin-top:6px">
+            <p style="font-size:10px;color:var(--t3);margin-bottom:4px">Opacité</p>
+            <input type="range" id="risk-opacity" min="20" max="100" value="75"
+              style="width:100%;accent-color:#f97316"
+              oninput="riskOpacity=+this.value/100;document.getElementById('risk-op-lbl').textContent=this.value+'%'">
+            <span id="risk-op-lbl" style="font-size:10px;color:var(--t3)">75%</span>
+          </div>
+        </div>
+        <p class="hint">Dessine librement sur la carte<br>Les zones peuvent traverser les départements</p>
+        <button class="rst-btn" onclick="undoRisk()" style="border-color:rgba(249,115,22,.2);color:#f97316">↩ Annuler</button>
+        <button class="rst-btn" onclick="resetRisk()" style="border-color:rgba(249,115,22,.2);color:#f97316">↺ Tout effacer</button>
+      </div>
+      <button class="act-btn" onclick="exportRiskPng()" style="border-color:rgba(249,115,22,.3);color:#f97316">↓ Télécharger PNG</button>
+    </div>
+  </div>
+
   <div id="gauges"></div>
 </div>
 
@@ -423,7 +478,7 @@ async function exportPng(svgEl, filename) {
   if (!svgEl) return;
   const c = svgEl.cloneNode(true);
   c.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  c.querySelectorAll('path.dept, path.dept-prob, path.region-next, path.region-split, path.neighbor')
+  c.querySelectorAll('path.dept, path.dept-prob, path.region-next, path.region-split, path.neighbor, path.risk-dept, path.risk-nb')
     .forEach(p => p.setAttribute('stroke', '#000'));
   for (const im of [...c.querySelectorAll('image')]) {
     const data = await imgToDataURL(im.getAttribute('href'));
@@ -431,10 +486,14 @@ async function exportPng(svgEl, filename) {
   }
   const svgUrl = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(c)], { type: 'image/svg+xml;charset=utf-8' }));
   const img = new Image();
+  img.crossOrigin = 'anonymous';
   await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = svgUrl; });
-  const cv = document.createElement('canvas'), scale = 2;
+  const cv = document.createElement('canvas'), scale = 3;
   cv.width = img.width * scale; cv.height = img.height * scale;
-  cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, cv.width, cv.height);
   URL.revokeObjectURL(svgUrl);
   cv.toBlob(blob => {
     const a = document.createElement('a');
@@ -453,6 +512,129 @@ const RISK_BANDS = [
   { k:'r6', label:'> 90 %',    color:'#7f1d1d' }
 ];
 const RISK_MAP = Object.fromEntries(RISK_BANDS.map(b => [b.k, b]));
+
+/* ══════════════════════════════════════════════════════════
+   CARTES DE RISQUE — échelles par phénomène
+   ══════════════════════════════════════════════════════════ */
+const RISK_SCALES = {
+  orages: {
+    label: 'Orages', picto: 'orage', color: '#f59e0b',
+    bands: [
+      { k:'o1', label:'Faible',                  color:'#FFDE59' },
+      { k:'o2', label:'Modéré',                  color:'#FFCC00' },
+      { k:'o3', label:'Fort',                    color:'#FF751F' },
+      { k:'o4', label:'Violent',                 color:'#FF0000' },
+      { k:'o5', label:'Très violent',            color:'#AA00DB' },
+      { k:'o6', label:'Extrêmement violent',     color:'#F515DA' }
+    ]
+  },
+  vent: {
+    label: 'Vent', picto: 'vent', color: '#60a5fa',
+    bands: [
+      { k:'v1', label:'70–80 km/h',   color:'#FFD700' },
+      { k:'v2', label:'80–100 km/h',  color:'#FFA500' },
+      { k:'v3', label:'100–110 km/h', color:'#FF6600' },
+      { k:'v4', label:'110–130 km/h', color:'#FF0000' },
+      { k:'v5', label:'130–150 km/h', color:'#8B008B' },
+      { k:'v6', label:'150–170 km/h', color:'#CC44AA' },
+      { k:'v7', label:'170–190 km/h', color:'#FF69B4' },
+      { k:'v8', label:'190–210 km/h', color:'#FFB6C1' },
+      { k:'v9', label:'> 210 km/h',   color:'#808080' }
+    ]
+  },
+  canicule: {
+    label: 'Canicule', picto: 'chaleur', color: '#ef4444',
+    bands: [
+      { k:'ca0', label:'< 20°C',    color:'#F2CB07' },
+      { k:'ca1', label:'20–24°C',   color:'#E48703' },
+      { k:'ca2', label:'24–27°C',   color:'#EC3A02' },
+      { k:'ca3', label:'27–30°C',   color:'#ED0204' },
+      { k:'ca4', label:'30–33°C',   color:'#D40806' },
+      { k:'ca5', label:'33–35°C',   color:'#6C0100' },
+      { k:'ca6', label:'35–40°C',   color:'#7E004F' },
+      { k:'ca7', label:'40–45°C',   color:'#CC00CD' },
+      { k:'ca8', label:'> 45°C',    color:'#FE81FF' }
+    ]
+  },
+  froid: {
+    label: 'Froid', picto: 'froid', color: '#818cf8',
+    bands: [
+      { k:'fr1', label:'3 à 1°C',       color:'#AED6F1' },
+      { k:'fr2', label:'1 à −2°C',      color:'#5DADE2' },
+      { k:'fr3', label:'−2 à −5°C',     color:'#2E86C1' },
+      { k:'fr4', label:'−5 à −7°C',     color:'#1A5276' },
+      { k:'fr5', label:'−7 à −10°C',    color:'#6C3483' },
+      { k:'fr6', label:'−10 à −15°C',   color:'#9B59B6' },
+      { k:'fr7', label:'−15 à −20°C',   color:'#D7BDE2' },
+      { k:'fr8', label:'< −20°C',       color:'#FFFFFF' }
+    ]
+  },
+  pluie: {
+    label: 'Pluie', picto: 'pluies-intenses', color: '#38bdf8',
+    bands: [
+      { k:'pl1', label:'10–20 mm',   color:'#AED6F1' },
+      { k:'pl2', label:'20–30 mm',   color:'#5DADE2' },
+      { k:'pl3', label:'30–50 mm',   color:'#2E86C1' },
+      { k:'pl4', label:'50–70 mm',   color:'#1A5276' },
+      { k:'pl5', label:'70–100 mm',  color:'#7D3C98' },
+      { k:'pl6', label:'100–150 mm', color:'#9B59B6' },
+      { k:'pl7', label:'150–200 mm', color:'#F1948A' },
+      { k:'pl8', label:'> 200 mm',   color:'#E91E8C' }
+    ]
+  },
+  neige: {
+    label: 'Neige', picto: 'neige-verglas', color: '#e0f2fe',
+    bands: [
+      { k:'ne1',  label:'0–1 cm',      color:'#D6EAF8' },
+      { k:'ne2',  label:'1–2 cm',      color:'#85C1E9' },
+      { k:'ne3',  label:'2–5 cm',      color:'#2E86C1' },
+      { k:'ne4',  label:'5–7 cm',      color:'#1A5276' },
+      { k:'ne5',  label:'7–10 cm',     color:'#6C3483' },
+      { k:'ne6',  label:'10–15 cm',    color:'#9B59B6' },
+      { k:'ne7',  label:'15–20 cm',    color:'#C39BD3' },
+      { k:'ne8',  label:'20–30 cm',    color:'#F1948A' },
+      { k:'ne9',  label:'30–50 cm',    color:'#FF69B4' },
+      { k:'ne10', label:'50–100 cm',   color:'#FADBD8' },
+      { k:'ne11', label:'100–200 cm',  color:'#FFFFFF' }
+    ]
+  },
+  proba_orage: {
+    label: 'Probabilité orage', picto: 'orage', color: '#a78bfa',
+    bands: [
+      { k:'po1', label:'0–5 %',    color:'#E8D5F5' },
+      { k:'po2', label:'5–20 %',   color:'#C39BD3' },
+      { k:'po3', label:'20–40 %',  color:'#9B59B6' },
+      { k:'po4', label:'40–60 %',  color:'#6C3483' },
+      { k:'po5', label:'60–80 %',  color:'#4A235A' },
+      { k:'po6', label:'80–100 %', color:'#2C1040' }
+    ]
+  },
+  proba_tornade: {
+    label: 'Probabilité tornade', picto: 'vent', color: '#f87171',
+    bands: [
+      { k:'pt1', label:'0–5 %',   color:'#FADBD8' },
+      { k:'pt2', label:'5–15 %',  color:'#F1948A' },
+      { k:'pt3', label:'15–30 %', color:'#E74C3C' },
+      { k:'pt4', label:'30–50 %', color:'#C0392B' },
+      { k:'pt5', label:'50–70 %', color:'#922B21' },
+      { k:'pt6', label:'> 70 %',  color:'#641E16' }
+    ]
+  }
+};
+
+let riskData        = { today: {}, tomorrow: {} }; // non utilisé (dessin libre sur canvas)
+let activeRiskPhenom = 'orages';
+let activeRiskBand   = 'o1';
+let svgRiskEl = null; // SVG de référence (non interactif)
+// Canvas drawing state
+let riskCanvas = null, riskCtx = null;
+let riskDrawing = false, riskPoints = [];
+let riskTool    = 'brush';   // 'brush' | 'fill' | 'eraser'
+let riskBrushSz = 18;
+let riskOpacity = 0.75;
+let riskUndoStack = [];      // snapshots du canvas (max 20)
+
+
 
 /* ── NIVEAUX ── */
 /* Tracé des 22 anciennes régions métropolitaines (avant le redécoupage de 2015), simplifié et
@@ -620,7 +802,7 @@ const LVL_DEFS = [
 const COASTAL = new Set(['Manche','Calvados','Seine-Maritime','Somme','Pas-de-Calais','Nord','Finistère',"Côtes-d'Armor",'Ille-et-Vilaine','Morbihan','Loire-Atlantique','Vendée','Charente-Maritime','Gironde','Landes','Hérault','Gard','Bouches-du-Rhône','Var','Alpes-Maritimes','Pyrénées-Orientales','Aude','Corse-du-Sud','Haute-Corse']);
 
 const DFILL  = '#1e2535';
-const DSTROKE= 'rgba(255,255,255,.18)';
+const DSTROKE= '#000000';
 
 /* ── ÉTAT ── */
 let activeLevel  = 'vert';
@@ -659,12 +841,15 @@ function switchView(view) {
   document.getElementById('view-vigilance').style.display  = view === 'vigilance' ? 'flex' : 'none';
   document.getElementById('view-nextday').style.display    = view === 'nextday'   ? 'flex' : 'none';
   document.getElementById('view-probable').style.display   = view === 'probable'  ? 'flex' : 'none';
-  document.getElementById('day-tabs-wrap').style.display   = view === 'vigilance' ? 'flex' : 'none';
+  document.getElementById('view-risk').style.display       = view === 'risk'      ? 'flex' : 'none';
+  document.getElementById('day-tabs-wrap').style.display   = (view === 'vigilance' || view === 'risk') ? 'flex' : 'none';
   document.getElementById('vtab-vigil').classList.toggle('on', view === 'vigilance');
   document.getElementById('vtab-next').classList.toggle('on', view === 'nextday');
   document.getElementById('vtab-prob').classList.toggle('on', view === 'probable');
+  document.getElementById('vtab-risk').classList.toggle('on', view === 'risk');
   if (view === 'nextday' && !svgNextEl) initNextMap();
   if (view === 'probable' && !svgProbEl) initProbMap();
+  if (view === 'risk' && !riskCanvas) initRiskMap();
   if (view === 'probable') redrawProbMap();
 }
 const gaugeData = {
@@ -979,7 +1164,7 @@ function initNextMap() {
   layerNextSel.selectAll('path.region-next').data(regionFeatures).join('path')
     .attr('class', 'region-next')
     .attr('d', d => geoPath(d))
-    .attr('fill', DFILL).attr('stroke', 'rgba(255,255,255,.22)').attr('stroke-width', 0.9)
+    .attr('fill', DFILL).attr('stroke', '#000').attr('stroke-width', 0.9)
     .style('cursor', 'pointer')
     .on('mousemove', function(event, d) {
       const nm = d.properties.nom;
@@ -1116,7 +1301,7 @@ function redrawNextMap() {
 function zoomToNext(feat, name) {
   const W = 600, H = 624;
   zoomedRegionNext = name;
-  layerNextSel.selectAll('path.region-next').attr('stroke', 'rgba(255,255,255,.22)').attr('stroke-width', 0.9);
+  layerNextSel.selectAll('path.region-next').attr('stroke', '#000').attr('stroke-width', 0.9);
   layerNextSel.selectAll('path.region-next').filter(d => d.properties.nom === name)
     .raise().attr('stroke', '#fff').attr('stroke-width', 2.5);
   const b = geoPath.bounds(feat);
@@ -1127,7 +1312,7 @@ function zoomToNext(feat, name) {
 }
 function unzoomNext() {
   zoomedRegionNext = null;
-  layerNextSel.selectAll('path.region-next').attr('stroke', 'rgba(255,255,255,.22)').attr('stroke-width', 0.9);
+  layerNextSel.selectAll('path.region-next').attr('stroke', '#000').attr('stroke-width', 0.9);
   layerNextSel.transition().duration(450).ease(d3.easeCubicInOut).attr('transform', '');
   redrawNextMap();
 }
@@ -1179,6 +1364,244 @@ function updateLegNext() {
     </div>`;
   }
   el.innerHTML = h;
+}
+
+/* ══════════════════════════════════════════════════════════
+   CARTES DE RISQUE — outil de dessin libre sur canvas
+   ══════════════════════════════════════════════════════════ */
+function buildRiskSidebar() {
+  const pc = document.getElementById('risk-phenom-btns');
+  Object.entries(RISK_SCALES).forEach(([k, sc]) => {
+    const btn = document.createElement('button');
+    btn.className = 'lvl-btn' + (k === activeRiskPhenom ? ' on' : '');
+    btn.dataset.rp = k;
+    btn.innerHTML = `<span style="width:10px;height:10px;border-radius:50%;background:${sc.color};display:inline-block;flex-shrink:0"></span>${sc.label}`;
+    btn.onclick = () => {
+      activeRiskPhenom = k;
+      activeRiskBand = RISK_SCALES[k].bands[0].k;
+      document.querySelectorAll('[data-rp]').forEach(b => b.classList.toggle('on', b.dataset.rp === k));
+      buildRiskScale();
+    };
+    pc.appendChild(btn);
+  });
+  buildRiskScale();
+}
+
+function buildRiskScale() {
+  const sc = RISK_SCALES[activeRiskPhenom];
+  document.getElementById('risk-scale-title').textContent = sc.label;
+  const c = document.getElementById('risk-scale-btns');
+  c.innerHTML = '';
+  sc.bands.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'lvl-btn' + (b.k === activeRiskBand ? ' on' : '');
+    btn.dataset.rb = b.k;
+    const light = parseInt(b.color.slice(1,3),16) > 180;
+    btn.innerHTML = `<span style="width:11px;height:11px;border-radius:50%;background:${b.color};flex-shrink:0;${light?'border:1px solid rgba(0,0,0,.3)':''}"></span>${b.label}`;
+    btn.onclick = () => {
+      activeRiskBand = b.k;
+      document.querySelectorAll('[data-rb]').forEach(x => x.classList.toggle('on', x.dataset.rb === b.k));
+    };
+    c.appendChild(btn);
+  });
+}
+
+function activeRiskColor() {
+  const sc = RISK_SCALES[activeRiskPhenom];
+  return (sc.bands.find(b => b.k === activeRiskBand) || sc.bands[0]).color;
+}
+
+function setRiskTool(t) {
+  riskTool = t;
+  ['brush','fill','eraser'].forEach(x => document.getElementById('rt-'+x).classList.toggle('on', x===t));
+  if (riskCanvas) riskCanvas.style.cursor = t==='eraser' ? 'cell' : t==='fill' ? 'crosshair' : 'crosshair';
+}
+
+function hexToRgba(hex, alpha) {
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/* Flood fill (outil seau) — applique une couleur à une zone délimitée */
+function floodFill(startX, startY, fillColor) {
+  const imgData = riskCtx.getImageData(0, 0, riskCanvas.width, riskCanvas.height);
+  const data = imgData.data;
+  const w = riskCanvas.width, h = riskCanvas.height;
+  const idx = (startY*w+startX)*4;
+  const sr=data[idx],sg=data[idx+1],sb=data[idx+2],sa=data[idx+3];
+  const fr=parseInt(fillColor.slice(1,3),16),fg=parseInt(fillColor.slice(3,5),16),fb=parseInt(fillColor.slice(5,7),16);
+  const fa=Math.round(riskOpacity*255);
+  if (sr===fr&&sg===fg&&sb===fb&&sa===fa) return;
+  const stack = [[startX,startY]];
+  const visited = new Uint8Array(w*h);
+  while(stack.length) {
+    const [x,y] = stack.pop();
+    if (x<0||x>=w||y<0||y>=h||visited[y*w+x]) continue;
+    const i=(y*w+x)*4;
+    if (Math.abs(data[i]-sr)>30||Math.abs(data[i+1]-sg)>30||Math.abs(data[i+2]-sb)>30) continue;
+    visited[y*w+x]=1;
+    data[i]=fr; data[i+1]=fg; data[i+2]=fb; data[i+3]=fa;
+    stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+  }
+  riskCtx.putImageData(imgData, 0, 0);
+}
+
+/* Sauvegarde de l'état canvas pour undo */
+function riskSaveUndo() {
+  riskUndoStack.push(riskCanvas.toDataURL());
+  if (riskUndoStack.length > 20) riskUndoStack.shift();
+}
+function undoRisk() {
+  if (!riskUndoStack.length) return;
+  const snap = riskUndoStack.pop();
+  const img = new Image();
+  img.onload = () => { riskCtx.clearRect(0,0,riskCanvas.width,riskCanvas.height); riskCtx.drawImage(img,0,0); };
+  img.src = snap;
+}
+function resetRisk() {
+  riskSaveUndo();
+  riskCtx.clearRect(0, 0, riskCanvas.width, riskCanvas.height);
+}
+
+/* Coordonnées canvas à partir d'un événement souris/touch */
+function riskEvtPos(e) {
+  const rect = riskCanvas.getBoundingClientRect();
+  const scaleX = riskCanvas.width / rect.width;
+  const scaleY = riskCanvas.height / rect.height;
+  const src = e.touches ? e.touches[0] : e;
+  return [(src.clientX - rect.left)*scaleX, (src.clientY - rect.top)*scaleY];
+}
+
+/* Tracé d'une courbe lisse de Catmull-Rom à partir des points collectés */
+function drawSmoothStroke(pts, color, sz, op) {
+  if (pts.length < 2) return;
+  riskCtx.save();
+  riskCtx.globalAlpha = op;
+  riskCtx.globalCompositeOperation = 'source-over';
+  riskCtx.strokeStyle = color;
+  riskCtx.lineWidth = sz;
+  riskCtx.lineCap = 'round';
+  riskCtx.lineJoin = 'round';
+  riskCtx.beginPath();
+  riskCtx.moveTo(pts[0][0], pts[0][1]);
+  for (let i=1; i<pts.length-1; i++) {
+    const mx = (pts[i][0]+pts[i+1][0])/2;
+    const my = (pts[i][1]+pts[i+1][1])/2;
+    riskCtx.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
+  }
+  const last = pts[pts.length-1];
+  riskCtx.lineTo(last[0], last[1]);
+  riskCtx.stroke();
+  riskCtx.restore();
+}
+
+function initRiskMap() {
+  /* ── SVG de référence (fond carte, non interactif) ── */
+  const svgDiv = document.getElementById('map-risk-svg');
+  const W=600, H=624;
+  d3.select(svgDiv).selectAll('*').remove();
+  const svg = d3.select(svgDiv).append('svg')
+    .attr('viewBox',`0 0 ${W} ${H}`)
+    .attr('preserveAspectRatio','xMidYMid meet')
+    .style('display','block').style('width','100%').style('height','100%');
+  svgRiskEl = svg.node();
+  svg.append('rect').attr('width',W).attr('height',H).attr('fill','#131823');
+  // Voisins
+  svg.append('g').attr('pointer-events','none').selectAll('path')
+    .data(NEIGHBORS_GEOJSON.features).join('path')
+    .attr('d',d=>geoPath(d)).attr('fill',DFILL).attr('stroke','#000').attr('stroke-width',0.5);
+  // Départements
+  svg.append('g').attr('pointer-events','none').selectAll('path')
+    .data(features).join('path')
+    .attr('d',d=>geoPath(d)).attr('fill','none').attr('stroke','#000').attr('stroke-width',0.7);
+
+  /* ── Canvas de dessin (au-dessus, capte tous les évènements) ── */
+  riskCanvas = document.getElementById('map-risk-canvas');
+  // Résolution réelle = résolution CSS × devicePixelRatio pour la netteté
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = svgDiv.offsetWidth || 600;
+  const cssH = svgDiv.offsetHeight || 624;
+  riskCanvas.width  = cssW * dpr;
+  riskCanvas.height = cssH * dpr;
+  riskCtx = riskCanvas.getContext('2d');
+  riskCtx.scale(dpr, dpr);
+  riskUndoStack = [];
+
+  const onStart = e => {
+    if (!requireAuth()) return;
+    e.preventDefault();
+    riskSaveUndo();
+    riskDrawing = true;
+    const [x,y] = riskEvtPos(e);
+    if (riskTool === 'fill') {
+      floodFill(Math.round(x*(riskCanvas.width/cssW)), Math.round(y*(riskCanvas.height/cssH)), activeRiskColor());
+      riskDrawing = false;
+      return;
+    }
+    riskPoints = [[x,y]];
+  };
+  const onMove = e => {
+    if (!riskDrawing) return;
+    e.preventDefault();
+    const [x,y] = riskEvtPos(e);
+    riskPoints.push([x,y]);
+    // Redessine le trait courant
+    if (riskTool === 'eraser') {
+      riskCtx.save();
+      riskCtx.globalCompositeOperation = 'destination-out';
+      riskCtx.lineWidth = riskBrushSz * 2.5;
+      riskCtx.lineCap = 'round';
+      riskCtx.lineJoin = 'round';
+      riskCtx.strokeStyle = 'rgba(0,0,0,1)';
+      riskCtx.beginPath();
+      if (riskPoints.length>1) {
+        riskCtx.moveTo(riskPoints[riskPoints.length-2][0],riskPoints[riskPoints.length-2][1]);
+        riskCtx.lineTo(x,y);
+      } else riskCtx.arc(x,y,riskBrushSz,0,Math.PI*2);
+      riskCtx.stroke();
+      riskCtx.restore();
+    } else {
+      // Pour le pinceau, on redessine le dernier segment seulement (plus rapide)
+      drawSmoothStroke(riskPoints.slice(-3), activeRiskColor(), riskBrushSz, riskOpacity);
+    }
+  };
+  const onEnd = e => { riskDrawing = false; riskPoints = []; };
+
+  riskCanvas.addEventListener('mousedown',  onStart, { passive:false });
+  riskCanvas.addEventListener('mousemove',  onMove,  { passive:false });
+  riskCanvas.addEventListener('mouseup',    onEnd);
+  riskCanvas.addEventListener('mouseleave', onEnd);
+  riskCanvas.addEventListener('touchstart', onStart, { passive:false });
+  riskCanvas.addEventListener('touchmove',  onMove,  { passive:false });
+  riskCanvas.addEventListener('touchend',   onEnd);
+  riskCanvas.style.cursor = 'crosshair';
+}
+
+/* Export PNG : SVG de référence + canvas de dessin composite */
+async function exportRiskPng() {
+  if (!svgRiskEl || !riskCanvas) return;
+  // 1) SVG → data URL
+  const svgClone = svgRiskEl.cloneNode(true);
+  svgClone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+  const svgUrl = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svgClone)],{type:'image/svg+xml'}));
+  const svgImg = new Image();
+  await new Promise((res,rej) => { svgImg.onload=res; svgImg.onerror=rej; svgImg.src=svgUrl; });
+  // 2) Composite (scale 3x pour la netteté)
+  const scale = 3;
+  const cv = document.createElement('canvas');
+  cv.width  = svgImg.width  * scale;
+  cv.height = svgImg.height * scale;
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(svgImg, 0, 0, cv.width, cv.height);
+  ctx.drawImage(riskCanvas, 0, 0, cv.width, cv.height);
+  URL.revokeObjectURL(svgUrl);
+  cv.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'carte-risque.png'; a.click();
+    URL.revokeObjectURL(a.href);
+  },'image/png');
 }
 
 /* ── SIDEBAR PROBABLE BUILD ── */
@@ -1266,6 +1689,7 @@ function switchDay(d) {
   document.getElementById('dtab-tomorrow').classList.toggle('on', d === 'tomorrow');
   redrawMap();
   redrawAllNeighbors();
+  if (svgRiskEl) redrawAllRisk();
   renderGauges(zoomedDept);
 }
 function toggleSub() {
@@ -1299,7 +1723,7 @@ function redrawNeighborPath(sel, name) {
        .attr('stroke', 'rgba(0,0,0,.3)').attr('stroke-width', 0.7);
   } else {
     sel.attr('fill', DFILL)
-       .attr('stroke', 'rgba(255,255,255,.28)').attr('stroke-width', 0.6);
+       .attr('stroke', '#000').attr('stroke-width', 0.6);
   }
 }
 function redrawNeighborPictos() {
@@ -1740,6 +2164,7 @@ document.addEventListener('keydown', e => {
 buildSidebar();
 buildNextSidebar();
 buildProbSidebar();
+buildRiskSidebar();
 
 (async () => {
   const mapDiv = document.getElementById('map');
@@ -1780,7 +2205,7 @@ buildProbSidebar();
       .attr('class', 'neighbor')
       .attr('d', d => geoPath(d))
       .attr('fill', DFILL)
-      .attr('stroke', 'rgba(255,255,255,.28)')
+      .attr('stroke', '#000')
       .attr('stroke-width', 0.6)
       .style('cursor','pointer')
       .on('mousemove', function(event, d) {
@@ -1884,6 +2309,7 @@ buildProbSidebar();
   if (features.length) {
     setTimeout(() => { if (!svgNextEl) initNextMap(); }, 150);
     setTimeout(() => { if (!svgProbEl) initProbMap(); }, 200);
+    setTimeout(() => { if (!svgRiskEl) initRiskMap(); }, 250);
   }
 })();
 </script>
