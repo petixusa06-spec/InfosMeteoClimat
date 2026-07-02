@@ -6,45 +6,74 @@
 <title>Vigilance Météo France</title>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0f1117;--surf:#1a1d27;--surf2:#222536;
   --b1:rgba(255,255,255,.08);--b2:rgba(255,255,255,.14);
   --t1:#e8eaf0;--t2:#8b90a4;--t3:#555a6e;
-  --acc:#4d7cfe;--r:12px;--rs:8px;
+  --acc:#4d7cfe;--acc2:#7c9cff;--r:12px;--rs:8px;
+  --ease:cubic-bezier(.22,.9,.32,1);
+  --sh-sm:0 2px 8px rgba(0,0,0,.28);
+  --sh-md:0 8px 24px rgba(0,0,0,.38);
+  --sh-glow:0 0 0 1px rgba(77,124,254,.35),0 6px 20px rgba(77,124,254,.22);
 }
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh}
+*{scrollbar-width:thin;scrollbar-color:var(--b2) transparent}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:20px;border:2px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.24)}
+:focus-visible{outline:2px solid var(--acc2);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+body{
+  font-family:'Inter',sans-serif;color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+  background:
+    radial-gradient(1100px 520px at 18% -8%, rgba(77,124,254,.10), transparent 60%),
+    radial-gradient(900px 480px at 85% 6%, rgba(124,58,237,.06), transparent 55%),
+    var(--bg);
+  background-attachment:fixed;
+  animation:pageIn .35s var(--ease);
+}
+@keyframes pageIn{from{opacity:0}to{opacity:1}}
 .page{display:flex;flex-direction:column;gap:12px;padding:12px;max-width:1680px;margin:0 auto}
 
 /* Header */
-.app-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surf);border:1px solid var(--b1);border-radius:var(--r)}
-.app-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px rgba(77,124,254,.6)}
+.app-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:linear-gradient(180deg,rgba(34,37,54,.9),var(--surf));border:1px solid var(--b1);border-radius:var(--r);box-shadow:var(--sh-sm);backdrop-filter:blur(10px);position:relative;overflow:hidden}
+.app-hdr::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,transparent,rgba(77,124,254,.5),transparent)}
+.app-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:9px;letter-spacing:-.015em}
+.app-logo{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;background:linear-gradient(135deg,var(--acc),#7c3aed);box-shadow:0 2px 10px rgba(77,124,254,.4);flex-shrink:0}
+.app-title-sub{font-weight:500;color:var(--t2);font-size:13px;letter-spacing:0}
 .day-tabs{display:flex;gap:4px}
-.dtab{padding:5px 14px;border:1px solid var(--b2);border-radius:20px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--t2);transition:all .18s;font-weight:500}
-.dtab:hover{background:var(--surf2);color:var(--t1)}
-.dtab.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.dtab{padding:5px 14px;border:1px solid var(--b2);border-radius:20px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--t2);transition:all .18s var(--ease);font-weight:500}
+.dtab:hover{background:var(--surf2);color:var(--t1);transform:translateY(-1px)}
+.dtab.on{background:var(--acc);color:#fff;border-color:var(--acc);box-shadow:0 3px 12px rgba(77,124,254,.4)}
 
 /* Layout */
 .top{display:flex;gap:12px;align-items:flex-start}
 #map-col{flex:1;min-width:0;position:relative}
 .sb{width:192px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
-.card{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);padding:12px}
+.card{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);padding:12px;box-shadow:var(--sh-sm);transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+.card:hover{border-color:var(--b2)}
 .stitle{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:8px}
+#map,#map-next,#map-prob{box-shadow:var(--sh-md)}
 
 /* Level rows */
 .lvl-row-wrap{display:flex;align-items:center;gap:3px;margin-bottom:2px}
-.lvl-btn{display:flex;align-items:center;gap:7px;flex:1;padding:5px 7px;border:1px solid transparent;border-radius:var(--rs);cursor:pointer;background:transparent;font-size:12px;font-family:inherit;color:var(--t2);text-align:left;transition:all .12s}
-.lvl-btn:hover{background:var(--surf2);color:var(--t1)}
-.lvl-btn.on{border-color:var(--b2);background:var(--surf2);color:var(--t1)}
+.lvl-btn{display:flex;align-items:center;gap:7px;flex:1;padding:5px 7px;border:1px solid transparent;border-radius:var(--rs);cursor:pointer;background:transparent;font-size:12px;font-family:inherit;color:var(--t2);text-align:left;transition:all .15s var(--ease)}
+.lvl-btn:hover{background:var(--surf2);color:var(--t1);transform:translateX(1px)}
+.lvl-btn.on{border-color:var(--b2);background:var(--surf2);color:var(--t1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}
 .lvl-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
 .lvl-btn.semi{margin-left:5px;border-left:2px dashed var(--b2);font-size:11px;opacity:.85}
 /* ── Vue selector (Vigilance / Évolution probable) ── */
 .view-tabs{display:flex;gap:4px;align-items:center}
-.vtab{padding:5px 13px;border:1px solid var(--b2);border-radius:20px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--t2);transition:all .18s;font-weight:500}
-.vtab:hover{background:var(--surf2);color:var(--t1)}
-.vtab.on{background:#2a1f3d;color:#c084fc;border-color:#7c3aed}
+.vtab{padding:5px 13px;border:1px solid var(--b2);border-radius:20px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--t2);transition:all .18s var(--ease);font-weight:500}
+.vtab:hover{background:var(--surf2);color:var(--t1);transform:translateY(-1px)}
+.vtab:active{transform:translateY(0) scale(.97)}
+.vtab.on{background:#2a1f3d;color:#c084fc;border-color:#7c3aed;box-shadow:0 3px 14px rgba(124,58,237,.28)}
 .vtab-sep{width:1px;height:16px;background:var(--b2);margin:0 4px}
 
 /* ── Sidebar probable ── */
@@ -60,19 +89,29 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);min-hei
 #map-next-col{flex:1;min-width:0;position:relative}
 #map-next{width:100%;aspect-ratio:1/1.04;border-radius:12px;overflow:hidden;background:#1a1d27;border:1px solid rgba(20,184,196,.2);position:relative}
 .next-sidebar-note{font-size:10px;color:var(--t3);line-height:1.5;padding:8px;background:rgba(20,184,196,.07);border:1px solid rgba(20,184,196,.18);border-radius:8px;margin-bottom:2px}
-.risk-tool{width:36px;height:36px;border:1px solid var(--b2);border-radius:7px;background:transparent;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .12s;color:var(--t2)}
-.risk-tool.on{background:rgba(249,115,22,.15);border-color:#f97316;color:#f97316}
-.risk-tool:hover{background:var(--surf2)}
+.radar-rep-btn{padding:6px 10px;border-radius:6px;border:1px solid transparent;background:transparent;cursor:pointer;font-size:12px;color:var(--t2);font-family:inherit;transition:all .15s var(--ease);text-align:left;white-space:nowrap}
+.radar-rep-btn:hover{background:var(--surf2);color:var(--t1)}
+.radar-rep-btn.on{border-color:#22d3ee;color:#22d3ee;background:rgba(34,211,238,.12)}
 /* ── Auth widget ── */
-.auth-panel{position:absolute;top:40px;right:0;width:260px;background:var(--surf);border:1px solid var(--b2);border-radius:10px;padding:16px;box-shadow:0 8px 28px rgba(0,0,0,.6);z-index:100}
-.auth-input{width:100%;margin-bottom:8px;padding:7px 10px;background:var(--surf2);border:1px solid var(--b2);border-radius:7px;color:var(--t1);font-size:12px;font-family:inherit;box-sizing:border-box;resize:vertical;outline:none}
-.auth-input:focus{border-color:var(--acc)}
+.auth-panel{position:absolute;top:40px;right:0;width:270px;background:var(--surf);border:1px solid var(--b2);border-radius:12px;padding:16px;box-shadow:0 12px 36px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.03);z-index:100;animation:authIn .18s var(--ease)}
+@keyframes authIn{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.auth-input{width:100%;margin-bottom:8px;padding:8px 10px;background:var(--surf2);border:1px solid var(--b2);border-radius:8px;color:var(--t1);font-size:12px;font-family:inherit;box-sizing:border-box;resize:vertical;outline:none;transition:border-color .15s var(--ease),box-shadow .15s var(--ease)}
+.auth-input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(77,124,254,.15)}
+.auth-pass-wrap{position:relative}
+.auth-pass-wrap .auth-input{padding-right:34px}
+.auth-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;color:var(--t3);font-size:13px;padding:4px 6px;line-height:1;transition:color .12s}
+.auth-eye:hover{color:var(--t2)}
 .auth-tabs{display:flex;gap:4px;margin-bottom:12px}
-.auth-tab{flex:1;padding:5px;border:1px solid var(--b2);border-radius:6px;background:transparent;cursor:pointer;font-size:11px;color:var(--t3);font-family:inherit;transition:all .12s}
+.auth-tab{flex:1;padding:5px;border:1px solid var(--b2);border-radius:6px;background:transparent;cursor:pointer;font-size:11px;color:var(--t3);font-family:inherit;transition:all .15s var(--ease)}
 .auth-tab.on{background:var(--acc);border-color:var(--acc);color:#fff}
 .auth-notice{font-size:10px;color:var(--t3);line-height:1.5;padding:7px;background:rgba(77,124,254,.07);border-radius:6px;margin-bottom:10px}
 .auth-err{color:#f87171;font-size:11px;margin:6px 0 0;display:none}
 .auth-ok{color:#4ade80;font-size:11px;margin:6px 0 0;display:none}
+@keyframes authShake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
+.auth-shake{animation:authShake .45s cubic-bezier(.36,.07,.19,.97)}
+.auth-locked{opacity:.55;pointer-events:none}
+/* honeypot anti-bot, invisible pour un humain */
+.hp-field{position:absolute!important;left:-9999px!important;width:1px;height:1px;opacity:0;overflow:hidden}
 body.role-visitor .edit-zone{opacity:.4;pointer-events:none;user-select:none;cursor:not-allowed}
 .lock-hint{font-size:10px;color:var(--t3);text-align:center;padding:6px 0 2px;display:none}
 body.role-visitor .lock-hint{display:block}
@@ -86,9 +125,9 @@ body.role-visitor .lock-hint{display:block}
 
 /* Picto grid */
 .pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
-.pbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;border:1px solid transparent;border-radius:var(--rs);cursor:pointer;background:transparent;transition:all .12s;font-size:9px;color:var(--t3);font-family:inherit}
-.pbtn:hover{background:var(--surf2);color:var(--t2)}
-.pbtn.on{border-color:var(--acc);background:rgba(77,124,254,.1);color:var(--acc)}
+.pbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;border:1px solid transparent;border-radius:var(--rs);cursor:pointer;background:transparent;transition:all .15s var(--ease);font-size:9px;color:var(--t3);font-family:inherit}
+.pbtn:hover{background:var(--surf2);color:var(--t2);transform:translateY(-1px)}
+.pbtn.on{border-color:var(--acc);background:rgba(77,124,254,.1);color:var(--acc);box-shadow:0 0 0 1px rgba(77,124,254,.15)}
 .pbtn svg{width:22px;height:22px;display:block}
 
 /* Toggles */
@@ -105,19 +144,41 @@ body.role-visitor .lock-hint{display:block}
 .dv-tog:hover{background:var(--surf2)}
 
 /* Buttons */
-.act-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px;border:1px solid var(--b2);border-radius:var(--rs);cursor:pointer;background:transparent;font-size:12px;font-family:inherit;color:var(--t2);transition:all .12s;font-weight:500}
-.act-btn:hover{background:var(--surf2);color:var(--t1)}
-.act-btn.primary{background:var(--acc);border-color:var(--acc);color:#fff}
-.act-btn.primary:hover{background:#3d6de8}
-.rst-btn{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:6px;border:1px solid var(--b1);border-radius:var(--rs);cursor:pointer;background:transparent;font-size:11px;font-family:inherit;color:var(--t3);transition:all .12s}
+.act-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px;border:1px solid var(--b2);border-radius:var(--rs);cursor:pointer;background:transparent;font-size:12px;font-family:inherit;color:var(--t2);transition:all .16s var(--ease);font-weight:500}
+.act-btn:hover{background:var(--surf2);color:var(--t1);transform:translateY(-1px);box-shadow:var(--sh-sm)}
+.act-btn:active{transform:translateY(0)}
+.act-btn.primary{background:linear-gradient(135deg,var(--acc),#3d63d6);border-color:var(--acc);color:#fff;box-shadow:0 3px 14px rgba(77,124,254,.3)}
+.act-btn.primary:hover{background:linear-gradient(135deg,#5f8bff,var(--acc));box-shadow:0 5px 18px rgba(77,124,254,.42)}
+.rst-btn{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:6px;border:1px solid var(--b1);border-radius:var(--rs);cursor:pointer;background:transparent;font-size:11px;font-family:inherit;color:var(--t3);transition:all .15s var(--ease)}
 .rst-btn:hover{background:var(--surf2);color:var(--t2)}
 .hint{font-size:10px;color:var(--t3);line-height:1.5;text-align:center}
 
 /* Tooltip */
-.tip{position:absolute;background:var(--surf);border:1px solid var(--b2);border-radius:8px;padding:5px 11px;font-size:11px;color:var(--t1);pointer-events:none;display:none;z-index:10;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+.tip{position:absolute;background:var(--surf);border:1px solid var(--b2);border-radius:8px;padding:5px 11px;font-size:11px;color:var(--t1);pointer-events:none;display:none;z-index:10;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.55);transition:opacity .1s var(--ease)}
 
 /* Légende */
-#leg{position:absolute;bottom:12px;right:12px;background:rgba(15,17,23,.92);border:1px solid var(--b2);border-radius:10px;padding:10px 12px;min-width:160px;backdrop-filter:blur(8px);pointer-events:none;display:none}
+#leg{position:absolute;bottom:12px;right:12px;background:rgba(15,17,23,.92);border:1px solid var(--b2);border-radius:10px;padding:10px 12px;min-width:160px;backdrop-filter:blur(8px);pointer-events:none;display:none;box-shadow:var(--sh-md)}
+/* .leg-card : version "en ligne" des mêmes légendes, utilisée dans les sidebars
+   Prochain jour / Évolution probable (là où #leg n'a pas d'ID dédié). Sans ce bloc,
+   ces légendes s'affichaient sans aucun style. */
+.leg-card{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh-sm);animation:legIn .18s var(--ease)}
+@keyframes legIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Contrôles de zoom flottants sur les cartes D3 */
+.zoom-ctrl{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:1px;background:rgba(15,17,23,.88);border:1px solid var(--b2);border-radius:9px;overflow:hidden;backdrop-filter:blur(8px);box-shadow:var(--sh-sm);z-index:20}
+.zoom-ctrl button{width:30px;height:28px;border:none;background:transparent;color:var(--t2);cursor:pointer;font-size:15px;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:all .12s var(--ease)}
+.zoom-ctrl button:hover{background:var(--surf2);color:var(--t1)}
+.zoom-ctrl button:active{transform:scale(.92)}
+.zoom-ctrl button+button{border-top:1px solid var(--b1)}
+.zoom-ctrl button.zc-reset{font-size:12px}
+.map-zoomable{cursor:grab}
+.map-zoomable:active{cursor:grabbing}
+.zoom-hint{position:absolute;bottom:12px;left:12px;font-size:9px;color:var(--t3);background:rgba(15,17,23,.75);padding:4px 8px;border-radius:6px;backdrop-filter:blur(6px);pointer-events:none;letter-spacing:.02em;opacity:.85}
+
+/* Transitions douces entre les vues (Vigilance / Prochain jour / Probable / Risque / Radar) */
+.top{transition:opacity .22s var(--ease), transform .22s var(--ease)}
+.view-leave{opacity:0;transform:translateY(8px) scale(.985)}
+.view-enter{opacity:0;transform:translateY(-8px) scale(.985)}
 .leg-sec{margin-bottom:8px}
 .leg-sec:last-child{margin-bottom:0}
 .leg-sec-t{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.06)}
@@ -129,7 +190,8 @@ body.role-visitor .lock-hint{display:block}
 
 /* Jauges */
 #gauges{display:flex;flex-direction:column;gap:8px}
-.g-wrap{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.g-wrap{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);padding:12px 16px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--sh-sm);transition:border-color .2s var(--ease)}
+.g-wrap:hover{border-color:var(--b2)}
 .g-wrap.dept{border-left:3px solid var(--acc)}
 .g-hdr{display:flex;align-items:center;justify-content:space-between}
 .g-title{font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px}
@@ -155,23 +217,30 @@ body.role-visitor .lock-hint{display:block}
 .g-add:hover{background:var(--surf2);color:var(--t2)}
 
 /* Popups */
-.pop{position:fixed;background:var(--surf);border:1px solid var(--b2);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.7);z-index:9999;display:none}
+.pop{position:fixed;background:var(--surf);border:1px solid var(--b2);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.72);z-index:9999;display:none;animation:authIn .15s var(--ease)}
 .pop.open{display:flex}
 #lvl-pop{flex-direction:column;gap:1px;padding:6px;min-width:140px}
-.lp-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--t2)}
-.lp-item:hover{background:var(--surf2);color:var(--t1)}
+.lp-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--t2);transition:all .12s var(--ease)}
+.lp-item:hover{background:var(--surf2);color:var(--t1);transform:translateX(2px)}
 .lp-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
 #phen-pop{flex-wrap:wrap;gap:3px;padding:8px;width:220px}
-.pp-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px;border-radius:6px;cursor:pointer;font-size:9px;color:var(--t3);transition:all .12s}
-.pp-item:hover{background:var(--surf2);color:var(--t2)}
+.pp-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px;border-radius:6px;cursor:pointer;font-size:9px;color:var(--t3);transition:all .15s var(--ease)}
+.pp-item:hover{background:var(--surf2);color:var(--t2);transform:translateY(-1px)}
 .pp-item svg{width:20px;height:20px;display:block}
+
+/* États inactifs des contrôles verrouillés (rouge/violet réservés admin) */
+.lvl-btn:disabled,.dv-tog[disabled],[data-plk]:disabled{opacity:.32;cursor:not-allowed;filter:grayscale(.3)}
+
+/* Bandeau de session (auto-déconnexion, verrouillage) */
+#sess-toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-12px);background:var(--surf);border:1px solid var(--b2);color:var(--t1);font-size:12px;padding:9px 16px;border-radius:10px;box-shadow:var(--sh-md);z-index:10000;opacity:0;pointer-events:none;transition:all .25s var(--ease)}
+#sess-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
 <div class="page">
 
   <div class="app-hdr">
-    <div class="app-title"><span class="dot"></span>Carte Vigilance Météo France</div>
+    <div class="app-title"><span class="app-logo">🛡</span>Carte Vigilance <span class="app-title-sub">Météo France</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <!-- Sélecteur de vue -->
       <div class="view-tabs">
@@ -182,6 +251,8 @@ body.role-visitor .lock-hint{display:block}
         <button class="vtab" id="vtab-prob" onclick="switchView('probable')" style="color:#7c6a9a;border-color:rgba(124,58,237,.3)">↗ Évolution probable</button>
         <span class="vtab-sep"></span>
         <button class="vtab" id="vtab-risk" onclick="switchView('risk')" style="color:#f97316;border-color:rgba(249,115,22,.3)">🌡 Cartes de risque</button>
+        <span class="vtab-sep"></span>
+        <button class="vtab" id="vtab-radar" onclick="switchView('radar')" style="color:#22d3ee;border-color:rgba(34,211,238,.3)">📡 Radar en direct</button>
       </div>
       <!-- Sélecteur de jour (masqué en mode probable) -->
       <div class="day-tabs" id="day-tabs-wrap">
@@ -199,17 +270,22 @@ body.role-visitor .lock-hint{display:block}
           </div>
           <!-- Connexion -->
           <div id="auth-view-login">
-            <input id="auth-user" class="auth-input" type="text" placeholder="Identifiant" autocomplete="username">
-            <input id="auth-pass" class="auth-input" type="password" placeholder="Mot de passe" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-            <button class="act-btn primary" onclick="doLogin()">Se connecter</button>
+            <input id="auth-user" class="auth-input" type="text" placeholder="Identifiant" autocomplete="username" maxlength="60">
+            <div class="auth-pass-wrap">
+              <input id="auth-pass" class="auth-input" type="password" placeholder="Mot de passe" autocomplete="current-password" maxlength="128" onkeydown="if(event.key==='Enter')doLogin()">
+              <button type="button" class="auth-eye" id="auth-eye-btn" onclick="togglePassVis()" aria-label="Afficher le mot de passe" tabindex="-1">👁</button>
+            </div>
+            <button class="act-btn primary" id="auth-login-btn" onclick="doLogin()">Se connecter</button>
             <p id="auth-err" class="auth-err"></p>
           </div>
           <!-- Demande d'accès -->
           <div id="auth-view-request" style="display:none">
             <p class="auth-notice">Ta demande sera envoyée par email au propriétaire du site qui devra la valider manuellement avant que tu puisses te connecter.</p>
-            <input id="req-name" class="auth-input" type="text" placeholder="Nom ou pseudo">
-            <input id="req-email" class="auth-input" type="email" placeholder="Ton adresse email">
-            <textarea id="req-msg" class="auth-input" rows="2" placeholder="Pourquoi voudrais-tu accès ?"></textarea>
+            <input id="req-name" class="auth-input" type="text" placeholder="Nom ou pseudo" maxlength="80">
+            <input id="req-email" class="auth-input" type="email" placeholder="Ton adresse email" maxlength="120">
+            <textarea id="req-msg" class="auth-input" rows="2" placeholder="Pourquoi voudrais-tu accès ?" maxlength="500"></textarea>
+            <!-- Piège à robots : champ invisible pour un humain, rempli automatiquement par la plupart des bots -->
+            <input id="req-hp" class="hp-field" type="text" name="site" tabindex="-1" autocomplete="off" aria-hidden="true">
             <button class="act-btn primary" onclick="sendRequest()">Envoyer la demande</button>
             <p id="req-ok" class="auth-ok"></p>
             <p id="req-err" class="auth-err"></p>
@@ -223,9 +299,15 @@ body.role-visitor .lock-hint{display:block}
     <div id="map-col">
       <div id="map" style="width:100%;border-radius:12px;overflow:hidden;background:#1a1d27;border:1px solid rgba(255,255,255,.06)"></div>
       <div class="tip" id="tip"></div>
-      <div id="leg"></div>
+      <div class="zoom-ctrl" id="zoom-ctrl-main">
+        <button onclick="zoomStep(1)" aria-label="Zoomer">+</button>
+        <button onclick="zoomStep(-1)" aria-label="Dézoomer">−</button>
+        <button class="zc-reset" onclick="unzoom()" aria-label="Réinitialiser le zoom">⟲</button>
+      </div>
+      <div class="zoom-hint">🖱 Molette pour zoomer · glisser pour déplacer · dbl-clic sur une zone</div>
     </div>
     <div class="sb">
+      <div id="leg" class="leg-card" style="display:none"></div>
       <p class="lock-hint">🔒 Connecte-toi pour modifier</p>
       <div class="edit-zone">
         <div class="card">
@@ -275,9 +357,15 @@ body.role-visitor .lock-hint{display:block}
     <div id="map-next-col">
       <div id="map-next"></div>
       <div class="tip" id="tip-next"></div>
-      <div id="leg-next" style="position:absolute;bottom:12px;right:12px;background:rgba(15,17,23,.92);border:1px solid rgba(20,184,196,.25);border-radius:10px;padding:10px 12px;min-width:148px;backdrop-filter:blur(8px);pointer-events:none;display:none"></div>
+      <div class="zoom-ctrl" id="zoom-ctrl-next">
+        <button onclick="zoomStepNext(1)" aria-label="Zoomer">+</button>
+        <button onclick="zoomStepNext(-1)" aria-label="Dézoomer">−</button>
+        <button class="zc-reset" onclick="unzoomNext()" aria-label="Réinitialiser le zoom">⟲</button>
+      </div>
+      <div class="zoom-hint">🖱 Molette pour zoomer · glisser pour déplacer</div>
     </div>
     <div class="sb">
+      <div id="leg-next" class="leg-card" style="display:none;border-color:rgba(20,184,196,.18)"></div>
       <p class="lock-hint">🔒 Connecte-toi pour modifier</p>
       <div class="edit-zone">
         <div class="card" style="border-color:rgba(20,184,196,.2)">
@@ -305,9 +393,15 @@ body.role-visitor .lock-hint{display:block}
     <div id="map-prob-col">
       <div id="map-prob"></div>
       <div class="tip" id="tip-prob"></div>
-      <div id="leg-prob" style="position:absolute;bottom:12px;right:12px;background:rgba(15,17,23,.92);border:1px solid rgba(124,58,237,.25);border-radius:10px;padding:10px 12px;min-width:148px;backdrop-filter:blur(8px);pointer-events:none;display:none"></div>
+      <div class="zoom-ctrl" id="zoom-ctrl-prob">
+        <button onclick="zoomStepProb(1)" aria-label="Zoomer">+</button>
+        <button onclick="zoomStepProb(-1)" aria-label="Dézoomer">−</button>
+        <button class="zc-reset" onclick="unzoomProb()" aria-label="Réinitialiser le zoom">⟲</button>
+      </div>
+      <div class="zoom-hint">🖱 Molette pour zoomer · glisser pour déplacer</div>
     </div>
     <div class="sb">
+      <div id="leg-prob" class="leg-card" style="display:none;border-color:rgba(124,58,237,.18)"></div>
       <p class="lock-hint">🔒 Connecte-toi pour modifier</p>
       <div class="edit-zone">
         <div class="card" style="border-color:rgba(124,58,237,.2)">
@@ -324,52 +418,110 @@ body.role-visitor .lock-hint{display:block}
   </div>
 
   <!-- VUE CARTES DE RISQUE -->
-  <div class="top" id="view-risk" style="display:none">
-    <div id="map-risk-col" style="flex:1;min-width:0;position:relative">
-      <!-- Conteneur carte risque : SVG de référence + Canvas de dessin superposés -->
-      <div id="map-risk-wrap" style="width:100%;border-radius:12px;overflow:hidden;background:#1a1d27;border:1px solid rgba(249,115,22,.2);position:relative">
-        <div id="map-risk-svg" style="width:100%;position:relative"></div>
-        <canvas id="map-risk-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;touch-action:none"></canvas>
+  <!-- MODAL VÉRIFICATION IMAGE -->
+  <div id="risk-verify-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center">
+    <div style="background:var(--surf);border:1px solid var(--b2);border-radius:16px;max-width:900px;width:96vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.7)">
+      <div style="padding:18px 22px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <p style="font-size:15px;font-weight:700;color:var(--t1);margin:0">Vérification de la carte</p>
+          <p style="font-size:11px;color:var(--t3);margin:3px 0 0">Vérifie que les couleurs correspondent bien à l'échelle sélectionnée</p>
+        </div>
+        <button onclick="riskVerifyClose(false)" style="background:transparent;border:1px solid var(--b2);border-radius:8px;color:var(--t2);padding:6px 12px;cursor:pointer;font-size:13px">✕</button>
+      </div>
+      <div style="display:flex;flex:1;overflow:hidden;min-height:0">
+        <!-- Aperçu image -->
+        <div style="flex:1;padding:16px;display:flex;align-items:center;justify-content:center;background:#0f1117;min-width:0">
+          <img id="risk-verify-img" style="max-width:100%;max-height:65vh;object-fit:contain;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.5)">
+        </div>
+        <!-- Légende de vérification -->
+        <div style="width:220px;flex-shrink:0;border-left:1px solid var(--b1);overflow-y:auto;display:flex;flex-direction:column">
+          <div style="padding:14px 14px 8px">
+            <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin:0 0 10px">Légende attendue</p>
+            <div id="risk-verify-legend"></div>
+          </div>
+          <div style="padding:10px 14px;margin-top:auto;border-top:1px solid var(--b1)">
+            <p style="font-size:10px;color:var(--t3);line-height:1.5;margin:0 0 10px">Les couleurs de ton image correspondent-elles à cette légende ?</p>
+            <button onclick="riskVerifyClose(true)" style="width:100%;padding:9px;background:#f97316;border:none;border-radius:8px;color:#fff;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:7px">✓ Valider</button>
+            <button onclick="riskVerifyClose(false)" style="width:100%;padding:9px;background:transparent;border:1px solid var(--b2);border-radius:8px;color:var(--t2);font-size:13px;cursor:pointer">✕ Annuler</button>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="sb">
-      <p class="lock-hint">🔒 Connecte-toi pour modifier</p>
-      <div class="edit-zone">
-        <div class="card" style="border-color:rgba(249,115,22,.2)">
-          <p class="stitle" style="color:#f97316">Phénomène</p>
-          <div id="risk-phenom-btns" style="display:flex;flex-direction:column;gap:4px;margin-top:6px"></div>
-        </div>
-        <div class="card" style="border-color:rgba(249,115,22,.2)">
-          <p class="stitle" style="color:#f97316" id="risk-scale-title">Intensité</p>
-          <div id="risk-scale-btns" style="margin-top:6px"></div>
-        </div>
-        <div class="card" style="border-color:rgba(249,115,22,.2)">
-          <p class="stitle" style="color:#f97316">Outils</p>
-          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
-            <button class="risk-tool on" id="rt-brush" onclick="setRiskTool('brush')" title="Pinceau libre">🖌</button>
-            <button class="risk-tool" id="rt-fill" onclick="setRiskTool('fill')" title="Remplissage">🪣</button>
-            <button class="risk-tool" id="rt-eraser" onclick="setRiskTool('eraser')" title="Gomme">◻</button>
-          </div>
-          <div style="margin-top:8px">
-            <p style="font-size:10px;color:var(--t3);margin-bottom:4px">Taille</p>
-            <input type="range" id="risk-brush-size" min="4" max="60" value="18"
-              style="width:100%;accent-color:#f97316"
-              oninput="riskBrushSz=+this.value;document.getElementById('risk-sz-lbl').textContent=this.value+'px'">
-            <span id="risk-sz-lbl" style="font-size:10px;color:var(--t3)">18px</span>
-          </div>
-          <div style="margin-top:6px">
-            <p style="font-size:10px;color:var(--t3);margin-bottom:4px">Opacité</p>
-            <input type="range" id="risk-opacity" min="20" max="100" value="75"
-              style="width:100%;accent-color:#f97316"
-              oninput="riskOpacity=+this.value/100;document.getElementById('risk-op-lbl').textContent=this.value+'%'">
-            <span id="risk-op-lbl" style="font-size:10px;color:var(--t3)">75%</span>
+  </div>
+
+  <div class="top" id="view-risk" style="display:none">
+    <div id="map-risk-col" style="flex:1;min-width:0;position:relative">
+      <div id="risk-img-wrap" style="width:100%;min-height:520px;border-radius:12px;background:linear-gradient(135deg,#131823 0%,#1a1f2e 100%);border:2px dashed rgba(249,115,22,.3);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer;transition:all .2s"
+           onclick="document.getElementById('risk-file-inp').click()"
+           ondragover="event.preventDefault();this.style.borderColor='#f97316';this.style.background='rgba(249,115,22,.05)'"
+           ondragleave="this.style.borderColor='rgba(249,115,22,.3)';this.style.background='linear-gradient(135deg,#131823 0%,#1a1f2e 100%)'"
+           ondrop="riskDrop(event)">
+        <input type="file" id="risk-file-inp" accept="image/*" style="display:none" onchange="riskLoad(event)">
+        <img id="risk-img" style="display:none;width:100%;height:100%;object-fit:contain;border-radius:10px;transform-origin:center center;will-change:transform">
+        <div id="risk-placeholder" style="text-align:center;pointer-events:none;padding:40px">
+          <div style="width:72px;height:72px;border-radius:50%;background:rgba(249,115,22,.1);border:2px solid rgba(249,115,22,.25);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 18px">🗺</div>
+          <p style="color:var(--t1);font-size:15px;font-weight:700;margin:0 0 8px;letter-spacing:-.01em">Importer une carte — <span id="risk-ph-name" style="color:#f97316">Orages</span></p>
+          <p style="color:var(--t3);font-size:12px;line-height:1.7;margin:0">Clique ou glisse-dépose ton image ici<br><span style="font-size:11px;opacity:.6">PNG · JPG · WebP — propre à ce phénomène</span></p>
+          <div style="margin-top:20px;display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border:1px solid rgba(249,115,22,.4);border-radius:20px;background:rgba(249,115,22,.08)">
+            <span style="font-size:12px;color:#f97316;font-weight:600">Parcourir les fichiers</span>
           </div>
         </div>
-        <p class="hint">Dessine librement sur la carte<br>Les zones peuvent traverser les départements</p>
-        <button class="rst-btn" onclick="undoRisk()" style="border-color:rgba(249,115,22,.2);color:#f97316">↩ Annuler</button>
-        <button class="rst-btn" onclick="resetRisk()" style="border-color:rgba(249,115,22,.2);color:#f97316">↺ Tout effacer</button>
       </div>
-      <button class="act-btn" onclick="exportRiskPng()" style="border-color:rgba(249,115,22,.3);color:#f97316">↓ Télécharger PNG</button>
+      <div id="risk-img-toolbar" style="display:none;position:absolute;top:10px;right:10px;display:none;gap:6px">
+        <button onclick="document.getElementById('risk-file-inp').click()" style="background:rgba(15,17,23,.88);border:1px solid var(--b2);border-radius:7px;color:var(--t2);padding:5px 11px;font-size:12px;cursor:pointer;backdrop-filter:blur(8px)">↺ Changer</button>
+        <button onclick="riskClear()" style="background:rgba(15,17,23,.88);border:1px solid rgba(239,68,68,.4);border-radius:7px;color:#ef4444;padding:5px 11px;font-size:12px;cursor:pointer;backdrop-filter:blur(8px)">✕ Supprimer</button>
+      </div>
+      <div class="zoom-ctrl" id="zoom-ctrl-risk" style="display:none">
+        <button onclick="riskZoomStep(1)" aria-label="Zoomer">+</button>
+        <button onclick="riskZoomStep(-1)" aria-label="Dézoomer">−</button>
+        <button class="zc-reset" onclick="riskZoomReset()" aria-label="Réinitialiser le zoom">⟲</button>
+      </div>
+      <!-- Pastille phénomène affichée sur la carte -->
+      <div id="risk-img-badge" style="display:none;position:absolute;bottom:14px;left:14px;background:rgba(15,17,23,.92);border:1px solid rgba(249,115,22,.3);border-radius:8px;padding:7px 12px;backdrop-filter:blur(8px);pointer-events:none">
+        <p id="risk-badge-label" style="font-size:11px;font-weight:700;color:#f97316;margin:0"></p>
+      </div>
+      <div class="zoom-hint" id="risk-zoom-hint" style="display:none">🖱 Molette pour zoomer · glisser pour déplacer</div>
+    </div>
+
+    <!-- Sidebar légende -->
+    <div class="sb">
+      <div class="card" style="border-color:rgba(249,115,22,.2);padding:10px 10px 6px">
+        <p class="stitle" style="color:#f97316;margin-bottom:8px">Phénomène</p>
+        <div id="risk-phenom-btns" style="display:flex;flex-direction:column;gap:3px"></div>
+      </div>
+      <!-- Légende visuelle redessinée -->
+      <div id="risk-legend-block" style="border-radius:var(--r);overflow:hidden;border:1px solid rgba(249,115,22,.18)"></div>
+    </div>
+  </div>
+
+  <!-- VUE RADAR EN DIRECT -->
+  <div class="top" id="view-radar" style="display:none;flex-direction:column;gap:10px">
+    <!-- Sous-onglets radar -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="vtab on" id="rtab-foudre"  onclick="radarTab('foudre')">⚡ Foudre</button>
+      <button class="vtab"    id="rtab-pluie"   onclick="radarTab('pluie')">🌧 Pluie</button>
+      <button class="vtab"    id="rtab-rafales" onclick="radarTab('rafales')">💨 Rafales</button>
+      <button class="vtab"    id="rtab-reports" onclick="radarTab('reports')">⚠️ Signalements</button>
+      <span style="flex:1"></span>
+      <span id="radar-ts" style="font-size:10px;color:var(--t3);align-self:center"></span>
+      <button onclick="refreshRadar()" style="padding:4px 10px;border:1px solid var(--b2);border-radius:6px;background:transparent;color:var(--t2);font-size:11px;cursor:pointer">↺ Actualiser</button>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start">
+      <!-- Carte Leaflet -->
+      <div style="flex:1;min-width:0;position:relative">
+        <div id="radar-map" style="height:440px;border-radius:12px;overflow:hidden;border:1px solid rgba(34,211,238,.2)"></div>
+        <!-- Contrôles signalement (visibles seulement en mode reports) -->
+        <div id="radar-report-tools" style="display:none;position:absolute;top:10px;left:10px;z-index:500;flex-direction:column;gap:3px;background:rgba(15,17,23,.88);border:1px solid var(--b2);border-radius:9px;padding:5px;backdrop-filter:blur(8px);box-shadow:var(--sh-sm)">
+          <button class="radar-rep-btn on" data-rt="tornade" onclick="setReportType('tornade')">🌪 Tornade</button>
+          <button class="radar-rep-btn" data-rt="grele"   onclick="setReportType('grele')">🌨 Grêle</button>
+          <button class="radar-rep-btn" data-rt="pluie"   onclick="setReportType('pluie')">🌧 Forte pluie</button>
+        </div>
+      </div>
+      <!-- Légende radar -->
+      <div style="width:192px;flex-shrink:0">
+        <div id="radar-legend-wrap" style="border-radius:var(--r);overflow:hidden;border:1px solid rgba(34,211,238,.2);background:var(--surf)"></div>
+        <div id="radar-status-box" style="margin-top:8px;padding:10px;background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);font-size:11px;color:var(--t3);line-height:1.6"></div>
+      </div>
     </div>
   </div>
 
@@ -378,6 +530,7 @@ body.role-visitor .lock-hint{display:block}
 
 <div class="pop" id="lvl-pop"></div>
 <div class="pop" id="phen-pop"></div>
+<div id="sess-toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
@@ -622,17 +775,12 @@ const RISK_SCALES = {
   }
 };
 
-let riskData        = { today: {}, tomorrow: {} }; // non utilisé (dessin libre sur canvas)
+let riskData        = {};
 let activeRiskPhenom = 'orages';
 let activeRiskBand   = 'o1';
-let svgRiskEl = null; // SVG de référence (non interactif)
-// Canvas drawing state
-let riskCanvas = null, riskCtx = null;
-let riskDrawing = false, riskPoints = [];
-let riskTool    = 'brush';   // 'brush' | 'fill' | 'eraser'
-let riskBrushSz = 18;
-let riskOpacity = 0.75;
-let riskUndoStack = [];      // snapshots du canvas (max 20)
+let svgRiskEl = null;
+// Une image importée par phénomène : { orages: 'blob:...', vent: 'blob:...', ... }
+let riskImages = {};
 
 
 
@@ -689,6 +837,17 @@ async function sha256(str) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
+/* ── Petit toast pour les messages de session (auto-déco, verrouillage…) ── */
+let toastTimer = null;
+function showToast(msg, ms) {
+  const t = document.getElementById('sess-toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms || 3200);
+}
+
 /* ── Panneau auth ── */
 function authToggle() {
   const p = document.getElementById('auth-panel');
@@ -706,8 +865,70 @@ document.addEventListener('click', e => {
     p.style.display = 'none';
 });
 
+/* ── Afficher / masquer le mot de passe ── */
+function togglePassVis() {
+  const inp = document.getElementById('auth-pass');
+  const btn = document.getElementById('auth-eye-btn');
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+  btn.setAttribute('aria-label', show ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+}
+
+/* ── Anti-force-brute côté client ──
+   Ceci N'EST PAS une vraie protection serveur (voir note plus haut : tout ce fichier
+   est visible via "Afficher le code source"). Ça ralentit juste les essais répétés
+   depuis l'interface — pas depuis la console développeur. La seule protection réelle
+   contre une personne motivée serait un vrai serveur d'authentification. */
+const LOGIN_LOCK_KEY = 'lcdc_loginlock';
+function getLoginLock() {
+  try { return JSON.parse(localStorage.getItem(LOGIN_LOCK_KEY) || 'null') || { fails: 0, until: 0 }; }
+  catch { return { fails: 0, until: 0 }; }
+}
+function setLoginLock(state) {
+  try { localStorage.setItem(LOGIN_LOCK_KEY, JSON.stringify(state)); } catch {}
+}
+function lockDurationFor(fails) {
+  if (fails >= 12) return 10 * 60 * 1000;
+  if (fails >= 8)  return 2  * 60 * 1000;
+  if (fails >= 5)  return 30 * 1000;
+  return 0;
+}
+let lockCountdownTimer = null;
+function reflectLoginLockUI() {
+  const state = getLoginLock();
+  const err = document.getElementById('auth-err');
+  const btn = document.getElementById('auth-login-btn');
+  const remaining = state.until - Date.now();
+  clearInterval(lockCountdownTimer);
+  if (remaining > 0) {
+    btn.disabled = true;
+    btn.classList.add('auth-locked');
+    const tick = () => {
+      const s = Math.max(0, Math.ceil((state.until - Date.now()) / 1000));
+      if (s <= 0) {
+        clearInterval(lockCountdownTimer);
+        btn.disabled = false;
+        btn.classList.remove('auth-locked');
+        err.style.display = 'none';
+        return;
+      }
+      err.textContent = `Trop d'essais. Réessaie dans ${s}s.`;
+      err.style.display = 'block';
+    };
+    tick();
+    lockCountdownTimer = setInterval(tick, 1000);
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('auth-locked');
+  }
+}
+
 /* ── Connexion ── */
 async function doLogin() {
+  const lockState = getLoginLock();
+  if (lockState.until > Date.now()) { reflectLoginLockUI(); return; }
+
   const u = document.getElementById('auth-user').value.trim();
   const h = await sha256(document.getElementById('auth-pass').value);
   const err = document.getElementById('auth-err');
@@ -718,6 +939,7 @@ async function doLogin() {
     user: u, time: new Date().toLocaleString('fr-FR'), status: ok ? '✅ Succès' : '❌ Échec'
   }).catch(() => {});
   if (ok) {
+    setLoginLock({ fails: 0, until: 0 });
     currentRole = ok;
     document.body.className = 'role-' + ok;
     document.getElementById('auth-panel').style.display = 'none';
@@ -725,12 +947,20 @@ async function doLogin() {
     document.getElementById('auth-label').textContent = u + ' · Déco';
     document.getElementById('auth-btn').onclick = doLogout;
     applyRoleLocks();
+    armInactivityTimer();
+    showToast(`Connecté${ok==='admin'?' en administrateur':''} — session active`, 2600);
   } else {
+    const fails = lockState.fails + 1;
+    const dur = lockDurationFor(fails);
+    setLoginLock({ fails, until: dur ? Date.now() + dur : 0 });
     err.textContent = 'Identifiant ou mot de passe incorrect.';
     err.style.display = 'block';
+    const panel = document.getElementById('auth-panel');
+    panel.classList.remove('auth-shake'); void panel.offsetWidth; panel.classList.add('auth-shake');
+    reflectLoginLockUI();
   }
 }
-function doLogout() {
+function doLogout(silent) {
   currentRole = 'visitor';
   document.body.className = 'role-visitor';
   document.getElementById('auth-icon').textContent = '🔒';
@@ -740,15 +970,46 @@ function doLogout() {
   document.getElementById('auth-pass').value = '';
   document.getElementById('auth-err').style.display = 'none';
   applyRoleLocks();
+  clearInactivityTimer();
+  if (!silent) showToast('Déconnecté', 2200);
 }
 
+/* ── Déconnexion automatique après inactivité (réduit le risque en cas d'oubli
+   sur un ordinateur partagé — 15 minutes sans interaction) ── */
+const INACTIVITY_LIMIT_MS = 15 * 60 * 1000;
+let inactivityTimer = null;
+function armInactivityTimer() {
+  clearInactivityTimer();
+  inactivityTimer = setTimeout(() => {
+    if (currentRole !== 'visitor') {
+      doLogout(true);
+      showToast('Session expirée par inactivité — reconnecte-toi si besoin.', 4200);
+    }
+  }, INACTIVITY_LIMIT_MS);
+}
+function clearInactivityTimer() { clearTimeout(inactivityTimer); }
+['mousemove','keydown','click','touchstart'].forEach(evt =>
+  document.addEventListener(evt, () => { if (currentRole !== 'visitor') armInactivityTimer(); }, { passive: true })
+);
+
 /* ── Demande d'accès ── */
+let reqFormLoadedAt = Date.now();
 async function sendRequest() {
   const name = document.getElementById('req-name').value.trim();
   const email = document.getElementById('req-email').value.trim();
   const msg = document.getElementById('req-msg').value.trim();
+  const honeypot = document.getElementById('req-hp').value.trim();
   const okEl = document.getElementById('req-ok'), errEl = document.getElementById('req-err');
+  // Piège à robots : un champ rempli (invisible pour un humain) = probable bot →
+  // on affiche un faux succès sans jamais appeler EmailJS, pour ne pas gâcher le quota.
+  if (honeypot) {
+    okEl.textContent = '✓ Demande envoyée ! Tu seras contacté(e) dès validation.';
+    okEl.style.display = 'block'; errEl.style.display = 'none';
+    return;
+  }
   if (!name || !email) { errEl.textContent = 'Remplis au minimum ton nom et ton email.'; errEl.style.display='block'; return; }
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (!emailOk) { errEl.textContent = 'Adresse email invalide.'; errEl.style.display='block'; return; }
   try {
     await emailjs.send(EJS_SERVICE_ID, EJS_TPL_REQUEST, { name, email, msg });
     okEl.textContent = '✓ Demande envoyée ! Tu seras contacté(e) dès validation.';
@@ -776,8 +1037,9 @@ function requireAuth() {
   return false;
 }
 
-/* Appel initial : mode visiteur */
+/* Appel initial : mode visiteur, on reflète un éventuel verrouillage en cours */
 document.body.className = 'role-visitor';
+reflectLoginLockUI();
 
 const LEVELS = {
   vert:         { color: '#31AA35', label: 'Vert' },
@@ -818,6 +1080,7 @@ let dvPicto      = null;
 let zoomedDept   = null;
 let activeDay    = 'today';
 let svgEl=null, svgSel=null, geoPath=null, layerSel=null;
+let mapViewport=null, mapZoom=null;
 let features=[], pathMap={}, hatchIds={};
 
 /* ── ÉTAT CARTE PROBABLE ── */
@@ -825,32 +1088,60 @@ let probData     = {};          // { deptName: { level, picto } }
 let probActiveLevel = 'orange'; // niveau sélectionné dans sidebar probable
 let probActivePicto = null;     // picto sélectionné dans la sidebar probable
 let svgProbEl=null, svgProbSel=null, layerProbSel=null;
+let probZoom=null;
 let zoomedDeptProb = null;
 /* ── ÉTAT CARTE PROCHAIN JOUR (anciennes régions) ── */
 let nextData         = {};      // { regionName: { band, phenom } }  band = clé RISK_BANDS, phenom = clé PICTO_FALLBACK
 let nextActiveBand   = 'r3';
 let nextActivePhenom = 'orage';
 let svgNextEl=null, svgNextSel=null, layerNextSel=null;
+let nextZoom=null;
 let zoomedRegionNext = null;
 let regionFeatures   = [];
 let activeView   = 'vigilance'; // 'vigilance' | 'nextday' | 'probable'
 
 /* ── SWITCH VUE ── */
+const VIEW_ELS = { vigilance:'view-vigilance', nextday:'view-nextday', probable:'view-probable', risk:'view-risk', radar:'view-radar' };
 function switchView(view) {
+  const prevView = activeView;
+  const prevEl = prevView ? document.getElementById(VIEW_ELS[prevView]) : null;
+  const nextEl = document.getElementById(VIEW_ELS[view]);
+  if (prevView === view && nextEl.style.display !== 'none') return;
   activeView = view;
-  document.getElementById('view-vigilance').style.display  = view === 'vigilance' ? 'flex' : 'none';
-  document.getElementById('view-nextday').style.display    = view === 'nextday'   ? 'flex' : 'none';
-  document.getElementById('view-probable').style.display   = view === 'probable'  ? 'flex' : 'none';
-  document.getElementById('view-risk').style.display       = view === 'risk'      ? 'flex' : 'none';
-  document.getElementById('day-tabs-wrap').style.display   = (view === 'vigilance' || view === 'risk') ? 'flex' : 'none';
-  document.getElementById('vtab-vigil').classList.toggle('on', view === 'vigilance');
-  document.getElementById('vtab-next').classList.toggle('on', view === 'nextday');
-  document.getElementById('vtab-prob').classList.toggle('on', view === 'probable');
-  document.getElementById('vtab-risk').classList.toggle('on', view === 'risk');
-  if (view === 'nextday' && !svgNextEl) initNextMap();
-  if (view === 'probable' && !svgProbEl) initProbMap();
-  if (view === 'risk' && !riskCanvas) initRiskMap();
-  if (view === 'probable') redrawProbMap();
+
+  document.getElementById('day-tabs-wrap').style.display = (view === 'vigilance' || view === 'risk') ? 'flex' : 'none';
+  ['vigil','next','prob','risk','radar'].forEach(k =>
+    document.getElementById('vtab-'+k)?.classList.toggle('on', k === view.replace('nextday','next').replace('probable','prob').replace('vigilance','vigil'))
+  );
+
+  const revealNext = () => {
+    nextEl.style.display = 'flex';
+    nextEl.classList.add('view-enter');
+    // Double rAF pour laisser le navigateur peindre l'état initial avant de déclencher la transition CSS
+    requestAnimationFrame(() => requestAnimationFrame(() => nextEl.classList.remove('view-enter')));
+    if (view === 'nextday'  && !svgNextEl) initNextMap();
+    if (view === 'probable' && !svgProbEl) initProbMap();
+    if (view === 'risk') buildRiskSidebar();
+    if (view === 'radar') {
+      initRadarMap();
+      radarTab(radarMode);
+      // Le conteneur peut avoir changé de taille pendant qu'il était caché (fenêtre
+      // redimensionnée, sidebar repliée…) : on force Leaflet à se recaler.
+      setTimeout(() => radarMap && radarMap.invalidateSize(), 200);
+    }
+    if (view === 'probable') redrawProbMap();
+  };
+
+  if (prevEl && prevEl !== nextEl && prevEl.style.display !== 'none') {
+    prevEl.classList.add('view-leave');
+    setTimeout(() => {
+      prevEl.style.display = 'none';
+      prevEl.classList.remove('view-leave');
+      revealNext();
+    }, 170);
+  } else {
+    revealNext();
+  }
 }
 const gaugeData = {
   national: {
@@ -934,6 +1225,7 @@ function initProbMap() {
     
   svgProbEl = svg.node(); 
   svgProbSel = svg;
+  svg.classed('map-zoomable', true);
   svg.append('rect').attr('width',W).attr('height',H).attr('fill','#131823');
   layerProbSel = svg.append('g').attr('class','dept-layer-prob');
   layerProbSel.selectAll('path.dept-prob').data(features).join('path')
@@ -982,6 +1274,13 @@ function initProbMap() {
       zoomToProb(d, nm);
     });
   svg.on('dblclick', e => { if (e.target===svgProbEl) unzoomProb(); });
+
+  // Zoom libre à la molette / au clic-glissé — le double-clic garde son comportement dédié.
+  probZoom = d3.zoom()
+    .scaleExtent([1, 9])
+    .translateExtent([[0,0],[W,H]])
+    .on('zoom', event => layerProbSel.attr('transform', event.transform));
+  svg.call(probZoom).on('dblclick.zoom', null);
   
   // Mettre à jour la légende
   updateLegProb();
@@ -1033,6 +1332,7 @@ function redrawProbMap() {
 }
 
 function zoomToProb(feat, name) {
+  if (!probZoom) return;
   const svgNode = svgProbEl;
   const viewBox = svgNode.getAttribute('viewBox').split(' ').map(Number);
   const W = viewBox[2] || 600, H = viewBox[3] || 624;
@@ -1041,16 +1341,21 @@ function zoomToProb(feat, name) {
   layerProbSel.selectAll('path.dept-prob').filter(d=>(d.properties.name||d.properties.NAME)===name)
     .raise().attr('stroke','#fff').attr('stroke-width',2.5);
   const b = geoPath.bounds(feat);
-  const sc = Math.min(0.82*W/(b[1][0]-b[0][0]), 0.82*H/(b[1][1]-b[0][1]), 6);
+  const sc = Math.min(0.82*W/(b[1][0]-b[0][0]), 0.82*H/(b[1][1]-b[0][1]), 9);
   const cx=(b[0][0]+b[1][0])/2, cy=(b[0][1]+b[1][1])/2;
-  layerProbSel.transition().duration(480).ease(d3.easeCubicInOut)
-    .attr('transform',`translate(${W/2-sc*cx},${H/2-sc*cy}) scale(${sc})`);
+  const t = d3.zoomIdentity.translate(W/2-sc*cx, H/2-sc*cy).scale(sc);
+  svgProbSel.transition().duration(480).ease(d3.easeCubicInOut).call(probZoom.transform, t);
 }
 function unzoomProb() {
+  if (!probZoom) return;
   zoomedDeptProb = null;
   layerProbSel.selectAll('path.dept-prob').attr('stroke','rgba(255,255,255,.14)').attr('stroke-width',0.6);
-  layerProbSel.transition().duration(450).ease(d3.easeCubicInOut).attr('transform','');
+  svgProbSel.transition().duration(450).ease(d3.easeCubicInOut).call(probZoom.transform, d3.zoomIdentity);
   redrawProbMap();
+}
+function zoomStepProb(dir) {
+  if (!svgProbSel || !probZoom) return;
+  svgProbSel.transition().duration(220).call(probZoom.scaleBy, dir > 0 ? 1.5 : 1/1.5);
 }
 
 function resetProb() { probData = {}; redrawProbMap(); }
@@ -1072,37 +1377,46 @@ function dlMapProb() {
   URL.revokeObjectURL(a.href);
 }
 
+/* ══ LÉGENDE SVG PARTAGÉE ══
+   Génère une légende professionnelle (barre colorée + tirets + labels) pour
+   n'importe quelle liste de bandes { color, label }. Utilisée par toutes les cartes. */
+function buildSvgLegend(el, { title, subtitle, pictoKey, emoji, accentColor, bands, extra }) {
+  if (!el) return;
+  const barW = 26, bandH = 34, n = bands.length, svgH = n * bandH, svgW = 210;
+  let svgB = '', svgL = '', svgS = '';
+  bands.forEach((b, i) => {
+    const y = i * bandH, cy = y + bandH / 2;
+    svgB += `<rect x="0" y="${y}" width="${barW}" height="${bandH}" fill="${b.color}"/>`;
+    if (i < n-1) svgS += `<line x1="0" y1="${y+bandH}" x2="${barW}" y2="${y+bandH}" stroke="rgba(0,0,0,.2)" stroke-width=".8"/>`;
+    svgL += `<line x1="${barW}" y1="${cy}" x2="${barW+7}" y2="${cy}" stroke="rgba(255,255,255,.3)" stroke-width="1"/>`;
+    svgL += `<text x="${barW+12}" y="${cy}" dominant-baseline="middle" font-family="'Inter',system-ui,sans-serif" font-size="11" fill="rgba(255,255,255,.82)">${escHtml(b.label)}</text>`;
+  });
+  svgB += `<rect x="0" y="0" width="${barW}" height="${svgH}" fill="none" stroke="rgba(255,255,255,.1)" stroke-width=".8"/>`;
+  const iconHtml = pictoKey ? ico(pictoKey,20) : `<span style="font-size:17px;line-height:1">${emoji||'●'}</span>`;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:11px 13px 9px;border-bottom:1px solid ${accentColor}22">
+      <div style="width:34px;height:34px;border-radius:8px;background:${accentColor}18;border:1px solid ${accentColor}38;display:flex;align-items:center;justify-content:center;flex-shrink:0">${iconHtml}</div>
+      <div>
+        <p style="font-size:11px;font-weight:800;color:${accentColor};margin:0;letter-spacing:.04em;text-transform:uppercase">${escHtml(title)}</p>
+        ${subtitle?`<p style="font-size:9px;color:var(--t3);margin:2px 0 0;letter-spacing:.04em;text-transform:uppercase">${escHtml(subtitle)}</p>`:''}
+      </div>
+    </div>
+    <div style="padding:12px 13px 14px">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgW} ${svgH}" width="${svgW}" height="${svgH}" style="display:block;overflow:visible">${svgB}${svgS}${svgL}</svg>
+    </div>
+    ${extra||''}`;
+}
+
 function updateLegProb() {
   const el = document.getElementById('leg-prob');
   const used = Object.values(probData);
   if (!used.length) { el.style.display='none'; return; }
-  el.style.display = 'block';
-  let h = `<div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#7c6a9a;margin-bottom:6px">Évolution probable</div>`;
-  const lvls = [...new Set(used.map(d => d.level))];
-  lvls.forEach(lv => {
-    h += `<div class="prob-legend-item">
-      <span class="prob-legend-dot" style="background:${LEVELS[lv].color}"></span>
-      <span style="font-size:11px;color:var(--t2)">${LEVELS[lv].label}</span>
-    </div>`;
+  el.style.display='block';
+  const lvls = [...new Set(used.map(d=>d.level))];
+  buildSvgLegend(el, {
+    title:'Évolution probable', subtitle:`${lvls.length} niveau${lvls.length>1?'x':''}`, accentColor:'#7c6a9a', emoji:'↗',
+    bands: lvls.map(lv => ({ color:LEVELS[lv].color, label:'→ '+LEVELS[lv].label }))
   });
-  const pics = [...new Set(used.filter(d => d.picto).map(d => d.picto))];
-  if (pics.length) {
-    h += `<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--b1)">
-      <div style="font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:4px">Phénomènes</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">`;
-    pics.forEach(p => {
-      h += `<div style="display:flex;flex-direction:column;align-items:center;gap:1px;width:28px">${ico(p,20)}<span style="font-size:7px;color:var(--t3)">${p.slice(0,5)}</span></div>`;
-    });
-    h += `</div></div>`;
-  }
-  const neutral = features.length - Object.keys(probData).length;
-  if (neutral > 0) {
-    h += `<div class="prob-legend-item" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--b1)">
-      <span class="prob-legend-dot" style="background:#1e2535;border:1px solid rgba(255,255,255,.15)"></span>
-      <span style="font-size:10px;color:var(--t3)">Pas de changement</span>
-    </div>`;
-  }
-  el.innerHTML = h;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -1153,6 +1467,7 @@ function initNextMap() {
     .attr('preserveAspectRatio', 'xMidYMid meet')
     .style('display', 'block').style('width', '100%').style('height', '100%');
   svgNextEl = svg.node(); svgNextSel = svg;
+  svg.classed('map-zoomable', true);
   svg.append('rect').attr('width', W).attr('height', H).attr('fill', '#131823');
   // Lueur "néon" + légère élévation, une fois par bande de risque (réutilisée, donc léger).
   const defsNext = svg.append('defs');
@@ -1210,6 +1525,14 @@ function initNextMap() {
       zoomToNext(d, nm);
     });
   svg.on('dblclick', e => { if (e.target === svgNextEl) unzoomNext(); });
+
+  // Zoom libre à la molette / au clic-glissé — le double-clic garde son comportement dédié.
+  nextZoom = d3.zoom()
+    .scaleExtent([1, 9])
+    .translateExtent([[0,0],[W,H]])
+    .on('zoom', event => layerNextSel.attr('transform', event.transform));
+  svg.call(nextZoom).on('dblclick.zoom', null);
+
   updateLegNext();
 }
 
@@ -1219,11 +1542,11 @@ function redrawNextPath(sel, nm) {
   if (entries && entries.length) {
     // Couleur de base = 1er élément (recouverte par le partage visuel si 2 éléments).
     sel.attr('fill', RISK_MAP[entries[0].band].color)
-       .attr('stroke', isZoomed ? '#fff' : 'rgba(0,0,0,.3)')
+       .attr('stroke', isZoomed ? '#fff' : '#000')
        .attr('stroke-width', isZoomed ? 2.5 : 0.9);
   } else {
     sel.attr('fill', DFILL)
-       .attr('stroke', isZoomed ? '#fff' : 'rgba(255,255,255,.22)')
+       .attr('stroke', isZoomed ? '#fff' : '#000')
        .attr('stroke-width', isZoomed ? 2.5 : 0.9);
   }
 }
@@ -1283,11 +1606,11 @@ function redrawNextMap() {
 
     layerNextSel.append('path').attr('class', 'region-split')
       .attr('d', geoPath(feat)).attr('fill', RISK_MAP[entries[0].band].color)
-      .attr('stroke', 'rgba(255,255,255,.5)').attr('stroke-width', 1)
+      .attr('stroke', '#000').attr('stroke-width', 0.9)
       .attr('clip-path', `url(#${cid}-a)`).attr('filter', `url(#nglow-${entries[0].band})`).attr('pointer-events', 'none');
     layerNextSel.append('path').attr('class', 'region-split')
       .attr('d', geoPath(feat)).attr('fill', RISK_MAP[entries[1].band].color)
-      .attr('stroke', 'rgba(255,255,255,.5)').attr('stroke-width', 1)
+      .attr('stroke', '#000').attr('stroke-width', 0.9)
       .attr('clip-path', `url(#${cid}-b)`).attr('filter', `url(#nglow-${entries[1].band})`).attr('pointer-events', 'none');
 
     const halfMin = sideBySide ? Math.min(w/2, h) : Math.min(w, h/2);
@@ -1299,22 +1622,28 @@ function redrawNextMap() {
 }
 
 function zoomToNext(feat, name) {
+  if (!nextZoom) return;
   const W = 600, H = 624;
   zoomedRegionNext = name;
   layerNextSel.selectAll('path.region-next').attr('stroke', '#000').attr('stroke-width', 0.9);
   layerNextSel.selectAll('path.region-next').filter(d => d.properties.nom === name)
     .raise().attr('stroke', '#fff').attr('stroke-width', 2.5);
   const b = geoPath.bounds(feat);
-  const sc = Math.min(0.82*W/(b[1][0]-b[0][0]), 0.82*H/(b[1][1]-b[0][1]), 6);
+  const sc = Math.min(0.82*W/(b[1][0]-b[0][0]), 0.82*H/(b[1][1]-b[0][1]), 9);
   const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
-  layerNextSel.transition().duration(480).ease(d3.easeCubicInOut)
-    .attr('transform', `translate(${W/2-sc*cx},${H/2-sc*cy}) scale(${sc})`);
+  const t = d3.zoomIdentity.translate(W/2-sc*cx, H/2-sc*cy).scale(sc);
+  svgNextSel.transition().duration(480).ease(d3.easeCubicInOut).call(nextZoom.transform, t);
 }
 function unzoomNext() {
+  if (!nextZoom) return;
   zoomedRegionNext = null;
   layerNextSel.selectAll('path.region-next').attr('stroke', '#000').attr('stroke-width', 0.9);
-  layerNextSel.transition().duration(450).ease(d3.easeCubicInOut).attr('transform', '');
+  svgNextSel.transition().duration(450).ease(d3.easeCubicInOut).call(nextZoom.transform, d3.zoomIdentity);
   redrawNextMap();
+}
+function zoomStepNext(dir) {
+  if (!svgNextSel || !nextZoom) return;
+  svgNextSel.transition().duration(220).call(nextZoom.scaleBy, dir > 0 ? 1.5 : 1/1.5);
 }
 function resetNext() { nextData = {}; redrawNextMap(); }
 
@@ -1336,272 +1665,216 @@ function dlMapNext() {
 function updateLegNext() {
   const el = document.getElementById('leg-next');
   const used = Object.values(nextData).flat();
-  if (!used.length) { el.style.display = 'none'; return; }
-  el.style.display = 'block';
-  let h = `<div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#14b8c4;margin-bottom:6px">Risque prochain jour</div>`;
-  const bands = [...new Set(used.map(d => d.band))].sort();
-  bands.forEach(bk => {
-    h += `<div class="prob-legend-item">
-      <span class="prob-legend-dot" style="background:${RISK_MAP[bk].color};border:1px solid rgba(0,0,0,.3)"></span>
-      <span style="font-size:11px;color:var(--t2)">${RISK_MAP[bk].label}</span>
-    </div>`;
+  if (!used.length) { el.style.display='none'; return; }
+  el.style.display='block';
+  const bands = [...new Set(used.map(d=>d.band))].sort();
+  const pics  = [...new Set(used.map(d=>d.phenom))];
+  buildSvgLegend(el, {
+    title:'Risque prochain jour', subtitle:`${bands.length} bande${bands.length>1?'s':''}`, accentColor:'#14b8c4', emoji:'→',
+    bands: bands.map(bk => ({ color:RISK_MAP[bk].color, label:RISK_MAP[bk].label })),
+    extra: pics.length ? `<div style="padding:0 13px 12px;border-top:1px solid rgba(20,184,196,.1)">
+      <p style="font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin:8px 0 6px">Phénomènes</p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${pics.map(p=>`<div style="display:flex;flex-direction:column;align-items:center;gap:2px;width:28px">${ico(p,20)}<span style="font-size:7px;color:var(--t3)">${p.slice(0,5)}</span></div>`).join('')}</div>
+    </div>` : ''
   });
-  const pics = [...new Set(used.map(d => d.phenom))];
-  if (pics.length) {
-    h += `<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--b1)">
-      <div style="font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:4px">Phénomènes</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">`;
-    pics.forEach(p => {
-      h += `<div style="display:flex;flex-direction:column;align-items:center;gap:1px;width:28px">${ico(p,20)}<span style="font-size:7px;color:var(--t3)">${p.slice(0,5)}</span></div>`;
-    });
-    h += `</div></div>`;
-  }
-  const neutral = regionFeatures.length - Object.keys(nextData).length;
-  if (neutral > 0) {
-    h += `<div class="prob-legend-item" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--b1)">
-      <span class="prob-legend-dot" style="background:#1e2535;border:1px solid rgba(255,255,255,.15)"></span>
-      <span style="font-size:10px;color:var(--t3)">Pas de risque renseigné</span>
-    </div>`;
-  }
-  el.innerHTML = h;
 }
 
 /* ══════════════════════════════════════════════════════════
-   CARTES DE RISQUE — outil de dessin libre sur canvas
+   CARTES DE RISQUE — import image + légende visuelle
    ══════════════════════════════════════════════════════════ */
 function buildRiskSidebar() {
   const pc = document.getElementById('risk-phenom-btns');
+  if (pc.children.length) return;
   Object.entries(RISK_SCALES).forEach(([k, sc]) => {
     const btn = document.createElement('button');
     btn.className = 'lvl-btn' + (k === activeRiskPhenom ? ' on' : '');
     btn.dataset.rp = k;
-    btn.innerHTML = `<span style="width:10px;height:10px;border-radius:50%;background:${sc.color};display:inline-block;flex-shrink:0"></span>${sc.label}`;
+    btn.innerHTML = `<span style="width:9px;height:9px;border-radius:50%;background:${sc.color};display:inline-block;flex-shrink:0"></span>${sc.label}`;
     btn.onclick = () => {
       activeRiskPhenom = k;
-      activeRiskBand = RISK_SCALES[k].bands[0].k;
       document.querySelectorAll('[data-rp]').forEach(b => b.classList.toggle('on', b.dataset.rp === k));
-      buildRiskScale();
+      buildRiskLegend('risk-legend-block');
+      buildRiskLegend('risk-verify-legend');
+      refreshRiskImageDisplay();
     };
     pc.appendChild(btn);
   });
-  buildRiskScale();
+  buildRiskLegend('risk-legend-block');
+  refreshRiskImageDisplay();
 }
 
-function buildRiskScale() {
+function buildRiskLegend(targetId) {
+  const el = document.getElementById(targetId); if (!el) return;
   const sc = RISK_SCALES[activeRiskPhenom];
-  document.getElementById('risk-scale-title').textContent = sc.label;
-  const c = document.getElementById('risk-scale-btns');
-  c.innerHTML = '';
-  sc.bands.forEach(b => {
-    const btn = document.createElement('button');
-    btn.className = 'lvl-btn' + (b.k === activeRiskBand ? ' on' : '');
-    btn.dataset.rb = b.k;
-    const light = parseInt(b.color.slice(1,3),16) > 180;
-    btn.innerHTML = `<span style="width:11px;height:11px;border-radius:50%;background:${b.color};flex-shrink:0;${light?'border:1px solid rgba(0,0,0,.3)':''}"></span>${b.label}`;
-    btn.onclick = () => {
-      activeRiskBand = b.k;
-      document.querySelectorAll('[data-rb]').forEach(x => x.classList.toggle('on', x.dataset.rb === b.k));
-    };
-    c.appendChild(btn);
+  const n  = sc.bands.length;
+  const bandH = 36; // hauteur px de chaque bande (dans le SVG)
+  const barW  = 28; // largeur de la barre de couleur
+  const svgH  = n * bandH;
+  const svgW  = 200;
+
+  /* ── Barre de couleur + labels en SVG (netteté maximale) ── */
+  let svgBands = '', svgLabels = '', svgLines = '';
+  sc.bands.forEach((b, i) => {
+    const y = i * bandH;
+    const cy = y + bandH / 2;
+    const light = parseInt(b.color.slice(1,3),16) > 200;
+    // Bande couleur
+    svgBands += `<rect x="0" y="${y}" width="${barW}" height="${bandH}" fill="${b.color}"/>`;
+    // Ligne de séparation entre bandes (sauf dernière)
+    if (i < n-1) svgLines += `<line x1="0" y1="${y+bandH}" x2="${barW}" y2="${y+bandH}" stroke="rgba(0,0,0,.18)" stroke-width="0.8"/>`;
+    // Tiret indicateur + label
+    svgLabels += `<line x1="${barW}" y1="${cy}" x2="${barW+8}" y2="${cy}" stroke="rgba(255,255,255,.35)" stroke-width="1"/>`;
+    svgLabels += `<text x="${barW+13}" y="${cy}" dominant-baseline="middle" font-family="'Inter',system-ui,sans-serif" font-size="11" fill="rgba(255,255,255,.82)" letter-spacing="0.2">${escHtml(b.label)}</text>`;
+  });
+
+  /* Contour barre */
+  svgBands += `<rect x="0" y="0" width="${barW}" height="${svgH}" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="0.8"/>`;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgW} ${svgH}" width="${svgW}" height="${svgH}" style="display:block;overflow:visible">
+    ${svgBands}${svgLines}${svgLabels}
+  </svg>`;
+
+  el.innerHTML = `
+    <!-- En-tête : picto + titre phénomène -->
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px 10px;border-bottom:1px solid rgba(249,115,22,.15)">
+      <div style="width:36px;height:36px;border-radius:8px;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        ${ico(sc.picto, 22)}
+      </div>
+      <div>
+        <p style="font-size:12px;font-weight:800;color:#f97316;margin:0;letter-spacing:.04em;text-transform:uppercase">${escHtml(sc.label)}</p>
+        <p style="font-size:9px;color:var(--t3);margin:2px 0 0;letter-spacing:.05em;text-transform:uppercase">Échelle de risque · ${n} niveaux</p>
+      </div>
+    </div>
+    <!-- Légende graphique -->
+    <div style="padding:14px 14px 16px">
+      ${svg}
+    </div>`;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+let _riskPendingUrl = null;
+
+function riskLoad(e) {
+  const file = e.target.files[0]; if (!file) return;
+  _openRiskVerify(URL.createObjectURL(file));
+}
+function riskDrop(e) {
+  e.preventDefault();
+  const wrap = document.getElementById('risk-img-wrap');
+  wrap.style.borderColor = 'rgba(249,115,22,.3)';
+  wrap.style.background = 'linear-gradient(135deg,#131823 0%,#1a1f2e 100%)';
+  const file = e.dataTransfer.files[0]; if (!file||!file.type.startsWith('image/')) return;
+  _openRiskVerify(URL.createObjectURL(file));
+}
+function _openRiskVerify(url) {
+  _riskPendingUrl = url;
+  document.getElementById('risk-verify-img').src = url;
+  buildRiskLegend('risk-verify-legend');
+  document.getElementById('risk-verify-modal').style.display = 'flex';
+}
+function riskVerifyClose(confirmed) {
+  document.getElementById('risk-verify-modal').style.display = 'none';
+  if (confirmed && _riskPendingUrl) {
+    riskImages[activeRiskPhenom] = _riskPendingUrl; // stockée pour CE phénomène uniquement
+    _showRiskImg(_riskPendingUrl);
+  } else {
+    document.getElementById('risk-file-inp').value = '';
+  }
+  _riskPendingUrl = null;
+}
+function _showRiskImg(url) {
+  document.getElementById('risk-img').src = url;
+  document.getElementById('risk-img').style.display = 'block';
+  document.getElementById('risk-placeholder').style.display = 'none';
+  const wrap = document.getElementById('risk-img-wrap');
+  wrap.style.border = 'none'; wrap.style.cursor = 'default';
+  wrap.removeAttribute('ondragover'); wrap.removeAttribute('ondragleave');
+  wrap.removeAttribute('ondrop'); wrap.onclick = null;
+  document.getElementById('risk-img-toolbar').style.display = 'flex';
+  document.getElementById('risk-img-badge').style.display = 'block';
+  document.getElementById('risk-badge-label').textContent = RISK_SCALES[activeRiskPhenom].label;
+  riskImgLoaded = true;
+  document.getElementById('zoom-ctrl-risk').style.display = 'flex';
+  document.getElementById('risk-zoom-hint').style.display = 'block';
+  riskZoomReset();
+  riskBindZoomListeners();
+}
+/* ── Zoom / pan de l'image importée (vue Risque) — molette pour zoomer,
+   clic-glisser pour déplacer une fois zoomée. ── */
+let riskScale = 1, riskTx = 0, riskTy = 0, riskPanning = false, riskPanStart = null, riskListenersBound = false;
+function riskApplyTransform() {
+  const img = document.getElementById('risk-img');
+  if (img) img.style.transform = `translate(${riskTx}px,${riskTy}px) scale(${riskScale})`;
+}
+function riskZoomStep(dir) {
+  riskScale = Math.min(6, Math.max(1, +(riskScale + dir*0.5).toFixed(2)));
+  if (riskScale === 1) { riskTx = 0; riskTy = 0; }
+  riskApplyTransform();
+}
+function riskZoomReset() {
+  riskScale = 1; riskTx = 0; riskTy = 0;
+  riskApplyTransform();
+}
+function riskBindZoomListeners() {
+  if (riskListenersBound) return;
+  riskListenersBound = true;
+  const wrap = document.getElementById('risk-img-wrap');
+  const img = document.getElementById('risk-img');
+  wrap.addEventListener('wheel', e => {
+    if (!riskImgLoaded) return;
+    e.preventDefault();
+    const dir = e.deltaY < 0 ? 1 : -1;
+    riskScale = Math.min(6, Math.max(1, +(riskScale + dir*0.35).toFixed(2)));
+    if (riskScale === 1) { riskTx = 0; riskTy = 0; }
+    riskApplyTransform();
+  }, { passive:false });
+  wrap.addEventListener('mousedown', e => {
+    if (!riskImgLoaded || riskScale <= 1) return;
+    riskPanning = true;
+    riskPanStart = { x: e.clientX - riskTx, y: e.clientY - riskTy };
+    img.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', e => {
+    if (!riskPanning) return;
+    riskTx = e.clientX - riskPanStart.x;
+    riskTy = e.clientY - riskPanStart.y;
+    riskApplyTransform();
+  });
+  window.addEventListener('mouseup', () => {
+    riskPanning = false;
+    if (img) img.style.cursor = riskScale > 1 ? 'grab' : 'default';
   });
 }
-
-function activeRiskColor() {
-  const sc = RISK_SCALES[activeRiskPhenom];
-  return (sc.bands.find(b => b.k === activeRiskBand) || sc.bands[0]).color;
+function _showRiskPlaceholder() {
+  document.getElementById('risk-img').src = '';
+  document.getElementById('risk-img').style.display = 'none';
+  document.getElementById('risk-placeholder').style.display = 'block';
+  const nameEl = document.getElementById('risk-ph-name');
+  if (nameEl) nameEl.textContent = RISK_SCALES[activeRiskPhenom].label;
+  const wrap = document.getElementById('risk-img-wrap');
+  wrap.style.border = '2px dashed rgba(249,115,22,.3)';
+  wrap.style.cursor = 'pointer';
+  wrap.style.background = 'linear-gradient(135deg,#131823 0%,#1a1f2e 100%)';
+  wrap.setAttribute('ondragover', "event.preventDefault();this.style.borderColor='#f97316';this.style.background='rgba(249,115,22,.05)'");
+  wrap.setAttribute('ondragleave', "this.style.borderColor='rgba(249,115,22,.3)';this.style.background='linear-gradient(135deg,#131823 0%,#1a1f2e 100%)'");
+  wrap.setAttribute('ondrop', 'riskDrop(event)');
+  wrap.onclick = () => document.getElementById('risk-file-inp').click();
+  document.getElementById('risk-img-toolbar').style.display = 'none';
+  document.getElementById('risk-img-badge').style.display = 'none';
+  document.getElementById('risk-file-inp').value = '';
+  document.getElementById('zoom-ctrl-risk').style.display = 'none';
+  document.getElementById('risk-zoom-hint').style.display = 'none';
+  riskImgLoaded = false;
 }
-
-function setRiskTool(t) {
-  riskTool = t;
-  ['brush','fill','eraser'].forEach(x => document.getElementById('rt-'+x).classList.toggle('on', x===t));
-  if (riskCanvas) riskCanvas.style.cursor = t==='eraser' ? 'cell' : t==='fill' ? 'crosshair' : 'crosshair';
+/* Affiche l'image stockée du phénomène actif, ou le placeholder si aucune n'a été importée. */
+function refreshRiskImageDisplay() {
+  const url = riskImages[activeRiskPhenom];
+  if (url) _showRiskImg(url); else _showRiskPlaceholder();
 }
-
-function hexToRgba(hex, alpha) {
-  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-/* Flood fill (outil seau) — applique une couleur à une zone délimitée */
-function floodFill(startX, startY, fillColor) {
-  const imgData = riskCtx.getImageData(0, 0, riskCanvas.width, riskCanvas.height);
-  const data = imgData.data;
-  const w = riskCanvas.width, h = riskCanvas.height;
-  const idx = (startY*w+startX)*4;
-  const sr=data[idx],sg=data[idx+1],sb=data[idx+2],sa=data[idx+3];
-  const fr=parseInt(fillColor.slice(1,3),16),fg=parseInt(fillColor.slice(3,5),16),fb=parseInt(fillColor.slice(5,7),16);
-  const fa=Math.round(riskOpacity*255);
-  if (sr===fr&&sg===fg&&sb===fb&&sa===fa) return;
-  const stack = [[startX,startY]];
-  const visited = new Uint8Array(w*h);
-  while(stack.length) {
-    const [x,y] = stack.pop();
-    if (x<0||x>=w||y<0||y>=h||visited[y*w+x]) continue;
-    const i=(y*w+x)*4;
-    if (Math.abs(data[i]-sr)>30||Math.abs(data[i+1]-sg)>30||Math.abs(data[i+2]-sb)>30) continue;
-    visited[y*w+x]=1;
-    data[i]=fr; data[i+1]=fg; data[i+2]=fb; data[i+3]=fa;
-    stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
-  }
-  riskCtx.putImageData(imgData, 0, 0);
-}
-
-/* Sauvegarde de l'état canvas pour undo */
-function riskSaveUndo() {
-  riskUndoStack.push(riskCanvas.toDataURL());
-  if (riskUndoStack.length > 20) riskUndoStack.shift();
-}
-function undoRisk() {
-  if (!riskUndoStack.length) return;
-  const snap = riskUndoStack.pop();
-  const img = new Image();
-  img.onload = () => { riskCtx.clearRect(0,0,riskCanvas.width,riskCanvas.height); riskCtx.drawImage(img,0,0); };
-  img.src = snap;
-}
-function resetRisk() {
-  riskSaveUndo();
-  riskCtx.clearRect(0, 0, riskCanvas.width, riskCanvas.height);
-}
-
-/* Coordonnées canvas à partir d'un événement souris/touch */
-function riskEvtPos(e) {
-  const rect = riskCanvas.getBoundingClientRect();
-  const scaleX = riskCanvas.width / rect.width;
-  const scaleY = riskCanvas.height / rect.height;
-  const src = e.touches ? e.touches[0] : e;
-  return [(src.clientX - rect.left)*scaleX, (src.clientY - rect.top)*scaleY];
-}
-
-/* Tracé d'une courbe lisse de Catmull-Rom à partir des points collectés */
-function drawSmoothStroke(pts, color, sz, op) {
-  if (pts.length < 2) return;
-  riskCtx.save();
-  riskCtx.globalAlpha = op;
-  riskCtx.globalCompositeOperation = 'source-over';
-  riskCtx.strokeStyle = color;
-  riskCtx.lineWidth = sz;
-  riskCtx.lineCap = 'round';
-  riskCtx.lineJoin = 'round';
-  riskCtx.beginPath();
-  riskCtx.moveTo(pts[0][0], pts[0][1]);
-  for (let i=1; i<pts.length-1; i++) {
-    const mx = (pts[i][0]+pts[i+1][0])/2;
-    const my = (pts[i][1]+pts[i+1][1])/2;
-    riskCtx.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
-  }
-  const last = pts[pts.length-1];
-  riskCtx.lineTo(last[0], last[1]);
-  riskCtx.stroke();
-  riskCtx.restore();
-}
-
-function initRiskMap() {
-  /* ── SVG de référence (fond carte, non interactif) ── */
-  const svgDiv = document.getElementById('map-risk-svg');
-  const W=600, H=624;
-  d3.select(svgDiv).selectAll('*').remove();
-  const svg = d3.select(svgDiv).append('svg')
-    .attr('viewBox',`0 0 ${W} ${H}`)
-    .attr('preserveAspectRatio','xMidYMid meet')
-    .style('display','block').style('width','100%').style('height','100%');
-  svgRiskEl = svg.node();
-  svg.append('rect').attr('width',W).attr('height',H).attr('fill','#131823');
-  // Voisins
-  svg.append('g').attr('pointer-events','none').selectAll('path')
-    .data(NEIGHBORS_GEOJSON.features).join('path')
-    .attr('d',d=>geoPath(d)).attr('fill',DFILL).attr('stroke','#000').attr('stroke-width',0.5);
-  // Départements
-  svg.append('g').attr('pointer-events','none').selectAll('path')
-    .data(features).join('path')
-    .attr('d',d=>geoPath(d)).attr('fill','none').attr('stroke','#000').attr('stroke-width',0.7);
-
-  /* ── Canvas de dessin (au-dessus, capte tous les évènements) ── */
-  riskCanvas = document.getElementById('map-risk-canvas');
-  // Résolution réelle = résolution CSS × devicePixelRatio pour la netteté
-  const dpr = window.devicePixelRatio || 1;
-  const cssW = svgDiv.offsetWidth || 600;
-  const cssH = svgDiv.offsetHeight || 624;
-  riskCanvas.width  = cssW * dpr;
-  riskCanvas.height = cssH * dpr;
-  riskCtx = riskCanvas.getContext('2d');
-  riskCtx.scale(dpr, dpr);
-  riskUndoStack = [];
-
-  const onStart = e => {
-    if (!requireAuth()) return;
-    e.preventDefault();
-    riskSaveUndo();
-    riskDrawing = true;
-    const [x,y] = riskEvtPos(e);
-    if (riskTool === 'fill') {
-      floodFill(Math.round(x*(riskCanvas.width/cssW)), Math.round(y*(riskCanvas.height/cssH)), activeRiskColor());
-      riskDrawing = false;
-      return;
-    }
-    riskPoints = [[x,y]];
-  };
-  const onMove = e => {
-    if (!riskDrawing) return;
-    e.preventDefault();
-    const [x,y] = riskEvtPos(e);
-    riskPoints.push([x,y]);
-    // Redessine le trait courant
-    if (riskTool === 'eraser') {
-      riskCtx.save();
-      riskCtx.globalCompositeOperation = 'destination-out';
-      riskCtx.lineWidth = riskBrushSz * 2.5;
-      riskCtx.lineCap = 'round';
-      riskCtx.lineJoin = 'round';
-      riskCtx.strokeStyle = 'rgba(0,0,0,1)';
-      riskCtx.beginPath();
-      if (riskPoints.length>1) {
-        riskCtx.moveTo(riskPoints[riskPoints.length-2][0],riskPoints[riskPoints.length-2][1]);
-        riskCtx.lineTo(x,y);
-      } else riskCtx.arc(x,y,riskBrushSz,0,Math.PI*2);
-      riskCtx.stroke();
-      riskCtx.restore();
-    } else {
-      // Pour le pinceau, on redessine le dernier segment seulement (plus rapide)
-      drawSmoothStroke(riskPoints.slice(-3), activeRiskColor(), riskBrushSz, riskOpacity);
-    }
-  };
-  const onEnd = e => { riskDrawing = false; riskPoints = []; };
-
-  riskCanvas.addEventListener('mousedown',  onStart, { passive:false });
-  riskCanvas.addEventListener('mousemove',  onMove,  { passive:false });
-  riskCanvas.addEventListener('mouseup',    onEnd);
-  riskCanvas.addEventListener('mouseleave', onEnd);
-  riskCanvas.addEventListener('touchstart', onStart, { passive:false });
-  riskCanvas.addEventListener('touchmove',  onMove,  { passive:false });
-  riskCanvas.addEventListener('touchend',   onEnd);
-  riskCanvas.style.cursor = 'crosshair';
-}
-
-/* Export PNG : SVG de référence + canvas de dessin composite */
-async function exportRiskPng() {
-  if (!svgRiskEl || !riskCanvas) return;
-  // 1) SVG → data URL
-  const svgClone = svgRiskEl.cloneNode(true);
-  svgClone.setAttribute('xmlns','http://www.w3.org/2000/svg');
-  const svgUrl = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svgClone)],{type:'image/svg+xml'}));
-  const svgImg = new Image();
-  await new Promise((res,rej) => { svgImg.onload=res; svgImg.onerror=rej; svgImg.src=svgUrl; });
-  // 2) Composite (scale 3x pour la netteté)
-  const scale = 3;
-  const cv = document.createElement('canvas');
-  cv.width  = svgImg.width  * scale;
-  cv.height = svgImg.height * scale;
-  const ctx = cv.getContext('2d');
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(svgImg, 0, 0, cv.width, cv.height);
-  ctx.drawImage(riskCanvas, 0, 0, cv.width, cv.height);
-  URL.revokeObjectURL(svgUrl);
-  cv.toBlob(blob => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = 'carte-risque.png'; a.click();
-    URL.revokeObjectURL(a.href);
-  },'image/png');
+function riskClear() {
+  delete riskImages[activeRiskPhenom]; // ne supprime QUE l'image du phénomène actif
+  _showRiskPlaceholder();
 }
 
 /* ── SIDEBAR PROBABLE BUILD ── */
@@ -1689,7 +1962,6 @@ function switchDay(d) {
   document.getElementById('dtab-tomorrow').classList.toggle('on', d === 'tomorrow');
   redrawMap();
   redrawAllNeighbors();
-  if (svgRiskEl) redrawAllRisk();
   renderGauges(zoomedDept);
 }
 function toggleSub() {
@@ -1879,57 +2151,33 @@ function drawSub() {
 /* ── LÉGENDE ── */
 function updateLeg() {
   const el = document.getElementById('leg');
-  const data = curData();
-  const nbData = neighborData[activeDay] || {};
-  const allVals = [...Object.values(data), ...Object.values(nbData)];
-  const vals = allVals;
-  const lvls = [...new Set(vals.filter(d=>!d.probable).map(d=>d.level).filter(l=>l!=='vert'))];
+  const data = curData(), nbData = neighborData[activeDay]||{};
+  const vals = [...Object.values(data), ...Object.values(nbData)];
+  const lvls  = [...new Set(vals.filter(d=>!d.probable).map(d=>d.level).filter(l=>l!=='vert'))];
   const probs = [...new Set(vals.filter(d=>d.probable).map(d=>d.level))];
-  const pics = [...new Set(vals.map(d=>d.picto).filter(Boolean))];
+  const pics  = [...new Set(vals.map(d=>d.picto).filter(Boolean))];
   if (!lvls.length && !probs.length && !pics.length && !subVisible) { el.style.display='none'; return; }
-  el.style.display = 'block';
-  let h = '';
-  if (lvls.length) {
-    h += `<div class="leg-sec"><div class="leg-sec-t">Vigilance</div>`;
-    lvls.forEach(lv => {
-      const yc = (lv==='jaune'||lv==='pre-alerte'||lv==='jaune-orange') ? 'box-shadow:0 0 0 1.5px rgba(0,0,0,.35),0 0 0 2.5px rgba(255,255,255,.25)' : '';
-      h += `<div class="leg-r"><span class="leg-dot" style="background:${LEVELS[lv].color};${yc}"></span><span class="leg-lbl">${LEVELS[lv].label}</span></div>`;
-    });
-    h += `</div>`;
-  }
-  if (probs.length) {
-    h += `<div class="leg-sec"><div class="leg-sec-t" style="color:#ffb400">Probable</div>`;
-    probs.forEach(lv => {
-      const c = LEVELS[lv].color;
-      h += `<div class="leg-r">
-        <span style="width:11px;height:11px;border-radius:50%;flex-shrink:0;display:inline-block;
-          background:repeating-linear-gradient(45deg,${c}2a 0,${c}2a 2px,${c}99 2px,${c}99 5px,${c}2a 5px,${c}2a 8px);
-          border:1.5px solid ${c}88"></span>
-        <span class="leg-lbl" style="color:#ffb400">~ ${LEVELS[lv].label}</span>
-      </div>`;
-    });
-    h += `</div>`;
-  }
-  if (pics.length) {
-    h += `<div class="leg-sec"><div class="leg-sec-t">Phénomènes</div><div style="display:flex;flex-wrap:wrap;gap:6px">`;
-    pics.forEach(pk => {
-      h += `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-        <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center">${ico(pk,24)}</div>
-        <span style="font-size:8px;color:var(--t3)">${pk.slice(0,5)}</span>
-      </div>`;
-    });
-    h += `</div></div>`;
-  }
-  if (subVisible) {
-    const yc = (subLvl==='jaune') ? 'box-shadow:0 0 0 1.5px rgba(0,0,0,.35),0 0 0 2.5px rgba(255,255,255,.25)' : '';
-    h += `<div class="leg-sec"><div class="leg-sec-t">Submersion</div><div class="leg-r"><span class="leg-dot" style="background:${LEVELS[subLvl].color};${yc}"></span><span class="leg-lbl">Zone côtière</span></div></div>`;
-  }
-  el.innerHTML = h;
+  el.style.display='block';
+  // Bandes actives : niveaux + probabilité hachurée + submersion
+  const bands = [
+    ...lvls.map(lv=>({ color:LEVELS[lv].color, label:LEVELS[lv].label })),
+    ...probs.map(lv=>({ color:LEVELS[lv].color+'aa', label:'~ '+LEVELS[lv].label })),
+    ...(subVisible?[{ color:LEVELS[subLvl].color, label:'Submersion côtière' }]:[])
+  ];
+  buildSvgLegend(el, {
+    title:'Vigilance', subtitle:'Carte '+( activeDay==='today'?'Aujourd\'hui':'Demain' ),
+    accentColor:'#4d7cfe', emoji:'⚠',
+    bands,
+    extra: pics.length ? `<div style="padding:0 13px 12px;border-top:1px solid rgba(77,124,254,.1)">
+      <p style="font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin:8px 0 6px">Phénomènes</p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${pics.map(pk=>`<div style="display:flex;flex-direction:column;align-items:center;gap:2px;width:28px">${ico(pk,24)}<span style="font-size:8px;color:var(--t3)">${pk.slice(0,5)}</span></div>`).join('')}</div>
+    </div>` : ''
+  });
 }
 
 /* ── ZOOM ── */
 function zoomTo(feat, name) {
-  if (!svgSel || !geoPath) return;
+  if (!svgSel || !geoPath || !mapZoom) return;
   const [,, W, H] = svgEl.getAttribute('viewBox').split(' ').map(Number);
   zoomedDept = name;
   layerSel.selectAll('path.dept').attr('stroke', DSTROKE).attr('stroke-width', 0.6);
@@ -1938,17 +2186,22 @@ function zoomTo(feat, name) {
   const b = geoPath.bounds(feat);
   const dx = b[1][0]-b[0][0], dy = b[1][1]-b[0][1];
   const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
-  const sc = Math.min(0.82*W/dx, 0.82*H/dy, 6);
-  layerSel.transition().duration(480).ease(d3.easeCubicInOut)
-    .attr('transform', `translate(${W/2-sc*cx},${H/2-sc*cy}) scale(${sc})`);
+  const sc = Math.min(0.82*W/dx, 0.82*H/dy, 9);
+  const t = d3.zoomIdentity.translate(W/2-sc*cx, H/2-sc*cy).scale(sc);
+  svgSel.transition().duration(480).ease(d3.easeCubicInOut).call(mapZoom.transform, t);
   renderGauges(name);
 }
 function unzoom() {
-  if (!svgSel) return;
+  if (!svgSel || !mapZoom) return;
   zoomedDept = null;
   layerSel.selectAll('path.dept').attr('stroke', DSTROKE).attr('stroke-width', 0.6);
-  layerSel.transition().duration(450).ease(d3.easeCubicInOut).attr('transform','');
+  svgSel.transition().duration(450).ease(d3.easeCubicInOut).call(mapZoom.transform, d3.zoomIdentity);
   renderGauges(null);
+}
+/* Boutons +/− du contrôle de zoom flottant */
+function zoomStep(dir) {
+  if (!svgSel || !mapZoom) return;
+  svgSel.transition().duration(220).call(mapZoom.scaleBy, dir > 0 ? 1.5 : 1/1.5);
 }
 
 /* ── DOWNLOAD ── */
@@ -2161,10 +2414,260 @@ document.addEventListener('keydown', e => {
 });
 
 /* ── INIT ── */
+/* ══════════════════════════════════════════════════════════
+   RADAR EN DIRECT
+   - Foudre  : Blitzortung WebSocket (temps réel)
+   - Pluie   : RainViewer tiles (rafraîchi ~5 min)
+   - Rafales : Open-Meteo API (grille France, toutes les 10 min)
+   - Reports : Signalements utilisateur (localStorage)
+   ══════════════════════════════════════════════════════════ */
+let radarMap = null, radarMode = 'foudre';
+let radarRainLayer = null, radarRainAnim = null;
+let radarWs = null, radarLightningMarkers = [], radarGustMarkers = [], radarReportMarkers = [];
+let radarReportType = 'tornade';
+let radarRefreshTimer = null;
+
+const GUST_SCALE = [
+  { min:70,  max:90,  color:'#FFD700', label:'70–90 km/h' },
+  { min:90,  max:110, color:'#FF8C00', label:'90–110 km/h' },
+  { min:110, max:140, color:'#FF0000', label:'110–140 km/h' },
+  { min:140, max:170, color:'#8B008B', label:'140–170 km/h' },
+  { min:170, max:999, color:'#1a1a1a', label:'> 170 km/h' }
+];
+const REPORT_CFG = {
+  tornade: { label:'Tornade', color:'#ef4444', emoji:'🌪' },
+  grele:   { label:'Grêle',   color:'#60a5fa', emoji:'🌨' },
+  pluie:   { label:'Forte pluie', color:'#38bdf8', emoji:'🌧' }
+};
+
+/* Grille de ~40 points couvrant la France + voisins pour les rafales */
+const GUST_GRID = [
+  [51.2,2.5],[51.0,5.0],[50.5,3.5],[50.0,1.5],[50.0,7.0],[49.5,4.5],
+  [49.0,0.5],[49.0,3.0],[49.0,6.0],[48.5,2.0],[48.5,7.5],[48.0,4.5],
+  [47.5,0.0],[47.5,2.5],[47.5,5.5],[47.5,8.0],[47.0,-1.0],[47.0,1.5],
+  [46.5,4.0],[46.5,6.5],[46.0,2.0],[46.0,8.0],[45.5,0.5],[45.5,3.0],
+  [45.5,5.5],[45.0,1.0],[45.0,6.0],[44.5,2.5],[44.5,4.5],[44.0,3.0],
+  [43.5,1.0],[43.5,5.0],[43.0,3.5],[42.5,2.0],[42.0,9.0],[41.5,2.5]
+];
+
+function gustColor(v) { return (GUST_SCALE.find(s=>v>=s.min&&v<s.max)||GUST_SCALE.at(-1)).color; }
+function gustLabel(v) { return (GUST_SCALE.find(s=>v>=s.min&&v<s.max)||GUST_SCALE.at(-1)).label; }
+
+function setRadarStatus(msg) { document.getElementById('radar-status-box').innerHTML = msg; }
+function setRadarTs() {
+  document.getElementById('radar-ts').textContent = 'Mis à jour ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+}
+
+function initRadarMap() {
+  if (radarMap) return;
+  radarMap = L.map('radar-map', { center:[46.5,3], zoom:5, zoomControl:false, attributionControl:false });
+  L.control.zoom({ position:'topright' }).addTo(radarMap); // à droite pour ne pas gêner les boutons de signalement (en haut à gauche)
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    { subdomains:'abcd', maxZoom:19 }).addTo(radarMap);
+  // Stockage signalements
+  radarMap.on('click', e => {
+    if (radarMode !== 'reports') return;
+    if (!requireAuth()) return;
+    addRadarReport(e.latlng.lat, e.latlng.lng, radarReportType);
+  });
+  loadRadarReports(); // Chargement des signalements depuis localStorage
+  // Fix classique Leaflet : si la carte est créée pendant que son conteneur est encore
+  // caché (display:none) ou en cours de transition, elle calcule une taille de 0px et
+  // n'affiche jamais rien tant qu'on ne lui redit pas de recalculer sa taille.
+  requestAnimationFrame(() => radarMap && radarMap.invalidateSize());
+  setTimeout(() => radarMap && radarMap.invalidateSize(), 260);
+}
+
+/* ── Sous-onglets ── */
+function radarTab(t) {
+  radarMode = t;
+  ['foudre','pluie','rafales','reports'].forEach(k => {
+    document.getElementById('rtab-'+k).classList.toggle('on', k===t);
+  });
+  const tools = document.getElementById('radar-report-tools');
+  tools.style.display = t==='reports' ? 'flex' : 'none';
+  refreshRadar();
+}
+
+function refreshRadar() {
+  clearTimeout(radarRefreshTimer);
+  initRadarMap();
+  setRadarStatus('Chargement…');
+  if (radarMode==='foudre')  loadLightning();
+  else if (radarMode==='pluie')   loadRain();
+  else if (radarMode==='rafales') loadGusts();
+  else if (radarMode==='reports') { showReportLegend(); setRadarStatus('Clique sur la carte pour signaler un événement.'); }
+  setRadarTs();
+}
+
+/* ── FOUDRE (Blitzortung WebSocket) ── */
+function loadLightning() {
+  // Nettoyer marqueurs précédents et layers non-foudre
+  clearNonLightningLayers();
+  radarLightningMarkers.forEach(m => m.remove()); radarLightningMarkers=[];
+  buildSvgLegend(document.getElementById('radar-legend-wrap'), {
+    title:'Foudre en direct', subtitle:'Blitzortung', accentColor:'#fbbf24', emoji:'⚡',
+    bands:[{color:'#fde68a',label:'0–2 min'},{color:'#f59e0b',label:'2–5 min'},{color:'#d97706',label:'5–15 min'},{color:'#92400e',label:'15–30 min'}]
+  });
+  if (radarWs) { try{radarWs.close();}catch(e){} radarWs=null; }
+  // Tente plusieurs serveurs Blitzortung
+  const servers=['wss://ws1.blitzortung.org/','wss://ws2.blitzortung.org/','wss://ws7.blitzortung.org/'];
+  let si=0;
+  function tryConnect() {
+    if (si>=servers.length) { setRadarStatus('⚡ Foudre : connexion impossible. Vérifie ta connexion internet.'); return; }
+    setRadarStatus(`⚡ Connexion au réseau Blitzortung…`);
+    const ws = new WebSocket(servers[si++]);
+    ws.onopen = () => {
+      radarWs = ws;
+      setRadarStatus('⚡ Foudre en direct — réseau Blitzortung<br><small>Les impacts apparaissent en temps réel</small>');
+    };
+    ws.onmessage = e => {
+      try {
+        const d = JSON.parse(e.data);
+        if (d.lat && d.lon) plotLightning(d.lat, d.lon);
+      } catch {}
+    };
+    ws.onerror = () => ws.close();
+    ws.onclose = () => { if (radarMode==='foudre') tryConnect(); };
+  }
+  tryConnect();
+}
+
+function plotLightning(lat, lon) {
+  if (radarMode !== 'foudre') return;
+  const m = L.circleMarker([lat,lon],{radius:4,color:'#fde68a',fillColor:'#fbbf24',fillOpacity:0.9,weight:1}).addTo(radarMap);
+  radarLightningMarkers.push(m);
+  // Fade : jaune → orange → marron → suppression
+  setTimeout(()=>{ m.setStyle({fillColor:'#f59e0b',color:'#d97706'}); },120000); // 2 min
+  setTimeout(()=>{ m.setStyle({fillColor:'#d97706',color:'#92400e',radius:3}); },300000); // 5 min
+  setTimeout(()=>{ m.setStyle({fillColor:'#92400e',color:'#78350f',radius:2}); },900000); // 15 min
+  setTimeout(()=>{ m.remove(); radarLightningMarkers=radarLightningMarkers.filter(x=>x!==m); },1800000); // 30 min
+}
+
+/* ── PLUIE (RainViewer) ── */
+function loadRain() {
+  clearNonLightningLayers();
+  if (radarWs) { try{radarWs.close();}catch(e){} radarWs=null; }
+  setRadarStatus('🌧 Chargement du radar pluie…');
+  // La légende est affichée tout de suite, indépendamment du réseau : certains
+  // bloqueurs de trackers/pub (Firefox, uBlock…) empêchent l'appel à l'API RainViewer
+  // (erreur "NS_ERROR_CONTENT_BLOCKED" côté navigateur, hors de notre contrôle) — dans
+  // ce cas on doit quand même montrer la légende, avec un message d'état clair.
+  buildSvgLegend(document.getElementById('radar-legend-wrap'),{
+    title:'Pluie',subtitle:'Intensité radar',accentColor:'#38bdf8', emoji:'🌧',
+    bands:[
+      {color:'#d4f0fd',label:'Légère'},
+      {color:'#7dd3fc',label:'Modérée'},
+      {color:'#0ea5e9',label:'Forte'},
+      {color:'#0369a1',label:'Très forte'},
+      {color:'#7c3aed',label:'Extrême'}
+    ]
+  });
+  fetch('https://api.rainviewer.com/public/weather-maps.json')
+    .then(r => { if (!r.ok) throw new Error('http-'+r.status); return r.json(); })
+    .then(d=>{
+      const frames = d.radar.past;
+      const frame  = frames[frames.length-1];
+      if (radarRainLayer) { radarRainLayer.remove(); radarRainLayer=null; }
+      radarRainLayer = L.tileLayer(
+        `https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`,
+        { opacity:0.7, zIndex:10 }
+      ).addTo(radarMap);
+      // Animation : cycle sur les 6 dernières frames
+      let fi=0;
+      if (radarRainAnim) clearInterval(radarRainAnim);
+      radarRainAnim = setInterval(()=>{
+        if (radarMode!=='pluie'){clearInterval(radarRainAnim);return;}
+        fi=(fi+1)%frames.length;
+        radarRainLayer.setUrl(`https://tilecache.rainviewer.com${frames[fi].path}/256/{z}/{x}/{y}/2/1_1.png`);
+      },500);
+      setRadarStatus('🌧 Radar pluie — RainViewer<br><small>Animation des 6 dernières images</small>');
+    })
+    .catch(()=> setRadarStatus('⚠️ Radar pluie inaccessible.<br><small>Un bloqueur de pub/trackers (ex. protection renforcée Firefox) empêche probablement l\'appel à l\'API RainViewer sur ce site — essaie de le désactiver pour ce site, ou une autre extension de blocage.</small>'));
+}
+
+/* ── RAFALES (Open-Meteo batch) ── */
+async function loadGusts() {
+  clearNonLightningLayers();
+  if (radarWs){try{radarWs.close();}catch(e){}radarWs=null;}
+  radarGustMarkers.forEach(m=>m.remove()); radarGustMarkers=[];
+  buildSvgLegend(document.getElementById('radar-legend-wrap'),{
+    title:'Rafales de vent',subtitle:'Observations actuelles',accentColor:'#60a5fa', emoji:'💨',
+    bands: GUST_SCALE.map(s=>({color:s.color,label:s.label}))
+  });
+  setRadarStatus('💨 Récupération des observations…');
+  const lats = GUST_GRID.map(p=>p[0]).join(',');
+  const lons = GUST_GRID.map(p=>p[1]).join(',');
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current=wind_gusts_10m&wind_speed_unit=kmh&timezone=auto`);
+    const data = await r.json();
+    const arr = Array.isArray(data) ? data : [data];
+    let shown=0;
+    arr.forEach((d,i)=>{
+      const v = d?.current?.wind_gusts_10m;
+      if (!v || v<70) return;
+      const [lat,lon]=GUST_GRID[i];
+      const color=gustColor(v), lbl=gustLabel(v);
+      const svgIcon = L.divIcon({ html:`<div style="width:18px;height:18px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 6px ${color}99;display:flex;align-items:center;justify-content:center"></div>`,className:'',iconSize:[18,18],iconAnchor:[9,9]});
+      const m = L.marker([lat,lon],{icon:svgIcon}).bindPopup(`<b>${v} km/h</b><br>${lbl}`).addTo(radarMap);
+      radarGustMarkers.push(m); shown++;
+    });
+    setRadarStatus(`💨 ${shown} station${shown!==1?'s':''} avec rafales ≥ 70 km/h<br><small>Open-Meteo · rafraîchi auto 10 min</small>`);
+    if (radarMode==='rafales') radarRefreshTimer=setTimeout(loadGusts,600000);
+  } catch { setRadarStatus('⚠️ Erreur lors du chargement des rafales.'); }
+}
+
+/* ── SIGNALEMENTS ── */
+function setReportType(t) {
+  radarReportType=t;
+  document.querySelectorAll('[data-rt]').forEach(b=>b.classList.toggle('on',b.dataset.rt===t));
+}
+function addRadarReport(lat,lon,type) {
+  const cfg=REPORT_CFG[type];
+  const icon=L.divIcon({html:`<div style="font-size:24px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))">${cfg.emoji}</div>`,className:'',iconSize:[28,28],iconAnchor:[14,24]});
+  const ts=new Date().toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const m=L.marker([lat,lon],{icon}).bindPopup(`<b>${cfg.emoji} ${cfg.label}</b><br><small>${ts}</small><br><button onclick="removeReport(this)" style="font-size:11px;margin-top:4px;padding:2px 8px;border:1px solid #ccc;border-radius:4px;cursor:pointer">Supprimer</button>`).addTo(radarMap);
+  m._reportType=type; m._ts=ts;
+  radarReportMarkers.push(m);
+  saveRadarReports();
+}
+function removeReport(btn) {
+  const popup=btn.closest('.leaflet-popup');
+  radarReportMarkers=radarReportMarkers.filter(m=>{
+    const el=document.querySelector('.leaflet-popup');
+    if(m.getPopup()&&m.getPopup().isOpen()){m.remove();return false;}
+    return true;
+  });
+  radarMap.closePopup();
+  saveRadarReports();
+}
+function saveRadarReports() {
+  try{localStorage.setItem('lcdc_reports',JSON.stringify(radarReportMarkers.map(m=>({lat:m.getLatLng().lat,lon:m.getLatLng().lng,type:m._reportType,ts:m._ts}))));}catch{}
+}
+function loadRadarReports() {
+  try{
+    const d=JSON.parse(localStorage.getItem('lcdc_reports')||'[]');
+    d.forEach(r=>addRadarReport(r.lat,r.lon,r.type));
+  }catch{}
+}
+function showReportLegend() {
+  buildSvgLegend(document.getElementById('radar-legend-wrap'),{
+    title:'Signalements',subtitle:'Clic = ajouter',accentColor:'#f87171', emoji:'⚠',
+    bands:Object.values(REPORT_CFG).map(c=>({color:c.color,label:c.emoji+' '+c.label}))
+  });
+}
+
+function clearNonLightningLayers() {
+  if (radarRainAnim){clearInterval(radarRainAnim);radarRainAnim=null;}
+  if (radarRainLayer){radarRainLayer.remove();radarRainLayer=null;}
+  radarGustMarkers.forEach(m=>m.remove()); radarGustMarkers=[];
+  radarReportMarkers.forEach(m=>m.remove()); radarReportMarkers=[];
+  loadRadarReports(); // remet les reports si on revient
+}
+
 buildSidebar();
 buildNextSidebar();
 buildProbSidebar();
-buildRiskSidebar();
 
 (async () => {
   const mapDiv = document.getElementById('map');
@@ -2186,6 +2689,7 @@ buildRiskSidebar();
     .style('width','100%')
     .style('height','auto');
   svgEl = svg.node(); svgSel = svg;
+  svg.classed('map-zoomable', true);
   svg.append('rect').attr('width',W).attr('height',H).attr('fill','#131823');
   const defs0 = svg.append('defs'); // réservé pour patterns hachures
   // Ombre portée unique réutilisée par tous les badges "double vigilance" (plus léger qu'une
@@ -2193,12 +2697,16 @@ buildRiskSidebar();
   defs0.append('filter').attr('id','dvShadow').attr('x','-60%').attr('y','-60%').attr('width','220%').attr('height','220%')
     .append('feDropShadow').attr('dx',0).attr('dy',0.6).attr('stdDeviation',1).attr('flood-color','#000').attr('flood-opacity',0.5);
 
+  // Groupe racine du zoom : regroupe voisins + départements + pictos voisins pour qu'ils
+  // se déplacent/zooment tous ensemble, à la molette, au clic-glissé ou par double-clic.
+  const zg = svg.append('g').attr('class','zoom-root');
+
   /* ── Calque voisins interactif (BE/CH/LU/BW) ──
      Rendu avant le calque depts → frontières FR au-dessus.
      Cliquable : même sélecteur niveau + picto que les départements.
      Données stockées dans neighborData[day] avec clé "nb:<name>" pour éviter
      tout conflit avec les départements français de même nom (Jura, Luxembourg…). */
-  const nbLayer = svg.append('g').attr('class','neighbor-layer');
+  const nbLayer = zg.append('g').attr('class','neighbor-layer');
   nbLayer.selectAll('path.neighbor')
     .data(NEIGHBORS_GEOJSON.features)
     .join('path')
@@ -2241,18 +2749,12 @@ buildRiskSidebar();
       .on('dblclick', function(event, d) {
         event.stopPropagation();
         if (!svgSel || !geoPath) return;
-        const [,, W, H] = svgEl.getAttribute('viewBox').split(' ').map(Number);
-        const b = geoPath.bounds(d);
-        const dx = b[1][0]-b[0][0], dy = b[1][1]-b[0][1];
-        const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
-        const sc = Math.min(0.82*W/dx, 0.82*H/dy, 6);
-        layerSel.transition().duration(480).ease(d3.easeCubicInOut)
-          .attr('transform', `translate(${W/2-sc*cx},${H/2-sc*cy}) scale(${sc})`);
+        flyToFeature(d);
       });
 
-  layerSel = svg.append('g').attr('class','dept-layer');
+  layerSel = zg.append('g').attr('class','dept-layer');
   // calque pictos voisins (au-dessus du calque depts)
-  svg.append('g').attr('class','neighbor-picto-layer');
+  zg.append('g').attr('class','neighbor-picto-layer');
 
   layerSel.selectAll('path.dept').data(features).join('path')
     .attr('class','dept')
@@ -2303,13 +2805,31 @@ buildRiskSidebar();
 
   svg.on('dblclick', function(event) { if (event.target===svgEl) unzoom(); });
 
+  // Zoom libre à la molette / au clic-glissé sur l'ensemble de la carte (voisins compris).
+  // Le double-clic garde son propre comportement (zoom direct sur une zone) donc on
+  // désactive le zoom-au-double-clic natif de d3-zoom pour ne pas les faire concurrence.
+  mapZoom = d3.zoom()
+    .scaleExtent([1, 9])
+    .translateExtent([[0,0],[W,H]])
+    .on('zoom', event => zg.attr('transform', event.transform));
+  svg.call(mapZoom).on('dblclick.zoom', null);
+
+  function flyToFeature(feat) {
+    const [,, VW, VH] = svgEl.getAttribute('viewBox').split(' ').map(Number);
+    const b = geoPath.bounds(feat);
+    const dx = b[1][0]-b[0][0], dy = b[1][1]-b[0][1];
+    const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
+    const sc = Math.min(0.82*VW/dx, 0.82*VH/dy, 9);
+    const t = d3.zoomIdentity.translate(VW/2-sc*cx, VH/2-sc*cy).scale(sc);
+    svgSel.transition().duration(480).ease(d3.easeCubicInOut).call(mapZoom.transform, t);
+  }
+
   renderGauges(null);
   // Les cartes "prochain jour" et "probable" sont init au 1er switch de vue
   // mais on les précharge si les données sont dispo, pour un switch instantané
   if (features.length) {
     setTimeout(() => { if (!svgNextEl) initNextMap(); }, 150);
     setTimeout(() => { if (!svgProbEl) initProbMap(); }, 200);
-    setTimeout(() => { if (!svgRiskEl) initRiskMap(); }, 250);
   }
 })();
 </script>
