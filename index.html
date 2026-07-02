@@ -4,77 +4,76 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Vigilance Météo France</title>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0f1117;--surf:#1a1d27;--surf2:#222536;
-  --b1:rgba(255,255,255,.08);--b2:rgba(255,255,255,.14);
-  --t1:#e8eaf0;--t2:#8b90a4;--t3:#555a6e;
-  --acc:#4d7cfe;--acc2:#7c9cff;--r:12px;--rs:8px;
+  /* Palette "instrument météo" — noir bleuté profond, bleu signal, orange alerte */
+  --bg:#080a0f;--surf:#0f131b;--surf2:#161c27;
+  --b1:rgba(148,163,196,.10);--b2:rgba(148,163,196,.20);
+  --t1:#e7ebf3;--t2:#8590a8;--t3:#4a5268;
+  --acc:#3d8bff;--acc2:#6ba8ff;--sig:#ff7a3d;--r:3px;--rs:2px;
   --ease:cubic-bezier(.22,.9,.32,1);
-  --sh-sm:0 2px 8px rgba(0,0,0,.28);
-  --sh-md:0 8px 24px rgba(0,0,0,.38);
-  --sh-glow:0 0 0 1px rgba(77,124,254,.35),0 6px 20px rgba(77,124,254,.22);
+  --sh-sm:0 2px 10px rgba(0,0,0,.4);
+  --sh-md:0 10px 32px rgba(0,0,0,.5);
+  --sh-glow:0 0 0 1px rgba(61,139,255,.4),0 6px 22px rgba(61,139,255,.2);
+  --font-d:'Space Grotesk',sans-serif;--font-b:'Inter',sans-serif;--font-m:'JetBrains Mono',monospace;
 }
 *{scrollbar-width:thin;scrollbar-color:var(--b2) transparent}
 ::-webkit-scrollbar{width:9px;height:9px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:20px;border:2px solid var(--bg)}
-::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.24)}
-:focus-visible{outline:2px solid var(--acc2);outline-offset:2px;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(148,163,196,.32)}
+:focus-visible{outline:2px solid var(--acc2);outline-offset:2px;border-radius:2px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 body{
-  font-family:'Inter',sans-serif;color:var(--t1);min-height:100vh;
-  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
-  text-rendering:optimizeLegibility;
+  font-family:var(--font-b);color:var(--t1);min-height:100vh;
   background:
-    radial-gradient(1100px 520px at 18% -8%, rgba(77,124,254,.10), transparent 60%),
-    radial-gradient(900px 480px at 85% 6%, rgba(124,58,237,.06), transparent 55%),
+    radial-gradient(1200px 600px at 14% -10%, rgba(61,139,255,.08), transparent 58%),
+    radial-gradient(900px 500px at 90% 4%, rgba(255,122,61,.05), transparent 55%),
+    repeating-linear-gradient(0deg, rgba(148,163,196,.025) 0px, transparent 1px, transparent 42px),
     var(--bg);
   background-attachment:fixed;
-  animation:pageIn .35s var(--ease);
 }
-@keyframes pageIn{from{opacity:0}to{opacity:1}}
-.page{display:flex;flex-direction:column;gap:12px;padding:12px;max-width:1680px;margin:0 auto}
+.page{display:flex;flex-direction:column;gap:10px;padding:14px;max-width:1680px;margin:0 auto}
 
-/* Header */
-.app-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:linear-gradient(180deg,rgba(34,37,54,.9),var(--surf));border:1px solid var(--b1);border-radius:var(--r);box-shadow:var(--sh-sm);backdrop-filter:blur(10px);position:relative;overflow:hidden}
-.app-hdr::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,transparent,rgba(77,124,254,.5),transparent)}
-.app-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:9px;letter-spacing:-.015em}
-.app-logo{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;background:linear-gradient(135deg,var(--acc),#7c3aed);box-shadow:0 2px 10px rgba(77,124,254,.4);flex-shrink:0}
-.app-title-sub{font-weight:500;color:var(--t2);font-size:13px;letter-spacing:0}
-.day-tabs{display:flex;gap:4px}
-.dtab{padding:5px 14px;border:1px solid var(--b2);border-radius:20px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--t2);transition:all .18s var(--ease);font-weight:500}
-.dtab:hover{background:var(--surf2);color:var(--t1);transform:translateY(-1px)}
-.dtab.on{background:var(--acc);color:#fff;border-color:var(--acc);box-shadow:0 3px 12px rgba(77,124,254,.4)}
+/* Header — bandeau façon station de mesure */
+.app-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--surf);border:1px solid var(--b1);border-left:2px solid var(--acc);border-radius:var(--r);box-shadow:var(--sh-sm);position:relative;overflow:hidden}
+.app-title{font-family:var(--font-d);font-size:15px;font-weight:600;display:flex;align-items:center;gap:10px;letter-spacing:.01em;text-transform:uppercase}
+.app-title::after{content:'LA COLÈRE DU CIEL';font-family:var(--font-m);font-size:9px;font-weight:400;letter-spacing:.12em;color:var(--t3);padding-left:10px;margin-left:2px;border-left:1px solid var(--b2);text-transform:none}
+.dot{width:7px;height:7px;border-radius:1px;background:var(--acc);box-shadow:0 0 8px rgba(61,139,255,.7);animation:pulseDot 2.4s ease-in-out infinite;transform:rotate(45deg)}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 6px rgba(61,139,255,.55);opacity:1}50%{box-shadow:0 0 14px rgba(61,139,255,.95);opacity:.7}}
+.day-tabs{display:flex;gap:3px}
+.dtab{padding:6px 14px;border:1px solid var(--b2);border-radius:var(--r);cursor:pointer;font-size:11px;font-family:var(--font-m);text-transform:uppercase;letter-spacing:.04em;background:transparent;color:var(--t2);transition:all .16s var(--ease);font-weight:500}
+.dtab:hover{background:var(--surf2);color:var(--t1)}
+.dtab.on{background:var(--acc);color:#04101f;border-color:var(--acc);box-shadow:0 2px 10px rgba(61,139,255,.35);font-weight:600}
 
 /* Layout */
-.top{display:flex;gap:12px;align-items:flex-start}
+.top{display:flex;gap:10px;align-items:flex-start}
 #map-col{flex:1;min-width:0;position:relative}
-.sb{width:192px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
-.card{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);padding:12px;box-shadow:var(--sh-sm);transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+.sb{width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);padding:12px;box-shadow:var(--sh-sm);transition:border-color .2s var(--ease)}
 .card:hover{border-color:var(--b2)}
-.stitle{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:8px}
+.stitle{font-family:var(--font-m);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.stitle::before{content:'';width:5px;height:5px;background:var(--acc);flex-shrink:0}
 #map,#map-next,#map-prob{box-shadow:var(--sh-md)}
 
 /* Level rows */
 .lvl-row-wrap{display:flex;align-items:center;gap:3px;margin-bottom:2px}
-.lvl-btn{display:flex;align-items:center;gap:7px;flex:1;padding:5px 7px;border:1px solid transparent;border-radius:var(--rs);cursor:pointer;background:transparent;font-size:12px;font-family:inherit;color:var(--t2);text-align:left;transition:all .15s var(--ease)}
-.lvl-btn:hover{background:var(--surf2);color:var(--t1);transform:translateX(1px)}
-.lvl-btn.on{border-color:var(--b2);background:var(--surf2);color:var(--t1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}
-.lvl-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.lvl-btn{display:flex;align-items:center;gap:8px;flex:1;padding:6px 8px;border:1px solid transparent;border-radius:var(--rs);cursor:pointer;background:transparent;font-size:12px;font-family:var(--font-b);color:var(--t2);text-align:left;transition:all .13s var(--ease)}
+.lvl-btn:hover{background:var(--surf2);color:var(--t1)}
+.lvl-btn.on{border-color:var(--b2);background:var(--surf2);color:var(--t1);box-shadow:inset 2px 0 0 var(--acc)}
+.lvl-dot{width:10px;height:10px;border-radius:1px;flex-shrink:0}
 .lvl-btn.semi{margin-left:5px;border-left:2px dashed var(--b2);font-size:11px;opacity:.85}
 /* ── Vue selector (Vigilance / Évolution probable) ── */
-.view-tabs{display:flex;gap:4px;align-items:center}
-.vtab{padding:5px 13px;border:1px solid var(--b2);border-radius:20px;cursor:pointer;font-size:12px;font-family:inherit;background:transparent;color:var(--t2);transition:all .18s var(--ease);font-weight:500}
-.vtab:hover{background:var(--surf2);color:var(--t1);transform:translateY(-1px)}
-.vtab:active{transform:translateY(0) scale(.97)}
-.vtab.on{background:#2a1f3d;color:#c084fc;border-color:#7c3aed;box-shadow:0 3px 14px rgba(124,58,237,.28)}
-.vtab-sep{width:1px;height:16px;background:var(--b2);margin:0 4px}
+.view-tabs{display:flex;gap:2px;align-items:center}
+.vtab{padding:6px 13px;border:1px solid var(--b2);border-radius:var(--r);cursor:pointer;font-size:11px;font-family:var(--font-m);text-transform:uppercase;letter-spacing:.03em;background:transparent;color:var(--t2);transition:all .16s var(--ease);font-weight:500}
+.vtab:hover{background:var(--surf2);color:var(--t1)}
+.vtab:active{transform:scale(.97)}
+.vtab.on{background:rgba(124,58,237,.12);color:#c299ff;border-color:#7c3aed}
+.vtab-sep{width:1px;height:14px;background:var(--b2);margin:0 3px}
 
 /* ── Sidebar probable ── */
 .prob-sidebar-note{font-size:10px;color:var(--t3);line-height:1.5;padding:8px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.15);border-radius:8px;margin-bottom:2px}
@@ -84,50 +83,44 @@ body{
 
 /* ── Carte probable ── */
 #map-prob-col{flex:1;min-width:0;position:relative}
-#map-prob{width:100%;aspect-ratio:1/1.04;border-radius:12px;overflow:hidden;background:#1a1d27;border:1px solid rgba(124,58,237,.2);position:relative}
+#map-prob{width:100%;aspect-ratio:1/1.04;border-radius:var(--r);overflow:hidden;background:var(--surf);border:1px solid rgba(124,58,237,.25);position:relative}
 /* ── Vue Vigilance prochain jour (anciennes régions) ── */
 #map-next-col{flex:1;min-width:0;position:relative}
-#map-next{width:100%;aspect-ratio:1/1.04;border-radius:12px;overflow:hidden;background:#1a1d27;border:1px solid rgba(20,184,196,.2);position:relative}
+#map-next{width:100%;aspect-ratio:1/1.04;border-radius:var(--r);overflow:hidden;background:var(--surf);border:1px solid rgba(20,184,196,.25);position:relative}
 .next-sidebar-note{font-size:10px;color:var(--t3);line-height:1.5;padding:8px;background:rgba(20,184,196,.07);border:1px solid rgba(20,184,196,.18);border-radius:8px;margin-bottom:2px}
-.radar-rep-btn{padding:6px 10px;border-radius:6px;border:1px solid transparent;background:transparent;cursor:pointer;font-size:12px;color:var(--t2);font-family:inherit;transition:all .15s var(--ease);text-align:left;white-space:nowrap}
-.radar-rep-btn:hover{background:var(--surf2);color:var(--t1)}
+.radar-rep-btn{padding:5px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.2);background:rgba(15,17,23,.88);backdrop-filter:blur(8px);cursor:pointer;font-size:12px;color:var(--t2);font-family:inherit;transition:all .12s}
 .radar-rep-btn.on{border-color:#22d3ee;color:#22d3ee;background:rgba(34,211,238,.12)}
 /* ── Auth widget ── */
-.auth-panel{position:absolute;top:40px;right:0;width:270px;background:var(--surf);border:1px solid var(--b2);border-radius:12px;padding:16px;box-shadow:0 12px 36px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.03);z-index:100;animation:authIn .18s var(--ease)}
-@keyframes authIn{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-.auth-input{width:100%;margin-bottom:8px;padding:8px 10px;background:var(--surf2);border:1px solid var(--b2);border-radius:8px;color:var(--t1);font-size:12px;font-family:inherit;box-sizing:border-box;resize:vertical;outline:none;transition:border-color .15s var(--ease),box-shadow .15s var(--ease)}
-.auth-input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(77,124,254,.15)}
+.auth-panel{position:absolute;top:42px;right:0;width:260px;background:var(--surf);border:1px solid var(--b2);border-top:2px solid var(--acc);border-radius:var(--r);padding:16px;box-shadow:0 14px 40px rgba(0,0,0,.6);z-index:100;animation:authIn .16s var(--ease)}
+@keyframes authIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.auth-input{width:100%;margin-bottom:8px;padding:9px 10px;background:var(--bg);border:1px solid var(--b2);border-radius:var(--rs);color:var(--t1);font-size:12px;font-family:var(--font-b);box-sizing:border-box;resize:vertical;outline:none;transition:border-color .15s var(--ease)}
+.auth-input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(61,139,255,.15)}
 .auth-pass-wrap{position:relative}
 .auth-pass-wrap .auth-input{padding-right:34px}
 .auth-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;color:var(--t3);font-size:13px;padding:4px 6px;line-height:1;transition:color .12s}
 .auth-eye:hover{color:var(--t2)}
-.auth-tabs{display:flex;gap:4px;margin-bottom:12px}
-.auth-tab{flex:1;padding:5px;border:1px solid var(--b2);border-radius:6px;background:transparent;cursor:pointer;font-size:11px;color:var(--t3);font-family:inherit;transition:all .15s var(--ease)}
-.auth-tab.on{background:var(--acc);border-color:var(--acc);color:#fff}
-.auth-notice{font-size:10px;color:var(--t3);line-height:1.5;padding:7px;background:rgba(77,124,254,.07);border-radius:6px;margin-bottom:10px}
-.auth-err{color:#f87171;font-size:11px;margin:6px 0 0;display:none}
+.auth-notice{font-size:10px;color:var(--t3);line-height:1.5;padding:8px;background:rgba(61,139,255,.06);border:1px solid var(--b1);border-radius:var(--rs);margin-bottom:12px}
+.auth-err{color:#ff6b6b;font-size:11px;margin:6px 0 0;display:none;font-family:var(--font-m)}
 .auth-ok{color:#4ade80;font-size:11px;margin:6px 0 0;display:none}
 @keyframes authShake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
 .auth-shake{animation:authShake .45s cubic-bezier(.36,.07,.19,.97)}
-.auth-locked{opacity:.55;pointer-events:none}
-/* honeypot anti-bot, invisible pour un humain */
-.hp-field{position:absolute!important;left:-9999px!important;width:1px;height:1px;opacity:0;overflow:hidden}
-body.role-visitor .edit-zone{opacity:.4;pointer-events:none;user-select:none;cursor:not-allowed}
-.lock-hint{font-size:10px;color:var(--t3);text-align:center;padding:6px 0 2px;display:none}
+.auth-locked{opacity:.5;pointer-events:none}
+body.role-visitor .edit-zone{opacity:.35;pointer-events:none;user-select:none;cursor:not-allowed}
+.lock-hint{font-family:var(--font-m);font-size:9px;letter-spacing:.04em;color:var(--t3);text-align:center;padding:6px 0 2px;display:none;text-transform:uppercase}
 body.role-visitor .lock-hint{display:block}
+.dl-zone{display:flex;flex-direction:column;gap:8px}
 .lvl-btn:disabled{opacity:.3;cursor:not-allowed}
 #map-prob svg{display:block;width:100%;height:100%}
 .prob-legend-item{display:flex;align-items:center;gap:7px;padding:3px 0}
-.prob-legend-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(0,0,0,.35)}
+.prob-legend-dot{width:10px;height:10px;border-radius:1px;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(0,0,0,.35)}
 
-/* ── Supprime prob-btn de l'ancienne sidebar ── */
 .prob-btn{display:none!important}
 
 /* Picto grid */
 .pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
-.pbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;border:1px solid transparent;border-radius:var(--rs);cursor:pointer;background:transparent;transition:all .15s var(--ease);font-size:9px;color:var(--t3);font-family:inherit}
-.pbtn:hover{background:var(--surf2);color:var(--t2);transform:translateY(-1px)}
-.pbtn.on{border-color:var(--acc);background:rgba(77,124,254,.1);color:var(--acc);box-shadow:0 0 0 1px rgba(77,124,254,.15)}
+.pbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 2px;border:1px solid transparent;border-radius:var(--rs);cursor:pointer;background:transparent;transition:all .14s var(--ease);font-size:9px;color:var(--t3);font-family:var(--font-b)}
+.pbtn:hover{background:var(--surf2);color:var(--t2)}
+.pbtn.on{border-color:var(--acc);background:rgba(61,139,255,.1);color:var(--acc2)}
 .pbtn svg{width:22px;height:22px;display:block}
 
 /* Toggles */
@@ -137,102 +130,78 @@ body.role-visitor .lock-hint{display:block}
 .tog-k{position:absolute;top:2px;left:2px;width:10px;height:10px;background:#fff;border-radius:50%;transition:transform .2s;pointer-events:none}
 .tog.on .tog-k{transform:translateX(14px)}
 .sub-lvls{display:flex;gap:3px;flex-wrap:wrap;margin-top:7px}
-.slvl{flex:1;min-width:0;padding:4px 2px;border:1px solid var(--b1);border-radius:5px;cursor:pointer;background:transparent;font-size:10px;font-family:inherit;color:var(--t3);text-align:center;transition:all .12s;white-space:nowrap}
+.slvl{flex:1;min-width:0;padding:4px 2px;border:1px solid var(--b1);border-radius:var(--rs);cursor:pointer;background:transparent;font-size:10px;font-family:var(--font-m);color:var(--t3);text-align:center;transition:all .12s;white-space:nowrap}
 .slvl:hover{background:var(--surf2);color:var(--t2)}
 .slvl.on{border-color:var(--b2);background:var(--surf2);color:var(--t1)}
 .dv-tog{display:flex;align-items:center;justify-content:space-between;padding:4px 2px;border-radius:var(--rs);cursor:pointer;background:transparent;border:none;width:100%;transition:all .12s;font-family:inherit}
 .dv-tog:hover{background:var(--surf2)}
 
 /* Buttons */
-.act-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px;border:1px solid var(--b2);border-radius:var(--rs);cursor:pointer;background:transparent;font-size:12px;font-family:inherit;color:var(--t2);transition:all .16s var(--ease);font-weight:500}
-.act-btn:hover{background:var(--surf2);color:var(--t1);transform:translateY(-1px);box-shadow:var(--sh-sm)}
-.act-btn:active{transform:translateY(0)}
-.act-btn.primary{background:linear-gradient(135deg,var(--acc),#3d63d6);border-color:var(--acc);color:#fff;box-shadow:0 3px 14px rgba(77,124,254,.3)}
-.act-btn.primary:hover{background:linear-gradient(135deg,#5f8bff,var(--acc));box-shadow:0 5px 18px rgba(77,124,254,.42)}
-.rst-btn{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:6px;border:1px solid var(--b1);border-radius:var(--rs);cursor:pointer;background:transparent;font-size:11px;font-family:inherit;color:var(--t3);transition:all .15s var(--ease)}
+.act-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;border:1px solid var(--b2);border-radius:var(--rs);cursor:pointer;background:transparent;font-size:11px;font-family:var(--font-m);text-transform:uppercase;letter-spacing:.03em;color:var(--t2);transition:all .15s var(--ease);font-weight:500}
+.act-btn:hover{background:var(--surf2);color:var(--t1)}
+.act-btn:active{transform:scale(.98)}
+.act-btn.primary{background:var(--acc);border-color:var(--acc);color:#04101f;box-shadow:0 3px 14px rgba(61,139,255,.28);font-weight:600}
+.act-btn.primary:hover{background:var(--acc2);box-shadow:0 5px 18px rgba(61,139,255,.4)}
+.rst-btn{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:6px;border:1px solid var(--b1);border-radius:var(--rs);cursor:pointer;background:transparent;font-size:11px;font-family:var(--font-b);color:var(--t3);transition:all .15s var(--ease)}
 .rst-btn:hover{background:var(--surf2);color:var(--t2)}
 .hint{font-size:10px;color:var(--t3);line-height:1.5;text-align:center}
 
 /* Tooltip */
-.tip{position:absolute;background:var(--surf);border:1px solid var(--b2);border-radius:8px;padding:5px 11px;font-size:11px;color:var(--t1);pointer-events:none;display:none;z-index:10;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.55);transition:opacity .1s var(--ease)}
+.tip{position:absolute;background:var(--surf);border:1px solid var(--b2);border-left:2px solid var(--acc);border-radius:var(--rs);padding:5px 11px;font-size:11px;font-family:var(--font-m);color:var(--t1);pointer-events:none;display:none;z-index:10;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.55)}
 
 /* Légende */
-#leg{position:absolute;bottom:12px;right:12px;background:rgba(15,17,23,.92);border:1px solid var(--b2);border-radius:10px;padding:10px 12px;min-width:160px;backdrop-filter:blur(8px);pointer-events:none;display:none;box-shadow:var(--sh-md)}
-/* .leg-card : version "en ligne" des mêmes légendes, utilisée dans les sidebars
-   Prochain jour / Évolution probable (là où #leg n'a pas d'ID dédié). Sans ce bloc,
-   ces légendes s'affichaient sans aucun style. */
-.leg-card{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh-sm);animation:legIn .18s var(--ease)}
-@keyframes legIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-
-/* Contrôles de zoom flottants sur les cartes D3 */
-.zoom-ctrl{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:1px;background:rgba(15,17,23,.88);border:1px solid var(--b2);border-radius:9px;overflow:hidden;backdrop-filter:blur(8px);box-shadow:var(--sh-sm);z-index:20}
-.zoom-ctrl button{width:30px;height:28px;border:none;background:transparent;color:var(--t2);cursor:pointer;font-size:15px;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:all .12s var(--ease)}
-.zoom-ctrl button:hover{background:var(--surf2);color:var(--t1)}
-.zoom-ctrl button:active{transform:scale(.92)}
-.zoom-ctrl button+button{border-top:1px solid var(--b1)}
-.zoom-ctrl button.zc-reset{font-size:12px}
-.map-zoomable{cursor:grab}
-.map-zoomable:active{cursor:grabbing}
-.zoom-hint{position:absolute;bottom:12px;left:12px;font-size:9px;color:var(--t3);background:rgba(15,17,23,.75);padding:4px 8px;border-radius:6px;backdrop-filter:blur(6px);pointer-events:none;letter-spacing:.02em;opacity:.85}
-
-/* Transitions douces entre les vues (Vigilance / Prochain jour / Probable / Risque / Radar) */
-.top{transition:opacity .22s var(--ease), transform .22s var(--ease)}
-.view-leave{opacity:0;transform:translateY(8px) scale(.985)}
-.view-enter{opacity:0;transform:translateY(-8px) scale(.985)}
+#leg{position:absolute;bottom:12px;right:12px;background:rgba(8,10,15,.94);border:1px solid var(--b2);border-radius:var(--r);padding:10px 12px;min-width:160px;backdrop-filter:blur(8px);pointer-events:none;display:none;box-shadow:var(--sh-md)}
 .leg-sec{margin-bottom:8px}
 .leg-sec:last-child{margin-bottom:0}
-.leg-sec-t{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.06)}
+.leg-sec-t{font-family:var(--font-m);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b1)}
 .leg-r{display:flex;align-items:center;gap:8px;margin-bottom:4px}
-.leg-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(0,0,0,.35)}
+.leg-dot{width:10px;height:10px;border-radius:1px;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(0,0,0,.35)}
 .leg-lbl{font-size:11px;color:var(--t2)}
-/* pictos dans la légende : affichés sans fond ni bordure */
 #leg img,.prob-legend-item img{background:none!important;box-shadow:none!important;border:none!important}
 
 /* Jauges */
 #gauges{display:flex;flex-direction:column;gap:8px}
 .g-wrap{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);padding:12px 16px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--sh-sm);transition:border-color .2s var(--ease)}
 .g-wrap:hover{border-color:var(--b2)}
-.g-wrap.dept{border-left:3px solid var(--acc)}
+.g-wrap.dept{border-left:2px solid var(--acc)}
 .g-hdr{display:flex;align-items:center;justify-content:space-between}
-.g-title{font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px}
-.g-badge{font-size:9px;padding:2px 7px;border-radius:20px;background:rgba(77,124,254,.15);color:var(--acc);border:1px solid rgba(77,124,254,.3)}
-.g-back{display:flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid var(--b2);border-radius:20px;background:transparent;cursor:pointer;font-size:11px;font-family:inherit;color:var(--t2);transition:all .15s}
+.g-title{font-family:var(--font-d);font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px}
+.g-badge{font-family:var(--font-m);font-size:9px;padding:2px 7px;border-radius:var(--rs);background:rgba(61,139,255,.14);color:var(--acc2);border:1px solid rgba(61,139,255,.3)}
+.g-back{display:flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid var(--b2);border-radius:var(--r);background:transparent;cursor:pointer;font-size:11px;font-family:var(--font-m);color:var(--t2);transition:all .15s}
 .g-back:hover{background:var(--surf2);color:var(--t1)}
 .g-rows{display:flex;flex-direction:column;gap:5px}
 .g-row{display:flex;align-items:center;gap:10px}
-/* picto slot dans la jauge : juste l'icône, sans carré/bordure */
 .g-picto{width:26px;height:26px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:opacity .12s;color:var(--t3);opacity:.7}
 .g-picto:hover{opacity:1}
 .g-picto img{filter:none!important;background:none!important}
 .g-lbl{width:72px;font-size:11px;color:var(--t2);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
 .g-tl{flex:1;position:relative;height:22px;user-select:none;cursor:crosshair}
-.g-bg{width:100%;height:100%;background:rgba(255,255,255,.06);border-radius:5px;position:absolute;top:0;left:0}
+.g-bg{width:100%;height:100%;background:rgba(148,163,196,.07);border-radius:2px;position:absolute;top:0;left:0}
 .g-tl svg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 .g-del{border:none;background:transparent;cursor:pointer;color:var(--t3);font-size:15px;padding:0 2px;line-height:1;transition:color .12s;font-family:inherit}
-.g-del:hover{color:#ff5f5f}
+.g-del:hover{color:#ff6b6b}
 .g-ticks{display:flex;margin-top:1px;padding-left:112px}
-.g-tick{font-size:9px;color:var(--t3);font-family:'JetBrains Mono',monospace;flex:1;text-align:center}
+.g-tick{font-size:9px;color:var(--t3);font-family:var(--font-m);flex:1;text-align:center}
 .g-tick:first-child{text-align:left}.g-tick:last-child{text-align:right}
-.g-add{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border:1px dashed var(--b2);border-radius:20px;cursor:pointer;background:transparent;font-size:11px;font-family:inherit;color:var(--t3);transition:all .12s}
+.g-add{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border:1px dashed var(--b2);border-radius:var(--r);cursor:pointer;background:transparent;font-size:11px;font-family:var(--font-m);color:var(--t3);transition:all .12s}
 .g-add:hover{background:var(--surf2);color:var(--t2)}
 
 /* Popups */
-.pop{position:fixed;background:var(--surf);border:1px solid var(--b2);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.72);z-index:9999;display:none;animation:authIn .15s var(--ease)}
+.pop{position:fixed;background:var(--surf);border:1px solid var(--b2);border-top:2px solid var(--acc);border-radius:var(--r);box-shadow:0 14px 42px rgba(0,0,0,.7);z-index:9999;display:none;animation:authIn .14s var(--ease)}
 .pop.open{display:flex}
 #lvl-pop{flex-direction:column;gap:1px;padding:6px;min-width:140px}
-.lp-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--t2);transition:all .12s var(--ease)}
-.lp-item:hover{background:var(--surf2);color:var(--t1);transform:translateX(2px)}
-.lp-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.lp-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--rs);cursor:pointer;font-size:12px;color:var(--t2);transition:all .12s var(--ease)}
+.lp-item:hover{background:var(--surf2);color:var(--t1)}
+.lp-dot{width:11px;height:11px;border-radius:1px;flex-shrink:0}
 #phen-pop{flex-wrap:wrap;gap:3px;padding:8px;width:220px}
-.pp-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px;border-radius:6px;cursor:pointer;font-size:9px;color:var(--t3);transition:all .15s var(--ease)}
-.pp-item:hover{background:var(--surf2);color:var(--t2);transform:translateY(-1px)}
+.pp-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px;border-radius:var(--rs);cursor:pointer;font-size:9px;color:var(--t3);transition:all .14s var(--ease)}
+.pp-item:hover{background:var(--surf2);color:var(--t2)}
 .pp-item svg{width:20px;height:20px;display:block}
 
-/* États inactifs des contrôles verrouillés (rouge/violet réservés admin) */
 .lvl-btn:disabled,.dv-tog[disabled],[data-plk]:disabled{opacity:.32;cursor:not-allowed;filter:grayscale(.3)}
 
-/* Bandeau de session (auto-déconnexion, verrouillage) */
-#sess-toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-12px);background:var(--surf);border:1px solid var(--b2);color:var(--t1);font-size:12px;padding:9px 16px;border-radius:10px;box-shadow:var(--sh-md);z-index:10000;opacity:0;pointer-events:none;transition:all .25s var(--ease)}
+/* Bandeau de session */
+#sess-toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-12px);background:var(--surf);border:1px solid var(--b2);border-left:2px solid var(--acc);color:var(--t1);font-size:12px;font-family:var(--font-m);padding:9px 16px;border-radius:var(--r);box-shadow:var(--sh-md);z-index:10000;opacity:0;pointer-events:none;transition:all .25s var(--ease)}
 #sess-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
@@ -240,7 +209,7 @@ body.role-visitor .lock-hint{display:block}
 <div class="page">
 
   <div class="app-hdr">
-    <div class="app-title"><span class="app-logo">🛡</span>Carte Vigilance <span class="app-title-sub">Météo France</span></div>
+    <div class="app-title"><span class="dot"></span>Carte Vigilance Météo France</div>
     <div style="display:flex;align-items:center;gap:12px">
       <!-- Sélecteur de vue -->
       <div class="view-tabs">
@@ -264,32 +233,14 @@ body.role-visitor .lock-hint{display:block}
           <span id="auth-icon">🔒</span><span id="auth-label">Connexion</span>
         </button>
         <div id="auth-panel" class="auth-panel" style="display:none" onclick="event.stopPropagation()">
-          <div class="auth-tabs">
-            <button class="auth-tab on" id="tab-login" onclick="authTab('login')">Se connecter</button>
-            <button class="auth-tab" id="tab-request" onclick="authTab('request')">Demander accès</button>
+          <p class="auth-notice">Accès réservé à l'administrateur du site.</p>
+          <input id="auth-user" class="auth-input" type="text" placeholder="Identifiant" autocomplete="username" maxlength="60">
+          <div class="auth-pass-wrap">
+            <input id="auth-pass" class="auth-input" type="password" placeholder="Mot de passe" autocomplete="current-password" maxlength="128" onkeydown="if(event.key==='Enter')doLogin()">
+            <button type="button" class="auth-eye" id="auth-eye-btn" onclick="togglePassVis()" aria-label="Afficher le mot de passe" tabindex="-1">👁</button>
           </div>
-          <!-- Connexion -->
-          <div id="auth-view-login">
-            <input id="auth-user" class="auth-input" type="text" placeholder="Identifiant" autocomplete="username" maxlength="60">
-            <div class="auth-pass-wrap">
-              <input id="auth-pass" class="auth-input" type="password" placeholder="Mot de passe" autocomplete="current-password" maxlength="128" onkeydown="if(event.key==='Enter')doLogin()">
-              <button type="button" class="auth-eye" id="auth-eye-btn" onclick="togglePassVis()" aria-label="Afficher le mot de passe" tabindex="-1">👁</button>
-            </div>
-            <button class="act-btn primary" id="auth-login-btn" onclick="doLogin()">Se connecter</button>
-            <p id="auth-err" class="auth-err"></p>
-          </div>
-          <!-- Demande d'accès -->
-          <div id="auth-view-request" style="display:none">
-            <p class="auth-notice">Ta demande sera envoyée par email au propriétaire du site qui devra la valider manuellement avant que tu puisses te connecter.</p>
-            <input id="req-name" class="auth-input" type="text" placeholder="Nom ou pseudo" maxlength="80">
-            <input id="req-email" class="auth-input" type="email" placeholder="Ton adresse email" maxlength="120">
-            <textarea id="req-msg" class="auth-input" rows="2" placeholder="Pourquoi voudrais-tu accès ?" maxlength="500"></textarea>
-            <!-- Piège à robots : champ invisible pour un humain, rempli automatiquement par la plupart des bots -->
-            <input id="req-hp" class="hp-field" type="text" name="site" tabindex="-1" autocomplete="off" aria-hidden="true">
-            <button class="act-btn primary" onclick="sendRequest()">Envoyer la demande</button>
-            <p id="req-ok" class="auth-ok"></p>
-            <p id="req-err" class="auth-err"></p>
-          </div>
+          <button class="act-btn primary" id="auth-login-btn" onclick="doLogin()">Se connecter</button>
+          <p id="auth-err" class="auth-err"></p>
         </div>
       </div>
     </div>
@@ -299,12 +250,6 @@ body.role-visitor .lock-hint{display:block}
     <div id="map-col">
       <div id="map" style="width:100%;border-radius:12px;overflow:hidden;background:#1a1d27;border:1px solid rgba(255,255,255,.06)"></div>
       <div class="tip" id="tip"></div>
-      <div class="zoom-ctrl" id="zoom-ctrl-main">
-        <button onclick="zoomStep(1)" aria-label="Zoomer">+</button>
-        <button onclick="zoomStep(-1)" aria-label="Dézoomer">−</button>
-        <button class="zc-reset" onclick="unzoom()" aria-label="Réinitialiser le zoom">⟲</button>
-      </div>
-      <div class="zoom-hint">🖱 Molette pour zoomer · glisser pour déplacer · dbl-clic sur une zone</div>
     </div>
     <div class="sb">
       <div id="leg" class="leg-card" style="display:none"></div>
@@ -347,8 +292,11 @@ body.role-visitor .lock-hint{display:block}
         <p class="hint">Clic = appliquer · Dbl-clic = zoom</p>
         <button class="rst-btn" onclick="resetAll()">↺ Réinitialiser</button>
       </div>
-      <button class="act-btn primary" onclick="dlMap()">↓ Télécharger SVG</button>
-      <button class="act-btn" onclick="exportPng(svgEl,'vigilance-france.png')">↓ Télécharger PNG</button>
+      <div class="edit-zone dl-zone">
+        <button class="act-btn primary" onclick="dlMap()">↓ Télécharger SVG</button>
+        <button class="act-btn" onclick="exportPng(svgEl,'vigilance-france.png')">↓ Télécharger PNG</button>
+      </div>
+      <p class="lock-hint dl-lock-hint">🔒 Réservé à l'administrateur</p>
     </div>
   </div>
 
@@ -357,12 +305,6 @@ body.role-visitor .lock-hint{display:block}
     <div id="map-next-col">
       <div id="map-next"></div>
       <div class="tip" id="tip-next"></div>
-      <div class="zoom-ctrl" id="zoom-ctrl-next">
-        <button onclick="zoomStepNext(1)" aria-label="Zoomer">+</button>
-        <button onclick="zoomStepNext(-1)" aria-label="Dézoomer">−</button>
-        <button class="zc-reset" onclick="unzoomNext()" aria-label="Réinitialiser le zoom">⟲</button>
-      </div>
-      <div class="zoom-hint">🖱 Molette pour zoomer · glisser pour déplacer</div>
     </div>
     <div class="sb">
       <div id="leg-next" class="leg-card" style="display:none;border-color:rgba(20,184,196,.18)"></div>
@@ -383,8 +325,11 @@ body.role-visitor .lock-hint{display:block}
         <p class="hint">Clic = appliquer · Re-clic = effacer<br>Jusqu'à 2 phénomènes/région · Dbl-clic = zoom</p>
         <button class="rst-btn" onclick="resetNext()" style="border-color:rgba(20,184,196,.2);color:#14b8c4">↺ Réinitialiser</button>
       </div>
-      <button class="act-btn" onclick="dlMapNext()" style="border-color:rgba(20,184,196,.3);color:#14b8c4">↓ Télécharger SVG</button>
-      <button class="act-btn" onclick="exportPng(svgNextEl,'vigilance-prochain-jour.png')" style="border-color:rgba(20,184,196,.3);color:#14b8c4">↓ Télécharger PNG</button>
+      <div class="edit-zone dl-zone">
+        <button class="act-btn" onclick="dlMapNext()" style="border-color:rgba(20,184,196,.3);color:#14b8c4">↓ Télécharger SVG</button>
+        <button class="act-btn" onclick="exportPng(svgNextEl,'vigilance-prochain-jour.png')" style="border-color:rgba(20,184,196,.3);color:#14b8c4">↓ Télécharger PNG</button>
+      </div>
+      <p class="lock-hint dl-lock-hint">🔒 Réservé à l'administrateur</p>
     </div>
   </div>
 
@@ -393,12 +338,6 @@ body.role-visitor .lock-hint{display:block}
     <div id="map-prob-col">
       <div id="map-prob"></div>
       <div class="tip" id="tip-prob"></div>
-      <div class="zoom-ctrl" id="zoom-ctrl-prob">
-        <button onclick="zoomStepProb(1)" aria-label="Zoomer">+</button>
-        <button onclick="zoomStepProb(-1)" aria-label="Dézoomer">−</button>
-        <button class="zc-reset" onclick="unzoomProb()" aria-label="Réinitialiser le zoom">⟲</button>
-      </div>
-      <div class="zoom-hint">🖱 Molette pour zoomer · glisser pour déplacer</div>
     </div>
     <div class="sb">
       <div id="leg-prob" class="leg-card" style="display:none;border-color:rgba(124,58,237,.18)"></div>
@@ -412,8 +351,11 @@ body.role-visitor .lock-hint{display:block}
         <p class="hint" style="color:var(--t3)">Clic = appliquer · Re-clic = effacer<br>Dbl-clic = zoom</p>
         <button class="rst-btn" onclick="resetProb()" style="border-color:rgba(124,58,237,.2);color:#7c6a9a">↺ Réinitialiser l'évolution</button>
       </div>
-      <button class="act-btn" onclick="dlMapProb()" style="border-color:rgba(124,58,237,.3);color:#c084fc">↓ Télécharger SVG</button>
-      <button class="act-btn" onclick="exportPng(svgProbEl,'evolution-probable.png')" style="border-color:rgba(124,58,237,.3);color:#c084fc">↓ Télécharger PNG</button>
+      <div class="edit-zone dl-zone">
+        <button class="act-btn" onclick="dlMapProb()" style="border-color:rgba(124,58,237,.3);color:#c084fc">↓ Télécharger SVG</button>
+        <button class="act-btn" onclick="exportPng(svgProbEl,'evolution-probable.png')" style="border-color:rgba(124,58,237,.3);color:#c084fc">↓ Télécharger PNG</button>
+      </div>
+      <p class="lock-hint dl-lock-hint">🔒 Réservé à l'administrateur</p>
     </div>
   </div>
 
@@ -457,7 +399,7 @@ body.role-visitor .lock-hint{display:block}
            ondragleave="this.style.borderColor='rgba(249,115,22,.3)';this.style.background='linear-gradient(135deg,#131823 0%,#1a1f2e 100%)'"
            ondrop="riskDrop(event)">
         <input type="file" id="risk-file-inp" accept="image/*" style="display:none" onchange="riskLoad(event)">
-        <img id="risk-img" style="display:none;width:100%;height:100%;object-fit:contain;border-radius:10px;transform-origin:center center;will-change:transform">
+        <img id="risk-img" style="display:none;width:100%;height:100%;object-fit:contain;border-radius:10px">
         <div id="risk-placeholder" style="text-align:center;pointer-events:none;padding:40px">
           <div style="width:72px;height:72px;border-radius:50%;background:rgba(249,115,22,.1);border:2px solid rgba(249,115,22,.25);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 18px">🗺</div>
           <p style="color:var(--t1);font-size:15px;font-weight:700;margin:0 0 8px;letter-spacing:-.01em">Importer une carte — <span id="risk-ph-name" style="color:#f97316">Orages</span></p>
@@ -471,16 +413,10 @@ body.role-visitor .lock-hint{display:block}
         <button onclick="document.getElementById('risk-file-inp').click()" style="background:rgba(15,17,23,.88);border:1px solid var(--b2);border-radius:7px;color:var(--t2);padding:5px 11px;font-size:12px;cursor:pointer;backdrop-filter:blur(8px)">↺ Changer</button>
         <button onclick="riskClear()" style="background:rgba(15,17,23,.88);border:1px solid rgba(239,68,68,.4);border-radius:7px;color:#ef4444;padding:5px 11px;font-size:12px;cursor:pointer;backdrop-filter:blur(8px)">✕ Supprimer</button>
       </div>
-      <div class="zoom-ctrl" id="zoom-ctrl-risk" style="display:none">
-        <button onclick="riskZoomStep(1)" aria-label="Zoomer">+</button>
-        <button onclick="riskZoomStep(-1)" aria-label="Dézoomer">−</button>
-        <button class="zc-reset" onclick="riskZoomReset()" aria-label="Réinitialiser le zoom">⟲</button>
-      </div>
       <!-- Pastille phénomène affichée sur la carte -->
       <div id="risk-img-badge" style="display:none;position:absolute;bottom:14px;left:14px;background:rgba(15,17,23,.92);border:1px solid rgba(249,115,22,.3);border-radius:8px;padding:7px 12px;backdrop-filter:blur(8px);pointer-events:none">
         <p id="risk-badge-label" style="font-size:11px;font-weight:700;color:#f97316;margin:0"></p>
       </div>
-      <div class="zoom-hint" id="risk-zoom-hint" style="display:none">🖱 Molette pour zoomer · glisser pour déplacer</div>
     </div>
 
     <!-- Sidebar légende -->
@@ -509,9 +445,9 @@ body.role-visitor .lock-hint{display:block}
     <div style="display:flex;gap:12px;align-items:flex-start">
       <!-- Carte Leaflet -->
       <div style="flex:1;min-width:0;position:relative">
-        <div id="radar-map" style="height:440px;border-radius:12px;overflow:hidden;border:1px solid rgba(34,211,238,.2)"></div>
+        <div id="radar-map" style="height:580px;border-radius:12px;overflow:hidden;border:1px solid rgba(34,211,238,.2)"></div>
         <!-- Contrôles signalement (visibles seulement en mode reports) -->
-        <div id="radar-report-tools" style="display:none;position:absolute;top:10px;left:10px;z-index:500;flex-direction:column;gap:3px;background:rgba(15,17,23,.88);border:1px solid var(--b2);border-radius:9px;padding:5px;backdrop-filter:blur(8px);box-shadow:var(--sh-sm)">
+        <div id="radar-report-tools" style="display:none;position:absolute;top:10px;left:10px;z-index:500;display:none;gap:6px;flex-wrap:wrap">
           <button class="radar-rep-btn on" data-rt="tornade" onclick="setReportType('tornade')">🌪 Tornade</button>
           <button class="radar-rep-btn" data-rt="grele"   onclick="setReportType('grele')">🌨 Grêle</button>
           <button class="radar-rep-btn" data-rt="pluie"   onclick="setReportType('pluie')">🌧 Forte pluie</button>
@@ -808,29 +744,15 @@ const REGIONS_OLD_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Fea
    résultat ci-dessous (ADMIN.hash, ou un nouvel objet dans EDITORS). */
 
 /* ══════════════════════════════════════════════════════════════════════
-   AUTHENTIFICATION — CONFIGURATION (à remplir par l'admin)
+   AUTHENTIFICATION — accès admin unique
    ─────────────────────────────────────────────────────────────────────
-   1. Crée un compte gratuit sur https://www.emailjs.com
-   2. Crée un "Email Service" connecté à ta boîte Gmail / autre.
-   3. Crée deux "Email Templates" :
-      - template_login   : variables {{user}}, {{time}}, {{status}}
-      - template_request : variables {{name}}, {{email}}, {{msg}}
-   4. Remplis les 3 valeurs ci-dessous.
-   5. Ajoute les comptes autorisés dans EDITORS (hash SHA-256 du mdp).
+   Un seul compte (toi). Pour changer le mot de passe : ouvre la console
+   du navigateur sur cette page, tape  await sha256("nouveau-mdp")  et
+   colle le résultat dans ADMIN.hash ci-dessous.
    ══════════════════════════════════════════════════════════════════════ */
-const EJS_PUBLIC_KEY   = '-XZdr0BU0Bw1vtS71';
-const EJS_SERVICE_ID   = 'service_5y7fzdj';
-const EJS_TPL_LOGIN    = 'template_zlgkreo';  // template connexion
-const EJS_TPL_REQUEST  = 'template_request';  // template demande d'accès (à créer si besoin)
-
 const ADMIN = { user: 'admin', hash: 'fe3fbef0c1529bebc9ff874b02b697707a71f29761b5efafb35c99e3c01c20b9' };
-const EDITORS = [];  // { user:'pseudo', hash:'sha256-du-mdp' }  ← ajoute ici les comptes validés
 
-let currentRole = 'visitor';
-
-(async () => {
-  emailjs.init({ publicKey: EJS_PUBLIC_KEY });
-})();
+let currentRole = 'visitor'; // 'visitor' | 'admin'
 
 async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -852,12 +774,6 @@ function showToast(msg, ms) {
 function authToggle() {
   const p = document.getElementById('auth-panel');
   p.style.display = p.style.display === 'none' ? 'block' : 'none';
-}
-function authTab(t) {
-  ['login','request'].forEach(k => {
-    document.getElementById('tab-'+k).classList.toggle('on', k===t);
-    document.getElementById('auth-view-'+k).style.display = k===t ? 'block' : 'none';
-  });
 }
 document.addEventListener('click', e => {
   const p = document.getElementById('auth-panel');
@@ -932,23 +848,17 @@ async function doLogin() {
   const u = document.getElementById('auth-user').value.trim();
   const h = await sha256(document.getElementById('auth-pass').value);
   const err = document.getElementById('auth-err');
-  const ok = u === ADMIN.user && h === ADMIN.hash ? 'admin'
-           : EDITORS.find(e => e.user===u && e.hash===h) ? 'editor' : null;
-  // Email de notification (tentative de connexion)
-  emailjs.send(EJS_SERVICE_ID, EJS_TPL_LOGIN, {
-    user: u, time: new Date().toLocaleString('fr-FR'), status: ok ? '✅ Succès' : '❌ Échec'
-  }).catch(() => {});
+  const ok = (u === ADMIN.user && h === ADMIN.hash) ? 'admin' : null;
   if (ok) {
     setLoginLock({ fails: 0, until: 0 });
     currentRole = ok;
     document.body.className = 'role-' + ok;
     document.getElementById('auth-panel').style.display = 'none';
-    document.getElementById('auth-icon').textContent = ok==='admin' ? '★' : '✓';
-    document.getElementById('auth-label').textContent = u + ' · Déco';
+    document.getElementById('auth-icon').textContent = '★';
+    document.getElementById('auth-label').textContent = 'Admin · Déco';
     document.getElementById('auth-btn').onclick = doLogout;
-    applyRoleLocks();
     armInactivityTimer();
-    showToast(`Connecté${ok==='admin'?' en administrateur':''} — session active`, 2600);
+    showToast('Connecté en administrateur — session active', 2600);
   } else {
     const fails = lockState.fails + 1;
     const dur = lockDurationFor(fails);
@@ -969,7 +879,6 @@ function doLogout(silent) {
   document.getElementById('auth-user').value = '';
   document.getElementById('auth-pass').value = '';
   document.getElementById('auth-err').style.display = 'none';
-  applyRoleLocks();
   clearInactivityTimer();
   if (!silent) showToast('Déconnecté', 2200);
 }
@@ -991,44 +900,6 @@ function clearInactivityTimer() { clearTimeout(inactivityTimer); }
 ['mousemove','keydown','click','touchstart'].forEach(evt =>
   document.addEventListener(evt, () => { if (currentRole !== 'visitor') armInactivityTimer(); }, { passive: true })
 );
-
-/* ── Demande d'accès ── */
-let reqFormLoadedAt = Date.now();
-async function sendRequest() {
-  const name = document.getElementById('req-name').value.trim();
-  const email = document.getElementById('req-email').value.trim();
-  const msg = document.getElementById('req-msg').value.trim();
-  const honeypot = document.getElementById('req-hp').value.trim();
-  const okEl = document.getElementById('req-ok'), errEl = document.getElementById('req-err');
-  // Piège à robots : un champ rempli (invisible pour un humain) = probable bot →
-  // on affiche un faux succès sans jamais appeler EmailJS, pour ne pas gâcher le quota.
-  if (honeypot) {
-    okEl.textContent = '✓ Demande envoyée ! Tu seras contacté(e) dès validation.';
-    okEl.style.display = 'block'; errEl.style.display = 'none';
-    return;
-  }
-  if (!name || !email) { errEl.textContent = 'Remplis au minimum ton nom et ton email.'; errEl.style.display='block'; return; }
-  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  if (!emailOk) { errEl.textContent = 'Adresse email invalide.'; errEl.style.display='block'; return; }
-  try {
-    await emailjs.send(EJS_SERVICE_ID, EJS_TPL_REQUEST, { name, email, msg });
-    okEl.textContent = '✓ Demande envoyée ! Tu seras contacté(e) dès validation.';
-    okEl.style.display = 'block'; errEl.style.display = 'none';
-  } catch {
-    errEl.textContent = "Erreur d'envoi. Vérifie ta connexion ou contacte l'administrateur."; errEl.style.display='block';
-  }
-}
-
-/* ── Verrous rouge / violet réservés à l'admin ── */
-function applyRoleLocks() {
-  const lock = currentRole === 'editor';
-  ['rouge','violet'].forEach(k => {
-    document.querySelectorAll(`[data-lk="${k}"],[data-dvk="${k}"],[data-plk="${k}"]`).forEach(b => {
-      b.disabled = lock;
-      b.title = lock ? "Réservé à l'administrateur" : '';
-    });
-  });
-}
 
 /* ── Garde sur les cartes ── */
 function requireAuth() {
@@ -1080,7 +951,6 @@ let dvPicto      = null;
 let zoomedDept   = null;
 let activeDay    = 'today';
 let svgEl=null, svgSel=null, geoPath=null, layerSel=null;
-let mapViewport=null, mapZoom=null;
 let features=[], pathMap={}, hatchIds={};
 
 /* ── ÉTAT CARTE PROBABLE ── */
@@ -1088,60 +958,33 @@ let probData     = {};          // { deptName: { level, picto } }
 let probActiveLevel = 'orange'; // niveau sélectionné dans sidebar probable
 let probActivePicto = null;     // picto sélectionné dans la sidebar probable
 let svgProbEl=null, svgProbSel=null, layerProbSel=null;
-let probZoom=null;
 let zoomedDeptProb = null;
 /* ── ÉTAT CARTE PROCHAIN JOUR (anciennes régions) ── */
 let nextData         = {};      // { regionName: { band, phenom } }  band = clé RISK_BANDS, phenom = clé PICTO_FALLBACK
 let nextActiveBand   = 'r3';
 let nextActivePhenom = 'orage';
 let svgNextEl=null, svgNextSel=null, layerNextSel=null;
-let nextZoom=null;
 let zoomedRegionNext = null;
 let regionFeatures   = [];
 let activeView   = 'vigilance'; // 'vigilance' | 'nextday' | 'probable'
 
 /* ── SWITCH VUE ── */
-const VIEW_ELS = { vigilance:'view-vigilance', nextday:'view-nextday', probable:'view-probable', risk:'view-risk', radar:'view-radar' };
 function switchView(view) {
-  const prevView = activeView;
-  const prevEl = prevView ? document.getElementById(VIEW_ELS[prevView]) : null;
-  const nextEl = document.getElementById(VIEW_ELS[view]);
-  if (prevView === view && nextEl.style.display !== 'none') return;
   activeView = view;
-
-  document.getElementById('day-tabs-wrap').style.display = (view === 'vigilance' || view === 'risk') ? 'flex' : 'none';
+  document.getElementById('view-vigilance').style.display  = view === 'vigilance' ? 'flex' : 'none';
+  document.getElementById('view-nextday').style.display    = view === 'nextday'   ? 'flex' : 'none';
+  document.getElementById('view-probable').style.display   = view === 'probable'  ? 'flex' : 'none';
+  document.getElementById('view-risk').style.display       = view === 'risk'      ? 'flex' : 'none';
+  document.getElementById('view-radar').style.display      = view === 'radar'     ? 'flex' : 'none';
+  document.getElementById('day-tabs-wrap').style.display   = (view === 'vigilance' || view === 'risk') ? 'flex' : 'none';
   ['vigil','next','prob','risk','radar'].forEach(k =>
     document.getElementById('vtab-'+k)?.classList.toggle('on', k === view.replace('nextday','next').replace('probable','prob').replace('vigilance','vigil'))
   );
-
-  const revealNext = () => {
-    nextEl.style.display = 'flex';
-    nextEl.classList.add('view-enter');
-    // Double rAF pour laisser le navigateur peindre l'état initial avant de déclencher la transition CSS
-    requestAnimationFrame(() => requestAnimationFrame(() => nextEl.classList.remove('view-enter')));
-    if (view === 'nextday'  && !svgNextEl) initNextMap();
-    if (view === 'probable' && !svgProbEl) initProbMap();
-    if (view === 'risk') buildRiskSidebar();
-    if (view === 'radar') {
-      initRadarMap();
-      radarTab(radarMode);
-      // Le conteneur peut avoir changé de taille pendant qu'il était caché (fenêtre
-      // redimensionnée, sidebar repliée…) : on force Leaflet à se recaler.
-      setTimeout(() => radarMap && radarMap.invalidateSize(), 200);
-    }
-    if (view === 'probable') redrawProbMap();
-  };
-
-  if (prevEl && prevEl !== nextEl && prevEl.style.display !== 'none') {
-    prevEl.classList.add('view-leave');
-    setTimeout(() => {
-      prevEl.style.display = 'none';
-      prevEl.classList.remove('view-leave');
-      revealNext();
-    }, 170);
-  } else {
-    revealNext();
-  }
+  if (view === 'nextday'  && !svgNextEl) initNextMap();
+  if (view === 'probable' && !svgProbEl) initProbMap();
+  if (view === 'risk') buildRiskSidebar();
+  if (view === 'radar') { initRadarMap(); radarTab(radarMode); }
+  if (view === 'probable') redrawProbMap();
 }
 const gaugeData = {
   national: {
@@ -1225,7 +1068,6 @@ function initProbMap() {
     
   svgProbEl = svg.node(); 
   svgProbSel = svg;
-  svg.classed('map-zoomable', true);
   svg.append('rect').attr('width',W).attr('height',H).attr('fill','#131823');
   layerProbSel = svg.append('g').attr('class','dept-layer-prob');
   layerProbSel.selectAll('path.dept-prob').data(features).join('path')
@@ -1274,13 +1116,6 @@ function initProbMap() {
       zoomToProb(d, nm);
     });
   svg.on('dblclick', e => { if (e.target===svgProbEl) unzoomProb(); });
-
-  // Zoom libre à la molette / au clic-glissé — le double-clic garde son comportement dédié.
-  probZoom = d3.zoom()
-    .scaleExtent([1, 9])
-    .translateExtent([[0,0],[W,H]])
-    .on('zoom', event => layerProbSel.attr('transform', event.transform));
-  svg.call(probZoom).on('dblclick.zoom', null);
   
   // Mettre à jour la légende
   updateLegProb();
@@ -1332,7 +1167,6 @@ function redrawProbMap() {
 }
 
 function zoomToProb(feat, name) {
-  if (!probZoom) return;
   const svgNode = svgProbEl;
   const viewBox = svgNode.getAttribute('viewBox').split(' ').map(Number);
   const W = viewBox[2] || 600, H = viewBox[3] || 624;
@@ -1341,21 +1175,16 @@ function zoomToProb(feat, name) {
   layerProbSel.selectAll('path.dept-prob').filter(d=>(d.properties.name||d.properties.NAME)===name)
     .raise().attr('stroke','#fff').attr('stroke-width',2.5);
   const b = geoPath.bounds(feat);
-  const sc = Math.min(0.82*W/(b[1][0]-b[0][0]), 0.82*H/(b[1][1]-b[0][1]), 9);
+  const sc = Math.min(0.82*W/(b[1][0]-b[0][0]), 0.82*H/(b[1][1]-b[0][1]), 6);
   const cx=(b[0][0]+b[1][0])/2, cy=(b[0][1]+b[1][1])/2;
-  const t = d3.zoomIdentity.translate(W/2-sc*cx, H/2-sc*cy).scale(sc);
-  svgProbSel.transition().duration(480).ease(d3.easeCubicInOut).call(probZoom.transform, t);
+  layerProbSel.transition().duration(480).ease(d3.easeCubicInOut)
+    .attr('transform',`translate(${W/2-sc*cx},${H/2-sc*cy}) scale(${sc})`);
 }
 function unzoomProb() {
-  if (!probZoom) return;
   zoomedDeptProb = null;
   layerProbSel.selectAll('path.dept-prob').attr('stroke','rgba(255,255,255,.14)').attr('stroke-width',0.6);
-  svgProbSel.transition().duration(450).ease(d3.easeCubicInOut).call(probZoom.transform, d3.zoomIdentity);
+  layerProbSel.transition().duration(450).ease(d3.easeCubicInOut).attr('transform','');
   redrawProbMap();
-}
-function zoomStepProb(dir) {
-  if (!svgProbSel || !probZoom) return;
-  svgProbSel.transition().duration(220).call(probZoom.scaleBy, dir > 0 ? 1.5 : 1/1.5);
 }
 
 function resetProb() { probData = {}; redrawProbMap(); }
@@ -1467,7 +1296,6 @@ function initNextMap() {
     .attr('preserveAspectRatio', 'xMidYMid meet')
     .style('display', 'block').style('width', '100%').style('height', '100%');
   svgNextEl = svg.node(); svgNextSel = svg;
-  svg.classed('map-zoomable', true);
   svg.append('rect').attr('width', W).attr('height', H).attr('fill', '#131823');
   // Lueur "néon" + légère élévation, une fois par bande de risque (réutilisée, donc léger).
   const defsNext = svg.append('defs');
@@ -1525,14 +1353,6 @@ function initNextMap() {
       zoomToNext(d, nm);
     });
   svg.on('dblclick', e => { if (e.target === svgNextEl) unzoomNext(); });
-
-  // Zoom libre à la molette / au clic-glissé — le double-clic garde son comportement dédié.
-  nextZoom = d3.zoom()
-    .scaleExtent([1, 9])
-    .translateExtent([[0,0],[W,H]])
-    .on('zoom', event => layerNextSel.attr('transform', event.transform));
-  svg.call(nextZoom).on('dblclick.zoom', null);
-
   updateLegNext();
 }
 
@@ -1542,11 +1362,11 @@ function redrawNextPath(sel, nm) {
   if (entries && entries.length) {
     // Couleur de base = 1er élément (recouverte par le partage visuel si 2 éléments).
     sel.attr('fill', RISK_MAP[entries[0].band].color)
-       .attr('stroke', isZoomed ? '#fff' : '#000')
+       .attr('stroke', isZoomed ? '#fff' : 'rgba(0,0,0,.3)')
        .attr('stroke-width', isZoomed ? 2.5 : 0.9);
   } else {
     sel.attr('fill', DFILL)
-       .attr('stroke', isZoomed ? '#fff' : '#000')
+       .attr('stroke', isZoomed ? '#fff' : 'rgba(255,255,255,.22)')
        .attr('stroke-width', isZoomed ? 2.5 : 0.9);
   }
 }
@@ -1606,11 +1426,11 @@ function redrawNextMap() {
 
     layerNextSel.append('path').attr('class', 'region-split')
       .attr('d', geoPath(feat)).attr('fill', RISK_MAP[entries[0].band].color)
-      .attr('stroke', '#000').attr('stroke-width', 0.9)
+      .attr('stroke', 'rgba(255,255,255,.5)').attr('stroke-width', 1)
       .attr('clip-path', `url(#${cid}-a)`).attr('filter', `url(#nglow-${entries[0].band})`).attr('pointer-events', 'none');
     layerNextSel.append('path').attr('class', 'region-split')
       .attr('d', geoPath(feat)).attr('fill', RISK_MAP[entries[1].band].color)
-      .attr('stroke', '#000').attr('stroke-width', 0.9)
+      .attr('stroke', 'rgba(255,255,255,.5)').attr('stroke-width', 1)
       .attr('clip-path', `url(#${cid}-b)`).attr('filter', `url(#nglow-${entries[1].band})`).attr('pointer-events', 'none');
 
     const halfMin = sideBySide ? Math.min(w/2, h) : Math.min(w, h/2);
@@ -1622,28 +1442,22 @@ function redrawNextMap() {
 }
 
 function zoomToNext(feat, name) {
-  if (!nextZoom) return;
   const W = 600, H = 624;
   zoomedRegionNext = name;
   layerNextSel.selectAll('path.region-next').attr('stroke', '#000').attr('stroke-width', 0.9);
   layerNextSel.selectAll('path.region-next').filter(d => d.properties.nom === name)
     .raise().attr('stroke', '#fff').attr('stroke-width', 2.5);
   const b = geoPath.bounds(feat);
-  const sc = Math.min(0.82*W/(b[1][0]-b[0][0]), 0.82*H/(b[1][1]-b[0][1]), 9);
+  const sc = Math.min(0.82*W/(b[1][0]-b[0][0]), 0.82*H/(b[1][1]-b[0][1]), 6);
   const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
-  const t = d3.zoomIdentity.translate(W/2-sc*cx, H/2-sc*cy).scale(sc);
-  svgNextSel.transition().duration(480).ease(d3.easeCubicInOut).call(nextZoom.transform, t);
+  layerNextSel.transition().duration(480).ease(d3.easeCubicInOut)
+    .attr('transform', `translate(${W/2-sc*cx},${H/2-sc*cy}) scale(${sc})`);
 }
 function unzoomNext() {
-  if (!nextZoom) return;
   zoomedRegionNext = null;
   layerNextSel.selectAll('path.region-next').attr('stroke', '#000').attr('stroke-width', 0.9);
-  svgNextSel.transition().duration(450).ease(d3.easeCubicInOut).call(nextZoom.transform, d3.zoomIdentity);
+  layerNextSel.transition().duration(450).ease(d3.easeCubicInOut).attr('transform', '');
   redrawNextMap();
-}
-function zoomStepNext(dir) {
-  if (!svgNextSel || !nextZoom) return;
-  svgNextSel.transition().duration(220).call(nextZoom.scaleBy, dir > 0 ? 1.5 : 1/1.5);
 }
 function resetNext() { nextData = {}; redrawNextMap(); }
 
@@ -1795,56 +1609,6 @@ function _showRiskImg(url) {
   document.getElementById('risk-img-badge').style.display = 'block';
   document.getElementById('risk-badge-label').textContent = RISK_SCALES[activeRiskPhenom].label;
   riskImgLoaded = true;
-  document.getElementById('zoom-ctrl-risk').style.display = 'flex';
-  document.getElementById('risk-zoom-hint').style.display = 'block';
-  riskZoomReset();
-  riskBindZoomListeners();
-}
-/* ── Zoom / pan de l'image importée (vue Risque) — molette pour zoomer,
-   clic-glisser pour déplacer une fois zoomée. ── */
-let riskScale = 1, riskTx = 0, riskTy = 0, riskPanning = false, riskPanStart = null, riskListenersBound = false;
-function riskApplyTransform() {
-  const img = document.getElementById('risk-img');
-  if (img) img.style.transform = `translate(${riskTx}px,${riskTy}px) scale(${riskScale})`;
-}
-function riskZoomStep(dir) {
-  riskScale = Math.min(6, Math.max(1, +(riskScale + dir*0.5).toFixed(2)));
-  if (riskScale === 1) { riskTx = 0; riskTy = 0; }
-  riskApplyTransform();
-}
-function riskZoomReset() {
-  riskScale = 1; riskTx = 0; riskTy = 0;
-  riskApplyTransform();
-}
-function riskBindZoomListeners() {
-  if (riskListenersBound) return;
-  riskListenersBound = true;
-  const wrap = document.getElementById('risk-img-wrap');
-  const img = document.getElementById('risk-img');
-  wrap.addEventListener('wheel', e => {
-    if (!riskImgLoaded) return;
-    e.preventDefault();
-    const dir = e.deltaY < 0 ? 1 : -1;
-    riskScale = Math.min(6, Math.max(1, +(riskScale + dir*0.35).toFixed(2)));
-    if (riskScale === 1) { riskTx = 0; riskTy = 0; }
-    riskApplyTransform();
-  }, { passive:false });
-  wrap.addEventListener('mousedown', e => {
-    if (!riskImgLoaded || riskScale <= 1) return;
-    riskPanning = true;
-    riskPanStart = { x: e.clientX - riskTx, y: e.clientY - riskTy };
-    img.style.cursor = 'grabbing';
-  });
-  window.addEventListener('mousemove', e => {
-    if (!riskPanning) return;
-    riskTx = e.clientX - riskPanStart.x;
-    riskTy = e.clientY - riskPanStart.y;
-    riskApplyTransform();
-  });
-  window.addEventListener('mouseup', () => {
-    riskPanning = false;
-    if (img) img.style.cursor = riskScale > 1 ? 'grab' : 'default';
-  });
 }
 function _showRiskPlaceholder() {
   document.getElementById('risk-img').src = '';
@@ -1863,8 +1627,6 @@ function _showRiskPlaceholder() {
   document.getElementById('risk-img-toolbar').style.display = 'none';
   document.getElementById('risk-img-badge').style.display = 'none';
   document.getElementById('risk-file-inp').value = '';
-  document.getElementById('zoom-ctrl-risk').style.display = 'none';
-  document.getElementById('risk-zoom-hint').style.display = 'none';
   riskImgLoaded = false;
 }
 /* Affiche l'image stockée du phénomène actif, ou le placeholder si aucune n'a été importée. */
@@ -2177,7 +1939,7 @@ function updateLeg() {
 
 /* ── ZOOM ── */
 function zoomTo(feat, name) {
-  if (!svgSel || !geoPath || !mapZoom) return;
+  if (!svgSel || !geoPath) return;
   const [,, W, H] = svgEl.getAttribute('viewBox').split(' ').map(Number);
   zoomedDept = name;
   layerSel.selectAll('path.dept').attr('stroke', DSTROKE).attr('stroke-width', 0.6);
@@ -2186,22 +1948,17 @@ function zoomTo(feat, name) {
   const b = geoPath.bounds(feat);
   const dx = b[1][0]-b[0][0], dy = b[1][1]-b[0][1];
   const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
-  const sc = Math.min(0.82*W/dx, 0.82*H/dy, 9);
-  const t = d3.zoomIdentity.translate(W/2-sc*cx, H/2-sc*cy).scale(sc);
-  svgSel.transition().duration(480).ease(d3.easeCubicInOut).call(mapZoom.transform, t);
+  const sc = Math.min(0.82*W/dx, 0.82*H/dy, 6);
+  layerSel.transition().duration(480).ease(d3.easeCubicInOut)
+    .attr('transform', `translate(${W/2-sc*cx},${H/2-sc*cy}) scale(${sc})`);
   renderGauges(name);
 }
 function unzoom() {
-  if (!svgSel || !mapZoom) return;
+  if (!svgSel) return;
   zoomedDept = null;
   layerSel.selectAll('path.dept').attr('stroke', DSTROKE).attr('stroke-width', 0.6);
-  svgSel.transition().duration(450).ease(d3.easeCubicInOut).call(mapZoom.transform, d3.zoomIdentity);
+  layerSel.transition().duration(450).ease(d3.easeCubicInOut).attr('transform','');
   renderGauges(null);
-}
-/* Boutons +/− du contrôle de zoom flottant */
-function zoomStep(dir) {
-  if (!svgSel || !mapZoom) return;
-  svgSel.transition().duration(220).call(mapZoom.scaleBy, dir > 0 ? 1.5 : 1/1.5);
 }
 
 /* ── DOWNLOAD ── */
@@ -2460,8 +2217,7 @@ function setRadarTs() {
 
 function initRadarMap() {
   if (radarMap) return;
-  radarMap = L.map('radar-map', { center:[46.5,3], zoom:5, zoomControl:false, attributionControl:false });
-  L.control.zoom({ position:'topright' }).addTo(radarMap); // à droite pour ne pas gêner les boutons de signalement (en haut à gauche)
+  radarMap = L.map('radar-map', { center:[46.5,3], zoom:5, zoomControl:true, attributionControl:false });
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     { subdomains:'abcd', maxZoom:19 }).addTo(radarMap);
   // Stockage signalements
@@ -2471,11 +2227,6 @@ function initRadarMap() {
     addRadarReport(e.latlng.lat, e.latlng.lng, radarReportType);
   });
   loadRadarReports(); // Chargement des signalements depuis localStorage
-  // Fix classique Leaflet : si la carte est créée pendant que son conteneur est encore
-  // caché (display:none) ou en cours de transition, elle calcule une taille de 0px et
-  // n'affiche jamais rien tant qu'on ne lui redit pas de recalculer sa taille.
-  requestAnimationFrame(() => radarMap && radarMap.invalidateSize());
-  setTimeout(() => radarMap && radarMap.invalidateSize(), 260);
 }
 
 /* ── Sous-onglets ── */
@@ -2549,23 +2300,8 @@ function loadRain() {
   clearNonLightningLayers();
   if (radarWs) { try{radarWs.close();}catch(e){} radarWs=null; }
   setRadarStatus('🌧 Chargement du radar pluie…');
-  // La légende est affichée tout de suite, indépendamment du réseau : certains
-  // bloqueurs de trackers/pub (Firefox, uBlock…) empêchent l'appel à l'API RainViewer
-  // (erreur "NS_ERROR_CONTENT_BLOCKED" côté navigateur, hors de notre contrôle) — dans
-  // ce cas on doit quand même montrer la légende, avec un message d'état clair.
-  buildSvgLegend(document.getElementById('radar-legend-wrap'),{
-    title:'Pluie',subtitle:'Intensité radar',accentColor:'#38bdf8', emoji:'🌧',
-    bands:[
-      {color:'#d4f0fd',label:'Légère'},
-      {color:'#7dd3fc',label:'Modérée'},
-      {color:'#0ea5e9',label:'Forte'},
-      {color:'#0369a1',label:'Très forte'},
-      {color:'#7c3aed',label:'Extrême'}
-    ]
-  });
   fetch('https://api.rainviewer.com/public/weather-maps.json')
-    .then(r => { if (!r.ok) throw new Error('http-'+r.status); return r.json(); })
-    .then(d=>{
+    .then(r=>r.json()).then(d=>{
       const frames = d.radar.past;
       const frame  = frames[frames.length-1];
       if (radarRainLayer) { radarRainLayer.remove(); radarRainLayer=null; }
@@ -2582,8 +2318,17 @@ function loadRain() {
         radarRainLayer.setUrl(`https://tilecache.rainviewer.com${frames[fi].path}/256/{z}/{x}/{y}/2/1_1.png`);
       },500);
       setRadarStatus('🌧 Radar pluie — RainViewer<br><small>Animation des 6 dernières images</small>');
-    })
-    .catch(()=> setRadarStatus('⚠️ Radar pluie inaccessible.<br><small>Un bloqueur de pub/trackers (ex. protection renforcée Firefox) empêche probablement l\'appel à l\'API RainViewer sur ce site — essaie de le désactiver pour ce site, ou une autre extension de blocage.</small>'));
+      buildSvgLegend(document.getElementById('radar-legend-wrap'),{
+        title:'Pluie',subtitle:'Intensité radar',accentColor:'#38bdf8', emoji:'🌧',
+        bands:[
+          {color:'#d4f0fd',label:'Légère'},
+          {color:'#7dd3fc',label:'Modérée'},
+          {color:'#0ea5e9',label:'Forte'},
+          {color:'#0369a1',label:'Très forte'},
+          {color:'#7c3aed',label:'Extrême'}
+        ]
+      });
+    }).catch(()=>setRadarStatus('⚠️ Impossible de charger le radar pluie.'));
 }
 
 /* ── RAFALES (Open-Meteo batch) ── */
@@ -2689,7 +2434,6 @@ buildProbSidebar();
     .style('width','100%')
     .style('height','auto');
   svgEl = svg.node(); svgSel = svg;
-  svg.classed('map-zoomable', true);
   svg.append('rect').attr('width',W).attr('height',H).attr('fill','#131823');
   const defs0 = svg.append('defs'); // réservé pour patterns hachures
   // Ombre portée unique réutilisée par tous les badges "double vigilance" (plus léger qu'une
@@ -2697,16 +2441,12 @@ buildProbSidebar();
   defs0.append('filter').attr('id','dvShadow').attr('x','-60%').attr('y','-60%').attr('width','220%').attr('height','220%')
     .append('feDropShadow').attr('dx',0).attr('dy',0.6).attr('stdDeviation',1).attr('flood-color','#000').attr('flood-opacity',0.5);
 
-  // Groupe racine du zoom : regroupe voisins + départements + pictos voisins pour qu'ils
-  // se déplacent/zooment tous ensemble, à la molette, au clic-glissé ou par double-clic.
-  const zg = svg.append('g').attr('class','zoom-root');
-
   /* ── Calque voisins interactif (BE/CH/LU/BW) ──
      Rendu avant le calque depts → frontières FR au-dessus.
      Cliquable : même sélecteur niveau + picto que les départements.
      Données stockées dans neighborData[day] avec clé "nb:<name>" pour éviter
      tout conflit avec les départements français de même nom (Jura, Luxembourg…). */
-  const nbLayer = zg.append('g').attr('class','neighbor-layer');
+  const nbLayer = svg.append('g').attr('class','neighbor-layer');
   nbLayer.selectAll('path.neighbor')
     .data(NEIGHBORS_GEOJSON.features)
     .join('path')
@@ -2749,12 +2489,18 @@ buildProbSidebar();
       .on('dblclick', function(event, d) {
         event.stopPropagation();
         if (!svgSel || !geoPath) return;
-        flyToFeature(d);
+        const [,, W, H] = svgEl.getAttribute('viewBox').split(' ').map(Number);
+        const b = geoPath.bounds(d);
+        const dx = b[1][0]-b[0][0], dy = b[1][1]-b[0][1];
+        const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
+        const sc = Math.min(0.82*W/dx, 0.82*H/dy, 6);
+        layerSel.transition().duration(480).ease(d3.easeCubicInOut)
+          .attr('transform', `translate(${W/2-sc*cx},${H/2-sc*cy}) scale(${sc})`);
       });
 
-  layerSel = zg.append('g').attr('class','dept-layer');
+  layerSel = svg.append('g').attr('class','dept-layer');
   // calque pictos voisins (au-dessus du calque depts)
-  zg.append('g').attr('class','neighbor-picto-layer');
+  svg.append('g').attr('class','neighbor-picto-layer');
 
   layerSel.selectAll('path.dept').data(features).join('path')
     .attr('class','dept')
@@ -2804,25 +2550,6 @@ buildProbSidebar();
     });
 
   svg.on('dblclick', function(event) { if (event.target===svgEl) unzoom(); });
-
-  // Zoom libre à la molette / au clic-glissé sur l'ensemble de la carte (voisins compris).
-  // Le double-clic garde son propre comportement (zoom direct sur une zone) donc on
-  // désactive le zoom-au-double-clic natif de d3-zoom pour ne pas les faire concurrence.
-  mapZoom = d3.zoom()
-    .scaleExtent([1, 9])
-    .translateExtent([[0,0],[W,H]])
-    .on('zoom', event => zg.attr('transform', event.transform));
-  svg.call(mapZoom).on('dblclick.zoom', null);
-
-  function flyToFeature(feat) {
-    const [,, VW, VH] = svgEl.getAttribute('viewBox').split(' ').map(Number);
-    const b = geoPath.bounds(feat);
-    const dx = b[1][0]-b[0][0], dy = b[1][1]-b[0][1];
-    const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
-    const sc = Math.min(0.82*VW/dx, 0.82*VH/dy, 9);
-    const t = d3.zoomIdentity.translate(VW/2-sc*cx, VH/2-sc*cy).scale(sc);
-    svgSel.transition().duration(480).ease(d3.easeCubicInOut).call(mapZoom.transform, t);
-  }
 
   renderGauges(null);
   // Les cartes "prochain jour" et "probable" sont init au 1er switch de vue
