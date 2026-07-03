@@ -1,4 +1,3 @@
-#InfosMeteoClimat
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -115,6 +114,12 @@ body{
 body.role-visitor .edit-zone{display:none!important}
 .lock-hint{display:none!important}
 .dl-zone{display:flex;flex-direction:column;gap:8px}
+.publish-btn{background:rgba(255,122,61,.12);border-color:var(--sig);color:#ffab7a;font-weight:600}
+.publish-btn:hover{background:rgba(255,122,61,.2)}
+.publish-btn:disabled{opacity:.5;cursor:wait}
+.publish-status{font-family:var(--font-m);font-size:9px;text-align:center;color:var(--t3);min-height:12px;margin:-3px 0 1px}
+.publish-status.ok{color:#4ade80}
+.publish-status.err{color:#ff6b6b}
 .lvl-btn:disabled{opacity:.3;cursor:not-allowed}
 #map-prob svg{display:block;width:100%;height:100%}
 .prob-legend-item{display:flex;align-items:center;gap:7px;padding:3px 0}
@@ -295,6 +300,8 @@ body.role-visitor .edit-zone{display:none!important}
         <button class="rst-btn" onclick="resetAll()">↺ Réinitialiser</button>
       </div>
       <div class="edit-zone dl-zone">
+        <button class="act-btn publish-btn" id="publish-btn" onclick="publishState()">⇪ Publier les prévisions</button>
+        <p class="publish-status" id="publish-status"></p>
         <button class="act-btn primary" onclick="dlMap()">↓ Télécharger SVG</button>
         <button class="act-btn" onclick="exportPng(svgEl,'vigilance-france.png')">↓ Télécharger PNG</button>
       </div>
@@ -477,6 +484,94 @@ body.role-visitor .edit-zone{display:none!important}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script type="module">
+/* ═══════════════════════════════════════════════════════════════════
+   SYNCHRONISATION FIREBASE — publication publique des prévisions
+   ─────────────────────────────────────────────────────────────────
+   1. Remplace FIREBASE_CONFIG ci-dessous par ta config (console Firebase
+      → Paramètres du projet → Vos applications → config Web).
+   2. Dans Firestore, va dans l'onglet "Règles" et colle :
+
+      rules_version = '2';
+      service cloud.firestore {
+        match /databases/{database}/documents {
+          match /vigilance/state {
+            allow read: if true;
+            allow write: if true; // toi seul connais l'URL admin de ton site,
+          }                       // la modif reste protégée par ton login local
+        }
+      }
+
+   ═══════════════════════════════════════════════════════════════════ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDqwF-gUzQHFQ0eIwFN08AgpvJ2xjo0Ic8",
+  authDomain: "infosmeteoclimat.firebaseapp.com",
+  projectId: "infosmeteoclimat",
+  storageBucket: "infosmeteoclimat.firebasestorage.app",
+  messagingSenderId: "681930892886",
+  appId: "1:681930892886:web:b61406a2d886236cc3fdf7"
+};
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+let fbReady = false;
+let db = null;
+try {
+  if (FIREBASE_CONFIG.apiKey !== "REMPLACE_MOI") {
+    const fbApp = initializeApp(FIREBASE_CONFIG);
+    db = getFirestore(fbApp);
+    fbReady = true;
+  }
+} catch (e) { console.warn('Firebase non initialisé :', e); }
+
+const STATE_DOC = () => doc(db, 'vigilance', 'state');
+
+/* Appelée par le bouton "Publier les prévisions" (admin uniquement) */
+window.publishState = async function() {
+  const btn = document.getElementById('publish-btn');
+  const status = document.getElementById('publish-status');
+  if (!fbReady) {
+    status.textContent = "Firebase non configuré — voir la note dans le code";
+    status.className = 'publish-status err';
+    return;
+  }
+  btn.disabled = true;
+  status.textContent = 'Publication en cours…';
+  status.className = 'publish-status';
+  try {
+    const payload = {
+      deptData: window.deptData, neighborData: window.neighborData,
+      probData: window.probData, nextData: window.nextData,
+      gaugeData: window.gaugeData, riskData: window.riskData,
+      publishedAt: Date.now()
+    };
+    await setDoc(STATE_DOC(), payload);
+    status.textContent = '✓ Publié — visible par tous';
+    status.className = 'publish-status ok';
+    setTimeout(() => { status.textContent = ''; }, 4000);
+  } catch (e) {
+    console.error(e);
+    status.textContent = 'Échec de publication — réessaie';
+    status.className = 'publish-status err';
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+/* Chargée automatiquement par tout visiteur (et par toi) à l'ouverture du site */
+window.loadPublishedState = async function() {
+  if (!fbReady) return null;
+  try {
+    const snap = await getDoc(STATE_DOC());
+    if (!snap.exists()) return null;
+    return snap.data();
+  } catch (e) {
+    console.warn('Chargement Firebase impossible :', e);
+    return null;
+  }
+};
+</script>
 <script>
 /* ── ICÔNES SVG (paths purs, net à toute résolution) ── */
 /* URLs Météo France officielles (PNG haute qualité) */
@@ -1123,7 +1218,8 @@ function initProbMap() {
       zoomToProb(d, nm);
     });
   svg.on('dblclick', e => { if (e.target===svgProbEl) unzoomProb(); });
-  
+
+  redrawProbMap(); // peint l'état chargé (Firebase ou vide)
   // Mettre à jour la légende
   updateLegProb();
 }
@@ -1159,7 +1255,7 @@ function redrawProbMap() {
     const b  = geoPath.bounds(feat);
     const cx = (b[0][0] + b[1][0]) / 2;
     const cy = (b[0][1] + b[1][1]) / 2;
-    const sz = Math.max(12, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.52, 26));
+    const sz = Math.max(9, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.36, 18));
     const url = resolvedUrls[info.picto] || PICTO_FALLBACK[info.picto];
     layerProbSel.append('image')
       .attr('class', 'dept-picto-prob')
@@ -1360,6 +1456,7 @@ function initNextMap() {
       zoomToNext(d, nm);
     });
   svg.on('dblclick', e => { if (e.target === svgNextEl) unzoomNext(); });
+  redrawNextMap(); // peint l'état chargé (Firebase ou vide)
   updateLegNext();
 }
 
@@ -1400,7 +1497,7 @@ function redrawNextMap() {
     const w  = x1 - x0, h = y1 - y0;
 
     if (entries.length === 1) {
-      const sz = Math.max(14, Math.min(Math.min(w, h) * 0.38, 28));
+      const sz = Math.max(10, Math.min(Math.min(w, h) * 0.26, 19));
       placeNextItem(entries[0].phenom, entries[0].band, x0 + w/2, y0 + h/2, sz);
       return;
     }
@@ -1441,7 +1538,7 @@ function redrawNextMap() {
       .attr('clip-path', `url(#${cid}-b)`).attr('filter', `url(#nglow-${entries[1].band})`).attr('pointer-events', 'none');
 
     const halfMin = sideBySide ? Math.min(w/2, h) : Math.min(w, h/2);
-    const sz = Math.max(10, Math.min(halfMin * 0.42, 22));
+    const sz = Math.max(8, Math.min(halfMin * 0.29, 15));
     placeNextItem(entries[0].phenom, entries[0].band, centA.x, centA.y, sz);
     placeNextItem(entries[1].phenom, entries[1].band, centB.x, centB.y, sz);
   });
@@ -1838,7 +1935,7 @@ function redrawMap() {
     const b  = geoPath.bounds(feat);
     const cx = (b[0][0] + b[1][0]) / 2;
     const cy = (b[0][1] + b[1][1]) / 2;
-    const sz = Math.max(12, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.52, 26));
+    const sz = Math.max(9, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.36, 18));
     placeIcoImg(layerSel, dd.picto, cx, cy, sz).attr('class', 'dept-picto-g');
   });
 
@@ -2421,7 +2518,35 @@ buildSidebar();
 buildNextSidebar();
 buildProbSidebar();
 
+/* ── Synchronisation Firebase : applique l'état publié (si dispo) puis expose
+   les variables d'état sur window pour que publishState() puisse les lire ── */
+async function applyPublishedState() {
+  if (typeof window.loadPublishedState !== 'function') { setTimeout(applyPublishedState, 150); return; }
+  try {
+    const remote = await window.loadPublishedState();
+    if (remote) {
+      if (remote.deptData)     deptData     = remote.deptData;
+      if (remote.neighborData) neighborData = remote.neighborData;
+      if (remote.probData)     probData     = remote.probData;
+      if (remote.nextData)     nextData     = remote.nextData;
+      if (remote.gaugeData)    Object.assign(gaugeData, remote.gaugeData);
+      if (remote.riskData)     riskData     = remote.riskData;
+    }
+  } catch (e) { console.warn('État publié non chargé :', e); }
+  // Expose pour publishState() (module séparé, ne voit pas les `let` de ce script)
+  Object.defineProperties(window, {
+    deptData:     { get:() => deptData,     configurable:true },
+    neighborData: { get:() => neighborData, configurable:true },
+    probData:     { get:() => probData,     configurable:true },
+    nextData:     { get:() => nextData,     configurable:true },
+    gaugeData:    { get:() => gaugeData,    configurable:true },
+    riskData:     { get:() => riskData,     configurable:true }
+  });
+}
+const _publishedStateReady = applyPublishedState();
+
 (async () => {
+  await _publishedStateReady;
   const mapDiv = document.getElementById('map');
   const tip    = document.getElementById('tip');
   let topo;
@@ -2558,6 +2683,7 @@ buildProbSidebar();
 
   svg.on('dblclick', function(event) { if (event.target===svgEl) unzoom(); });
 
+  redrawMap(); // peint immédiatement l'état chargé (publié via Firebase, ou vide par défaut)
   renderGauges(null);
   // Les cartes "prochain jour" et "probable" sont init au 1er switch de vue
   // mais on les précharge si les données sont dispo, pour un switch instantané
