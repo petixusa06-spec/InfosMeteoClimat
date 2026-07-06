@@ -4,60 +4,59 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Vigilance Météo France</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  /* Palette "instrument météo" — noir bleuté profond, bleu signal, orange alerte */
-  --bg:#080a0f;--surf:#0f131b;--surf2:#161c27;
-  --b1:rgba(148,163,196,.10);--b2:rgba(148,163,196,.20);
-  --t1:#e7ebf3;--t2:#8590a8;--t3:#4a5268;
-  --acc:#3d8bff;--acc2:#6ba8ff;--sig:#ff7a3d;--r:3px;--rs:2px;
+  /* Palette "Bulletin" — clair, pro, institutionnel. Les couleurs de vigilance restent les seules vraies teintes vives. */
+  --bg:#eef1f6;--surf:#ffffff;--surf2:#e6e9f0;
+  --b1:rgba(23,35,64,.08);--b2:rgba(23,35,64,.14);
+  --t1:#141a2c;--t2:#5b6478;--t3:#8b93a7;
+  --acc:#3462d6;--acc2:#4c78e8;--sig:#dc5b1f;--r:10px;--rs:7px;
   --ease:cubic-bezier(.22,.9,.32,1);
-  --sh-sm:0 2px 10px rgba(0,0,0,.4);
-  --sh-md:0 10px 32px rgba(0,0,0,.5);
-  --sh-glow:0 0 0 1px rgba(61,139,255,.4),0 6px 22px rgba(61,139,255,.2);
-  --font-d:'Space Grotesk',sans-serif;--font-b:'Inter',sans-serif;--font-m:'JetBrains Mono',monospace;
+  --sh-sm:0 1px 2px rgba(20,26,44,.04),0 2px 8px rgba(20,26,44,.05);
+  --sh-md:0 8px 28px rgba(20,26,44,.10),0 2px 8px rgba(20,26,44,.05);
+  --sh-glow:0 0 0 1px rgba(29,78,216,.25),0 6px 20px rgba(29,78,216,.12);
+  --font-d:'Archivo',sans-serif;--font-b:'Manrope',sans-serif;--font-m:'JetBrains Mono',monospace;
 }
 *{scrollbar-width:thin;scrollbar-color:var(--b2) transparent}
 ::-webkit-scrollbar{width:9px;height:9px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:20px;border:2px solid var(--bg)}
-::-webkit-scrollbar-thumb:hover{background:rgba(148,163,196,.32)}
+::-webkit-scrollbar-thumb:hover{background:rgba(23,35,64,.22)}
 :focus-visible{outline:2px solid var(--acc2);outline-offset:2px;border-radius:2px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 body{
   font-family:var(--font-b);color:var(--t1);min-height:100vh;
   background:
-    radial-gradient(1200px 600px at 14% -10%, rgba(61,139,255,.08), transparent 58%),
-    radial-gradient(900px 500px at 90% 4%, rgba(255,122,61,.05), transparent 55%),
-    repeating-linear-gradient(0deg, rgba(148,163,196,.025) 0px, transparent 1px, transparent 42px),
+    radial-gradient(1100px 560px at 12% -8%, rgba(29,78,216,.05), transparent 58%),
+    radial-gradient(900px 480px at 92% 2%, rgba(220,91,31,.035), transparent 55%),
     var(--bg);
   background-attachment:fixed;
 }
-.page{display:flex;flex-direction:column;gap:10px;padding:14px;max-width:1680px;margin:0 auto}
+.page{display:flex;flex-direction:column;gap:12px;padding:16px;max-width:1680px;margin:0 auto}
 
-/* Header — bandeau façon station de mesure */
-.app-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--surf);border:1px solid var(--b1);border-left:2px solid var(--acc);border-radius:var(--r);box-shadow:var(--sh-sm);position:relative;overflow:hidden}
-.app-title{font-family:var(--font-d);font-size:15px;font-weight:600;display:flex;align-items:center;gap:10px;letter-spacing:.01em;text-transform:uppercase}
-.app-title::after{content:'LA COLÈRE DU CIEL';font-family:var(--font-m);font-size:9px;font-weight:400;letter-spacing:.12em;color:var(--t3);padding-left:10px;margin-left:2px;border-left:1px solid var(--b2);text-transform:none}
-.dot{width:7px;height:7px;border-radius:1px;background:var(--acc);box-shadow:0 0 8px rgba(61,139,255,.7);animation:pulseDot 2.4s ease-in-out infinite;transform:rotate(45deg)}
-@keyframes pulseDot{0%,100%{box-shadow:0 0 6px rgba(61,139,255,.55);opacity:1}50%{box-shadow:0 0 14px rgba(61,139,255,.95);opacity:.7}}
+/* Header — bandeau de statut clair, façon bulletin officiel */
+.app-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--surf);border:1px solid var(--b1);border-top:3px solid var(--acc);border-radius:var(--r);box-shadow:var(--sh-sm);position:relative;overflow:hidden}
+.app-title{font-family:var(--font-d);font-size:15px;font-weight:700;display:flex;align-items:center;gap:10px;letter-spacing:.01em;text-transform:uppercase;color:var(--t1)}
+.app-title::after{content:'BULLETIN NATIONAL';font-family:var(--font-m);font-size:9px;font-weight:500;letter-spacing:.12em;color:var(--t3);padding-left:10px;margin-left:2px;border-left:1px solid var(--b2);text-transform:none}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px rgba(29,78,216,.5);animation:pulseDot 2.4s ease-in-out infinite}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 6px rgba(29,78,216,.4);opacity:1}50%{box-shadow:0 0 14px rgba(29,78,216,.75);opacity:.75}}
 .day-tabs{display:flex;gap:3px}
-.dtab{padding:6px 14px;border:1px solid var(--b2);border-radius:var(--r);cursor:pointer;font-size:11px;font-family:var(--font-m);text-transform:uppercase;letter-spacing:.04em;background:transparent;color:var(--t2);transition:all .16s var(--ease);font-weight:500}
+.dtab{padding:7px 15px;border:1px solid var(--b2);border-radius:var(--rs);cursor:pointer;font-size:11px;font-family:var(--font-m);text-transform:uppercase;letter-spacing:.04em;background:var(--surf);color:var(--t2);transition:all .16s var(--ease);font-weight:600}
 .dtab:hover{background:var(--surf2);color:var(--t1)}
-.dtab.on{background:var(--acc);color:#04101f;border-color:var(--acc);box-shadow:0 2px 10px rgba(61,139,255,.35);font-weight:600}
+.dtab.on{background:var(--acc);color:#fff;border-color:var(--acc);box-shadow:0 2px 10px rgba(29,78,216,.28);font-weight:700}
 
 /* Layout */
-.top{display:flex;gap:10px;align-items:flex-start}
-#map-col{flex:1;min-width:0;position:relative}
-.sb{width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
-.card{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);padding:12px;box-shadow:var(--sh-sm);transition:border-color .2s var(--ease)}
-.card:hover{border-color:var(--b2)}
-.stitle{font-family:var(--font-m);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:9px;display:flex;align-items:center;gap:6px}
-.stitle::before{content:'';width:5px;height:5px;background:var(--acc);flex-shrink:0}
+.top{display:flex;gap:12px;align-items:flex-start}
+#map-col{flex:1;min-width:0;position:relative;display:flex;justify-content:center}
+.sb{width:212px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);padding:13px;box-shadow:var(--sh-sm);transition:border-color .2s var(--ease),box-shadow .2s var(--ease)}
+.card:hover{border-color:var(--b2);box-shadow:var(--sh-md)}
+.stitle{font-family:var(--font-m);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.stitle::before{content:'';width:5px;height:5px;background:var(--acc);flex-shrink:0;border-radius:1px}
 #map,#map-next,#map-prob{box-shadow:var(--sh-md)}
 
 /* Level rows */
@@ -88,7 +87,7 @@ body{
 #map-next-col{flex:1;min-width:0;position:relative}
 #map-next{width:100%;aspect-ratio:1/1.04;border-radius:var(--r);overflow:hidden;background:var(--surf);border:1px solid rgba(20,184,196,.25);position:relative}
 .next-sidebar-note{font-size:10px;color:var(--t3);line-height:1.5;padding:8px;background:rgba(20,184,196,.07);border:1px solid rgba(20,184,196,.18);border-radius:8px;margin-bottom:2px}
-.radar-rep-btn{padding:5px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.2);background:rgba(15,17,23,.88);backdrop-filter:blur(8px);cursor:pointer;font-size:12px;color:var(--t2);font-family:inherit;transition:all .12s}
+.radar-rep-btn{padding:5px 10px;border-radius:7px;border:1px solid var(--b2);background:rgba(255,255,255,.9);backdrop-filter:blur(8px);cursor:pointer;font-size:12px;color:var(--t2);font-family:inherit;transition:all .12s;box-shadow:var(--sh-sm)}
 .radar-rep-btn.on{border-color:#22d3ee;color:#22d3ee;background:rgba(34,211,238,.12)}
 /* ── Pied de page discret + point d'accès admin ── */
 .site-ftr{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 0 4px;font-family:var(--font-m);font-size:10px;color:var(--t3);letter-spacing:.03em}
@@ -233,6 +232,8 @@ body.role-visitor .edit-zone{display:none!important}
         <button class="vtab" id="vtab-risk" onclick="switchView('risk')" style="color:#f97316;border-color:rgba(249,115,22,.3)">🌡 Cartes de risque</button>
         <span class="vtab-sep"></span>
         <button class="vtab" id="vtab-radar" onclick="switchView('radar')" style="color:#22d3ee;border-color:rgba(34,211,238,.3)">📡 Radar en direct</button>
+        <span class="vtab-sep"></span>
+        <button class="vtab" id="vtab-arome" onclick="switchView('arome')" style="color:#e8562f;border-color:rgba(232,86,47,.3)">🌡️ AROME Températures</button>
       </div>
       <!-- Sélecteur de jour (masqué en mode probable) -->
       <div class="day-tabs" id="day-tabs-wrap">
@@ -255,7 +256,7 @@ body.role-visitor .edit-zone{display:none!important}
 
   <div class="top" id="view-vigilance">
     <div id="map-col">
-      <div id="map" style="width:100%;border-radius:12px;overflow:hidden;background:#1a1d27;border:1px solid rgba(255,255,255,.06)"></div>
+      <div id="map" style="width:100%;border-radius:12px;overflow:hidden;background:#f3f5f9;border:1px solid rgba(23,35,64,.08)"></div>
       <div class="tip" id="tip"></div>
     </div>
     <div class="sb">
@@ -419,11 +420,11 @@ body.role-visitor .edit-zone{display:none!important}
         </div>
       </div>
       <div id="risk-img-toolbar" style="display:none;position:absolute;top:10px;right:10px;display:none;gap:6px">
-        <button onclick="document.getElementById('risk-file-inp').click()" style="background:rgba(15,17,23,.88);border:1px solid var(--b2);border-radius:7px;color:var(--t2);padding:5px 11px;font-size:12px;cursor:pointer;backdrop-filter:blur(8px)">↺ Changer</button>
-        <button onclick="riskClear()" style="background:rgba(15,17,23,.88);border:1px solid rgba(239,68,68,.4);border-radius:7px;color:#ef4444;padding:5px 11px;font-size:12px;cursor:pointer;backdrop-filter:blur(8px)">✕ Supprimer</button>
+        <button onclick="document.getElementById('risk-file-inp').click()" style="background:rgba(255,255,255,.9);border:1px solid var(--b2);border-radius:7px;color:var(--t2);padding:5px 11px;font-size:12px;cursor:pointer;backdrop-filter:blur(8px)">↺ Changer</button>
+        <button onclick="riskClear()" style="background:rgba(255,255,255,.9);border:1px solid rgba(239,68,68,.4);border-radius:7px;color:#ef4444;padding:5px 11px;font-size:12px;cursor:pointer;backdrop-filter:blur(8px)">✕ Supprimer</button>
       </div>
       <!-- Pastille phénomène affichée sur la carte -->
-      <div id="risk-img-badge" style="display:none;position:absolute;bottom:14px;left:14px;background:rgba(15,17,23,.92);border:1px solid rgba(249,115,22,.3);border-radius:8px;padding:7px 12px;backdrop-filter:blur(8px);pointer-events:none">
+      <div id="risk-img-badge" style="display:none;position:absolute;bottom:14px;left:14px;background:rgba(255,255,255,.94);border:1px solid rgba(249,115,22,.3);border-radius:8px;padding:7px 12px;backdrop-filter:blur(8px);pointer-events:none">
         <p id="risk-badge-label" style="font-size:11px;font-weight:700;color:#f97316;margin:0"></p>
       </div>
     </div>
@@ -466,6 +467,28 @@ body.role-visitor .edit-zone{display:none!important}
       <div style="width:192px;flex-shrink:0">
         <div id="radar-legend-wrap" style="border-radius:var(--r);overflow:hidden;border:1px solid rgba(34,211,238,.2);background:var(--surf)"></div>
         <div id="radar-status-box" style="margin-top:8px;padding:10px;background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);font-size:11px;color:var(--t3);line-height:1.6"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VUE AROME TEMPÉRATURES -->
+  <div class="top" id="view-arome" style="display:none">
+    <div id="map-arome-col" style="flex:1;min-width:0;position:relative;display:flex;justify-content:center">
+      <svg id="map-arome" viewBox="0 0 600 624" style="width:100%;max-width:600px;aspect-ratio:600/624;border-radius:var(--r);overflow:hidden;background:var(--surf);border:1px solid rgba(232,86,47,.25);box-shadow:var(--sh-md)"></svg>
+      <div class="tooltip" id="tip-arome" style="display:none;position:absolute;pointer-events:none;background:rgba(20,20,28,.94);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;font-family:var(--font-m);z-index:50;white-space:nowrap"></div>
+    </div>
+    <div class="sb">
+      <div class="card" style="border-color:rgba(232,86,47,.2)">
+        <p class="stitle" style="color:#e8562f">Modèle AROME</p>
+        <p style="font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:8px">
+          Moyenne min/max par département, calculée sur une grille de points pondérée par la superficie du département (Open-Meteo · meteofrance_arome_france_hd).
+        </p>
+        <div id="arome-status" style="font-family:var(--font-m);font-size:10px;color:var(--t3);line-height:1.6;padding:8px;background:rgba(232,86,47,.06);border:1px solid rgba(232,86,47,.15);border-radius:8px;margin-bottom:8px">Non chargé.</div>
+        <button onclick="loadAromeTemps(true)" style="width:100%;padding:8px;border:1px solid rgba(232,86,47,.4);border-radius:7px;background:rgba(232,86,47,.08);color:#e8562f;font-size:12px;font-weight:600;cursor:pointer">↺ Actualiser maintenant</button>
+      </div>
+      <div class="card" style="border-color:rgba(232,86,47,.15);max-height:420px;overflow-y:auto">
+        <p class="stitle" style="color:#e8562f">Classement (Max ↓)</p>
+        <div id="arome-list" style="display:flex;flex-direction:column;gap:2px;font-size:11px"></div>
       </div>
     </div>
   </div>
@@ -1078,8 +1101,9 @@ function switchView(view) {
   document.getElementById('view-probable').style.display   = view === 'probable'  ? 'flex' : 'none';
   document.getElementById('view-risk').style.display       = view === 'risk'      ? 'flex' : 'none';
   document.getElementById('view-radar').style.display      = view === 'radar'     ? 'flex' : 'none';
+  document.getElementById('view-arome').style.display       = view === 'arome'     ? 'flex' : 'none';
   document.getElementById('day-tabs-wrap').style.display   = (view === 'vigilance' || view === 'risk') ? 'flex' : 'none';
-  ['vigil','next','prob','risk','radar'].forEach(k =>
+  ['vigil','next','prob','risk','radar','arome'].forEach(k =>
     document.getElementById('vtab-'+k)?.classList.toggle('on', k === view.replace('nextday','next').replace('probable','prob').replace('vigilance','vigil'))
   );
   if (view === 'nextday'  && !svgNextEl) initNextMap();
@@ -1087,6 +1111,7 @@ function switchView(view) {
   if (view === 'risk') buildRiskSidebar();
   if (view === 'radar') { initRadarMap(); radarTab(radarMode); }
   if (view === 'probable') redrawProbMap();
+  if (view === 'arome')   { initAromeMap(); }
 }
 const gaugeData = {
   national: {
@@ -2399,6 +2424,221 @@ function plotLightning(lat, lon) {
   setTimeout(()=>{ m.remove(); radarLightningMarkers=radarLightningMarkers.filter(x=>x!==m); },1800000); // 30 min
 }
 
+/* ══════════════════════════════════════════════════════════════
+   MODULE AROME — Températures min/max moyennées par département
+   Source : Open-Meteo (modèle meteofrance_arome_france_hd), gratuit,
+   sans clé API. Se rafraîchit automatiquement à chaque nouveau run
+   AROME (Météo-France publie ~toutes les 3h ; on re-fetch toutes les
+   30 min pour capter le run le plus récent disponible côté Open-Meteo).
+   ══════════════════════════════════════════════════════════════ */
+
+let aromeData = {};       // { "Ain": {min:12.3, max:24.1, nPoints:7}, ... }
+let aromeRefreshTimer = null;
+let aromeLoaded = false;
+let aromeMapBuilt = false; // true seulement une fois les contours réellement dessinés (corrige le bug ci-dessous)
+let svgAromeEl=null, aromeLayerSel=null, aromeGeoPath=null;
+let DEPT_GRID_POINTS = null; // { "Ain": [[lat,lon], ...], ... } — construit une fois les contours chargés
+
+function aromeColor(t) {
+  if (t==null || isNaN(t)) return '#2a3040';
+  // Échelle de couleur simple, du bleu (froid) au violet foncé (canicule extrême)
+  const stops = [
+    [-10,'#2b5cad'], [0,'#3b82f6'], [10,'#22c55e'], [18,'#eab308'],
+    [24,'#f59e0b'], [30,'#e8562f'], [35,'#c81e3a'], [40,'#8a1538'], [45,'#5b1030']
+  ];
+  if (t<=stops[0][0]) return stops[0][1];
+  for (let i=0;i<stops.length-1;i++){
+    if (t>=stops[i][0] && t<=stops[i+1][0]) return stops[i][1]; // pas d'interpolation fine, palier suffisant pour la carte
+  }
+  return stops[stops.length-1][1];
+}
+
+/* ── Test point-dans-polygone (ray casting), utilisé pour construire la
+   grille d'échantillonnage pondérée par la superficie de chaque département.
+   pt = [lon, lat]. Gère Polygon et MultiPolygon, ainsi que les trous. ── */
+function pointInRing(pt, ring) {
+  let inside = false;
+  for (let i=0, j=ring.length-1; i<ring.length; j=i++) {
+    const xi=ring[i][0], yi=ring[i][1], xj=ring[j][0], yj=ring[j][1];
+    const intersect = ((yi>pt[1]) !== (yj>pt[1])) &&
+      (pt[0] < (xj-xi)*(pt[1]-yi)/((yj-yi)||1e-12)+xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+function pointInPolygonRings(pt, rings) {
+  if (!rings || !rings.length) return false;
+  if (!pointInRing(pt, rings[0])) return false;
+  for (let k=1; k<rings.length; k++) { if (pointInRing(pt, rings[k])) return false; } // trous
+  return true;
+}
+function pointInFeature(pt, feature) {
+  const g = feature && feature.geometry;
+  if (!g) return false;
+  if (g.type === 'Polygon') return pointInPolygonRings(pt, g.coordinates);
+  if (g.type === 'MultiPolygon') return g.coordinates.some(poly => pointInPolygonRings(pt, poly));
+  return false;
+}
+
+/* Construit, pour chaque département, une grille de points (3×3 sur la
+   bbox du département) filtrée par son contour réel : chaque point retenu
+   représente une surface équivalente, donc la moyenne simple entre ces
+   points équivaut à une moyenne pondérée par la superficie. Repli sur le
+   centroïde géométrique si aucun point de la grille ne tombe dans le
+   contour (départements très petits ou en forme de croissant). */
+function buildDeptGridPoints() {
+  if (DEPT_GRID_POINTS || !features || !features.length) return;
+  DEPT_GRID_POINTS = {};
+  const GRID_N = 3;
+  features.forEach(f => {
+    const nm = f.properties && (f.properties.name || f.properties.NAME || '');
+    if (!nm) return;
+    const bounds = d3.geoBounds(f); // [[minLon,minLat],[maxLon,maxLat]]
+    const [[minLon,minLat],[maxLon,maxLat]] = bounds;
+    const pts = [];
+    for (let i=0;i<GRID_N;i++){
+      for (let j=0;j<GRID_N;j++){
+        const lon = minLon + (maxLon-minLon) * (i+0.5)/GRID_N;
+        const lat = minLat + (maxLat-minLat) * (j+0.5)/GRID_N;
+        if (pointInFeature([lon,lat], f)) pts.push([lat,lon]);
+      }
+    }
+    if (!pts.length) {
+      const c = d3.geoCentroid(f); // [lon,lat]
+      pts.push([c[1], c[0]]);
+    }
+    DEPT_GRID_POINTS[nm] = pts;
+  });
+}
+
+function initAromeMap() {
+  if (!svgAromeEl) {
+    svgAromeEl = document.getElementById('map-arome');
+    const svg = d3.select(svgAromeEl);
+    const proj = d3.geoConicConformal().parallels([44,49]).rotate([-3,0]).center([0,46.5]).scale(1860).translate([300,312]);
+    aromeGeoPath = d3.geoPath().projection(proj);
+    aromeLayerSel = svg.append('g').attr('class','arome-dept-layer');
+  }
+  if (!aromeMapBuilt) {
+    // Bug corrigé : avant, si les contours (`features`) n'étaient pas encore
+    // chargés au premier appel, la carte restait vide pour toujours (le
+    // garde-fou `!svgAromeEl` empêchait tout nouvel essai). On réessaie
+    // maintenant tant que les contours ne sont pas prêts.
+    if (!features || !features.length) { setTimeout(initAromeMap, 250); return; }
+    const tip = document.getElementById('tip-arome');
+    const mapDiv = document.getElementById('map-arome-col');
+    aromeLayerSel.selectAll('path.adept').data(features).join('path')
+      .attr('class','adept')
+      .attr('d', d => aromeGeoPath(d))
+      .attr('fill', '#2a3040').attr('stroke','#000').attr('stroke-width',0.6).style('cursor','default')
+      .on('mousemove', function(event, d) {
+        const nm = d.properties && (d.properties.name || d.properties.NAME || '');
+        const dd = aromeData[nm];
+        tip.style.display = 'block';
+        const r = mapDiv.getBoundingClientRect();
+        tip.style.left = (event.clientX-r.left+14)+'px';
+        tip.style.top  = (event.clientY-r.top-36)+'px';
+        tip.textContent = nm + (dd ? ` — Moy. min ${dd.min.toFixed(1)}°C · Moy. max ${dd.max.toFixed(1)}°C (${dd.nPoints} pts)` : ' — pas de donnée');
+      })
+      .on('mouseleave', () => { tip.style.display='none'; });
+    aromeMapBuilt = true;
+  }
+  if (!aromeLoaded) loadAromeTemps();
+}
+
+function redrawAromeMap() {
+  if (!aromeLayerSel) return;
+  aromeLayerSel.selectAll('path.adept')
+    .attr('fill', d => {
+      const nm = d.properties && (d.properties.name || d.properties.NAME || '');
+      const dd = aromeData[nm];
+      return dd ? aromeColor(dd.max) : '#2a3040';
+    });
+}
+
+function renderAromeList() {
+  const wrap = document.getElementById('arome-list');
+  if (!wrap) return;
+  const rows = Object.entries(aromeData).sort((a,b) => b[1].max - a[1].max);
+  wrap.innerHTML = rows.map(([nm,dd]) => `
+    <div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px">
+      <span style="width:8px;height:8px;border-radius:2px;background:${aromeColor(dd.max)};flex-shrink:0"></span>
+      <span style="flex:1;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nm}</span>
+      <span style="font-family:var(--font-m);color:var(--t3);font-size:10px">${dd.min.toFixed(0)}°/${dd.max.toFixed(0)}°</span>
+    </div>`).join('');
+}
+
+/* Récupère, pour chaque département, les températures horaires AROME
+   (aujourd'hui + demain) sur une grille de points pondérée par la
+   superficie du département, moyenne heure par heure entre les points,
+   puis min/max sur cette série moyenne. Les points de tous les
+   départements sont envoyés à Open-Meteo par lots (paramètres
+   latitude/longitude en listes séparées par des virgules) pour rester
+   sous les limites de longueur d'URL. */
+const AROME_CHUNK_SIZE = 120;
+
+async function loadAromeTemps(manual) {
+  const statusEl = document.getElementById('arome-status');
+  buildDeptGridPoints();
+  if (!DEPT_GRID_POINTS) {
+    if (statusEl) statusEl.textContent = '⏳ En attente des contours des départements…';
+    setTimeout(() => loadAromeTemps(manual), 400);
+    return;
+  }
+  const deptNames = Object.keys(DEPT_GRID_POINTS);
+  const flatPoints = []; // [{dept, lat, lon}, ...]
+  deptNames.forEach(nm => DEPT_GRID_POINTS[nm].forEach(([lat,lon]) => flatPoints.push({dept:nm, lat, lon})));
+
+  if (statusEl) statusEl.textContent = (manual ? '↺ Actualisation manuelle…' : '⏳ Chargement du run AROME…')
+    + ` (${flatPoints.length} points sur ${deptNames.length} départements)`;
+
+  try {
+    const hourlySums = {}; // dept -> [{sum, n}, ...] par heure
+    for (let start=0; start<flatPoints.length; start+=AROME_CHUNK_SIZE) {
+      const batch = flatPoints.slice(start, start+AROME_CHUNK_SIZE);
+      const lats = batch.map(p => p.lat.toFixed(3)).join(',');
+      const lons = batch.map(p => p.lon.toFixed(3)).join(',');
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}`
+        + `&hourly=temperature_2m&models=meteofrance_arome_france_hd&forecast_days=2&timezone=auto`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('HTTP '+r.status);
+      const data = await r.json();
+      const arr = Array.isArray(data) ? data : [data];
+      arr.forEach((d,i) => {
+        const p = batch[i];
+        const temps = d?.hourly?.temperature_2m;
+        if (!p || !temps || !temps.length) return;
+        if (!hourlySums[p.dept]) hourlySums[p.dept] = [];
+        const bucket = hourlySums[p.dept];
+        temps.forEach((v,h) => {
+          if (typeof v !== 'number' || isNaN(v)) return;
+          if (!bucket[h]) bucket[h] = { sum:0, n:0 };
+          bucket[h].sum += v;
+          bucket[h].n += 1;
+        });
+      });
+    }
+    aromeData = {};
+    deptNames.forEach(nm => {
+      const bucket = hourlySums[nm];
+      if (!bucket) return;
+      const avgSeries = bucket.slice(0, 24).filter(h => h && h.n > 0).map(h => h.sum / h.n);
+      if (!avgSeries.length) return;
+      aromeData[nm] = { min: Math.min(...avgSeries), max: Math.max(...avgSeries), nPoints: DEPT_GRID_POINTS[nm].length };
+    });
+    aromeLoaded = true;
+    redrawAromeMap();
+    renderAromeList();
+    const now = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    if (statusEl) statusEl.innerHTML = `✅ ${Object.keys(aromeData).length} départements · moyenne sur ${flatPoints.length} points pondérés par la superficie<br><small>Modèle AROME (Open-Meteo) · mis à jour ${now}<br>Rafraîchissement auto toutes les 30 min</small>`;
+    if (aromeRefreshTimer) clearTimeout(aromeRefreshTimer);
+    aromeRefreshTimer = setTimeout(() => loadAromeTemps(false), 30*60*1000);
+  } catch (e) {
+    if (statusEl) statusEl.textContent = '⚠️ Erreur lors du chargement AROME.';
+    console.warn('Erreur AROME:', e);
+  }
+}
+
 /* ── PLUIE (RainViewer) ── */
 function loadRain() {
   clearNonLightningLayers();
@@ -2645,7 +2885,9 @@ const _publishedStateReady = applyPublishedState();
       const r = mapDiv.getBoundingClientRect();
       tip.style.left = (event.clientX-r.left+14)+'px';
       tip.style.top  = (event.clientY-r.top-36)+'px';
-      tip.textContent = nm + (dd ? ' — '+(dd.probable?'~ ':'')+LEVELS[dd.level].label+(dd.picto?' · '+dd.picto:'') : '');
+      const at = aromeData[nm];
+      const atStr = at ? `  🌡️ ${at.min.toFixed(0)}°/${at.max.toFixed(0)}°` : '';
+      tip.textContent = nm + (dd ? ' — '+(dd.probable?'~ ':'')+LEVELS[dd.level].label+(dd.picto?' · '+dd.picto:'') : '') + atStr;
       if (nm !== zoomedDept) d3.select(this).attr('stroke','rgba(255,255,255,.6)').attr('stroke-width',1.2);
     })
     .on('mouseleave', function(event, d) {
@@ -2690,6 +2932,7 @@ const _publishedStateReady = applyPublishedState();
   if (features.length) {
     setTimeout(() => { if (!svgNextEl) initNextMap(); }, 150);
     setTimeout(() => { if (!svgProbEl) initProbMap(); }, 200);
+    setTimeout(() => { if (!aromeLoaded) loadAromeTemps(false); }, 400);
   }
 })();
 </script>
