@@ -2534,8 +2534,9 @@ async function applyPublishedState() {
 setTimeout(() => {
   try {
     redrawMap && redrawMap();
-    redrawProbMap && redrawProbMap();
-    redrawNextMap && redrawNextMap();
+redrawAllNeighbors && redrawAllNeighbors();
+redrawProbMap && redrawProbMap();
+redrawNextMap && redrawNextMap();
 
     if (typeof refreshGauges === "function") {
       refreshGauges();
