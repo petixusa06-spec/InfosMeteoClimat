@@ -2534,13 +2534,19 @@ async function applyPublishedState() {
 setTimeout(() => {
   try {
     redrawMap && redrawMap();
-redrawAllNeighbors && redrawAllNeighbors();
-redrawProbMap && redrawProbMap();
-redrawNextMap && redrawNextMap();
+    redrawAllNeighbors && redrawAllNeighbors();
 
-    if (typeof refreshGauges === "function") {
-      refreshGauges();
-    }
+    // Initialisation si nécessaire
+    if (!svgProbEl && typeof initProbMap === "function") initProbMap();
+    if (!svgNextEl && typeof initNextMap === "function") initNextMap();
+
+    redrawProbMap && redrawProbMap();
+    redrawNextMap && redrawNextMap();
+
+    if (typeof buildRiskSidebar === "function") buildRiskSidebar();
+    if (typeof redrawRiskMap === "function") redrawRiskMap();
+
+    if (typeof refreshGauges === "function") refreshGauges();
 
     if (typeof updateLeg === "function") updateLeg();
     if (typeof updateLegProb === "function") updateLegProb();
@@ -2548,7 +2554,7 @@ redrawNextMap && redrawNextMap();
   } catch(e) {
     console.error(e);
   }
-}, 200);
+}, 300);
     }
   } catch (e) { console.warn('État publié non chargé :', e); }
   // Expose pour publishState() (module séparé, ne voit pas les `let` de ce script)
