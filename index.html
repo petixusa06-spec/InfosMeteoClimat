@@ -1070,10 +1070,8 @@ let regionFeatures   = [];
 let activeView   = 'vigilance'; // 'vigilance' | 'nextday' | 'probable'
 
 /* ── SWITCH VUE ── */
-const admin = document.getElementById('admin-panel');
-if (admin) {
-  admin.style.display = (currentRole === 'admin') ? '' : 'none';
-}
+function switchView(view) {
+  activeView = view;
   document.getElementById('view-vigilance').style.display  = view === 'vigilance' ? 'flex' : 'none';
   document.getElementById('view-nextday').style.display    = view === 'nextday'   ? 'flex' : 'none';
   document.getElementById('view-probable').style.display   = view === 'probable'  ? 'flex' : 'none';
