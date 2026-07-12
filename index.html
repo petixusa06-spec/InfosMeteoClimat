@@ -2291,7 +2291,6 @@ function drawSeg(svgT, tlEl, scope, ri, si, seg, isEditable) {
   g.addEventListener('dblclick', e => { e.stopPropagation(); gRows(scope)[ri].segs.splice(si,1); renderGauges(zoomedDept); saveGaugeData(); });
   svgT.appendChild(g);
 }
-}
 
 /* ── POPUPS ── */
 function openLvlPop(e, scope, ri, si) {
