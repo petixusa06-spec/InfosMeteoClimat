@@ -350,6 +350,10 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
         </div>
                 <p class="hint">Clic = appliquer · Dbl-clic = zoom</p>
         <button class="rst-btn" onclick="resetAll()">↺ Réinitialiser</button>
+          <!-- JAUGE SOUS LA CARTE -->
+  <div class="gauge-zone" style="margin-top:12px;width:100%">
+    <div id="gauges"></div>
+  </div>
 
         <!-- AJOUTE CETTE CARTE ICI -->
         <div class="card" style="border-color:rgba(34,211,238,.2);margin-top:4px">
@@ -380,9 +384,6 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
     </div>
   </div>
     
-<div class="gauge-zone">
-  <div id="gauges"></div>
-</div>
   <!-- VUE VIGILANCE PROCHAIN JOUR (anciennes régions, risque % par phénomène) -->
   <div class="top" id="view-nextday" style="display:none">
     <div id="map-next-col">
