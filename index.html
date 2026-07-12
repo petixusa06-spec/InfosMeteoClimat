@@ -350,10 +350,6 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
         </div>
                 <p class="hint">Clic = appliquer · Dbl-clic = zoom</p>
         <button class="rst-btn" onclick="resetAll()">↺ Réinitialiser</button>
-          <!-- JAUGE SOUS LA CARTE -->
-  <div class="gauge-zone" style="margin-top:12px;width:100%">
-    <div id="gauges"></div>
-  </div>
 
         <!-- AJOUTE CETTE CARTE ICI -->
         <div class="card" style="border-color:rgba(34,211,238,.2);margin-top:4px">
@@ -383,7 +379,7 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
       <p class="lock-hint dl-lock-hint">🔒 Réservé à l'administrateur</p>
     </div>
   </div>
-    
+
   <!-- VUE VIGILANCE PROCHAIN JOUR (anciennes régions, risque % par phénomène) -->
   <div class="top" id="view-nextday" style="display:none">
     <div id="map-next-col">
@@ -513,6 +509,24 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
       </div>
     </div>
   </div>
+
+  <div class="card" style="border-color:rgba(34,211,238,.2);margin-top:4px">
+  <p class="stitle" style="color:#22d3ee">Sélection multiple</p>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+    <button class="vtab" id="btn-select-mode" onclick="toggleSelectMode()" style="font-size:10px;padding:4px 10px;border-color:rgba(34,211,238,.3);color:#22d3ee">
+      ☐ Mode sélection
+    </button>
+    <button class="vtab" id="btn-apply-selection" onclick="applySelection()" style="font-size:10px;padding:4px 10px;border-color:rgba(34,211,238,.2);color:#7ce4f5;display:none">
+      ✓ Appliquer aux sélectionnés
+    </button>
+    <button class="vtab" id="btn-clear-selection" onclick="clearSelection()" style="font-size:10px;padding:4px 10px;border-color:rgba(239,68,68,.2);color:#ef4444;display:none">
+      ✕ Effacer
+    </button>
+  </div>
+  <p id="select-status" style="font-size:10px;color:var(--t3);margin:2px 0 0">
+    <span id="select-count">0</span> département(s) sélectionné(s)
+  </p>
+</div>
   <!-- VUE RADAR EN DIRECT -->
   <div class="top" id="view-radar" style="display:none;flex-direction:column;gap:10px">
     <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -539,6 +553,10 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
       </div>
     </div>
   </div>
+
+  <div class="gauge-zone">
+  <div id="gauges"></div>
+</div>
 
   <div class="site-ftr">
     <span>La Colère du Ciel — données de vigilance météorologique</span>
