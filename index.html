@@ -8,6 +8,35 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
+  /* La jauge est visible pour tout le monde */
+.gauge-zone { display: block; }
+
+/* Mais les interactions sont désactivées par défaut (visiteur) */
+.gauge-zone .g-tl,
+.gauge-zone .g-picto,
+.gauge-zone .g-add,
+.gauge-zone .g-del {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+.gauge-zone .g-del { display: none !important; }
+.gauge-zone .g-add { display: none !important; }
+.gauge-zone .g-picto { opacity: 0.6; }
+.gauge-zone .g-picto img { opacity: 0.7; }
+
+/* Quand l'admin est connecté, tout devient interactif */
+body.role-admin .gauge-zone .g-tl,
+body.role-admin .gauge-zone .g-picto,
+body.role-admin .gauge-zone .g-add,
+body.role-admin .gauge-zone .g-del {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+body.role-admin .gauge-zone .g-del { display: inline-block !important; }
+body.role-admin .gauge-zone .g-add { display: inline-flex !important; }
+body.role-admin .gauge-zone .g-picto { opacity: 1; }
+body.role-admin .gauge-zone .g-picto img { opacity: 1; }
+  
   .gauge-readonly .g-tl,
 .gauge-readonly .g-picto,
 .gauge-readonly .g-add,
@@ -489,7 +518,7 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
     </div>
   </div>
 
-  <div class="edit-zone">
+  <div class="gauge-zone">
   <div id="gauges"></div>
 </div>
 
@@ -2107,9 +2136,7 @@ function renderGauges(scope) {
   const wrap = document.createElement('div');
   wrap.className = 'g-wrap' + (scope ? ' dept' : '');
   
-  if (!isEditable) {
-    wrap.classList.add('gauge-readonly');
-  }
+  // On n'ajoute PLUS la classe gauge-readonly
 
   const hdr = document.createElement('div'); hdr.className = 'g-hdr';
   const ttl = document.createElement('div'); ttl.className = 'g-title';
