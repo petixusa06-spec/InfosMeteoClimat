@@ -26,6 +26,24 @@
 ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:20px;border:2px solid var(--bg)}
 ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22)}
 :focus-visible{outline:2px solid var(--acc2);outline-offset:2px;border-radius:2px}
+@media (max-width:760px){
+  .page{padding:10px;gap:8px}
+  .app-hdr{flex-wrap:wrap;gap:10px;padding:12px}
+  .app-title{font-size:14px}
+  .app-title::after{display:none}
+  .hdr-controls{width:100%;flex-wrap:wrap;gap:8px}
+  .view-tabs{overflow-x:auto;width:100%;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  .view-tabs::-webkit-scrollbar{height:3px}
+  .vtab{white-space:nowrap;flex-shrink:0}
+  .day-tabs{width:100%}
+  .dtab{flex:1;text-align:center}
+  .top{flex-direction:column}
+  .sb{width:100%}
+  #map-col,#map-prob-col,#map-next-col,#map-risk-col{width:100%}
+  #radar-map{height:360px!important}
+  #risk-img-wrap{min-height:280px}
+  #gauges{padding:0 2px}
+}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 body{
   font-family:var(--font-b);color:var(--t1);min-height:100vh;
@@ -110,6 +128,7 @@ body{
 .auth-locked{opacity:.5;pointer-events:none}
 body.role-visitor .edit-zone > *{display:none!important}
 body.role-visitor .edit-zone > .legend-zone{display:block!important}
+body.role-visitor #risk-img-toolbar,body.role-visitor #risk-size-ctrl{display:none!important}
 body.role-visitor .legend-zone{pointer-events:none}
 body.role-visitor .legend-zone button{cursor:default}
 body.role-visitor .legend-zone .lvl-btn.on{background:transparent!important;box-shadow:none!important;border-color:transparent!important;color:var(--t2)!important}
@@ -216,7 +235,7 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
 
   <div class="app-hdr">
     <div class="app-title"><span class="dot"></span>Carte Vigilance Météo France</div>
-    <div style="display:flex;align-items:center;gap:12px">
+    <div class="hdr-controls" style="display:flex;align-items:center;gap:12px">
       <div class="view-tabs">
         <button class="vtab on" id="vtab-vigil" onclick="switchView('vigilance')">Vigilance</button>
         <span class="vtab-sep"></span>
@@ -370,7 +389,7 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
   <!-- VUE CARTES DE RISQUE -->
   <div class="top" id="view-risk" style="display:none">
     <div id="map-risk-col" style="flex:1;min-width:0;position:relative">
-      <div id="risk-img-wrap" style="width:100%;min-height:520px;border-radius:12px;background:linear-gradient(135deg,#131823 0%,#1a1f2e 100%);border:2px dashed rgba(249,115,22,.3);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer;transition:all .2s"
+      <div id="risk-img-wrap" style="width:100%;min-height:380px;border-radius:12px;background:linear-gradient(135deg,#131823 0%,#1a1f2e 100%);border:2px dashed rgba(249,115,22,.3);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer;transition:all .2s"
            onclick="document.getElementById('risk-file-inp').click()"
            ondragover="event.preventDefault();this.style.borderColor='#f97316';this.style.background='rgba(249,115,22,.05)'"
            ondragleave="this.style.borderColor='rgba(249,115,22,.3)';this.style.background='linear-gradient(135deg,#131823 0%,#1a1f2e 100%)'"
@@ -386,9 +405,13 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
           </div>
         </div>
       </div>
-      <div id="risk-img-toolbar" style="display:none;position:absolute;top:10px;right:10px;display:none;gap:6px">
+      <div id="risk-img-toolbar" style="display:none;position:absolute;top:10px;right:10px;gap:6px">
         <button onclick="document.getElementById('risk-file-inp').click()" style="background:rgba(12,15,20,.82);border:1px solid var(--b2);border-radius:7px;color:var(--t2);padding:5px 11px;font-size:12px;cursor:pointer;backdrop-filter:blur(8px)">↺ Changer</button>
         <button onclick="riskClear()" style="background:rgba(12,15,20,.82);border:1px solid rgba(239,68,68,.4);border-radius:7px;color:#ef4444;padding:5px 11px;font-size:12px;cursor:pointer;backdrop-filter:blur(8px)">✕ Supprimer</button>
+      </div>
+      <div id="risk-size-ctrl" style="display:none;position:absolute;bottom:14px;right:14px;align-items:center;gap:8px;background:rgba(12,15,20,.82);border:1px solid var(--b2);border-radius:7px;padding:6px 10px;backdrop-filter:blur(8px)">
+        <span style="font-size:10px;color:var(--t3);font-family:var(--font-m);white-space:nowrap">Taille <span id="risk-size-val">380px</span></span>
+        <input type="range" id="risk-size-slider" min="240" max="900" step="10" value="380" oninput="riskResize(this.value)" style="width:100px;accent-color:var(--acc)">
       </div>
       <div id="risk-img-badge" style="display:none;position:absolute;bottom:14px;left:14px;background:rgba(255,255,255,.94);border:1px solid rgba(249,115,22,.3);border-radius:8px;padding:7px 12px;backdrop-filter:blur(8px);pointer-events:none">
         <p id="risk-badge-label" style="font-size:11px;font-weight:700;color:#f97316;margin:0"></p>
@@ -1665,6 +1688,7 @@ function _showRiskImg(url) {
   wrap.removeAttribute('ondrop'); wrap.onclick = null;
   document.getElementById('risk-img-toolbar').style.display = 'flex';
   document.getElementById('risk-img-badge').style.display = 'block';
+  document.getElementById('risk-size-ctrl').style.display = 'flex';
   document.getElementById('risk-badge-label').textContent = RISK_SCALES[activeRiskPhenom].label;
   riskImgLoaded = true;
 }
@@ -1684,8 +1708,16 @@ function _showRiskPlaceholder() {
   wrap.onclick = () => document.getElementById('risk-file-inp').click();
   document.getElementById('risk-img-toolbar').style.display = 'none';
   document.getElementById('risk-img-badge').style.display = 'none';
+  document.getElementById('risk-size-ctrl').style.display = 'none';
+  wrap.style.height = '';
+  document.getElementById('risk-size-slider').value = 380;
+  document.getElementById('risk-size-val').textContent = '380px';
   document.getElementById('risk-file-inp').value = '';
   riskImgLoaded = false;
+}
+function riskResize(px) {
+  document.getElementById('risk-img-wrap').style.height = px + 'px';
+  document.getElementById('risk-size-val').textContent = px + 'px';
 }
 function refreshRiskImageDisplay() {
   const url = riskImages[activeRiskPhenom];
