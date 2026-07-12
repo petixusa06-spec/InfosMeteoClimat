@@ -1059,6 +1059,7 @@ let dvActive     = false;
 let dvLevel      = 'orange';
 let dvPicto      = null;
 let zoomedDept   = null;
+window.zoomedDept = zoomedDept;  // <-- AJOUTE CETTE LIGNE
 let activeDay    = 'today';
 let svgEl=null, svgSel=null, geoPath=null, layerSel=null;
 let features=[], pathMap={}, hatchIds={};
@@ -1102,6 +1103,36 @@ const gaugeData = {
     tomorrow: [{ picto: null,    segs: [] }]
   }
 };
+  // Sauvegarde des jauges dans localStorage
+function saveGaugeData() {
+  try {
+    localStorage.setItem('lcdc_gaugeData', JSON.stringify(gaugeData));
+  } catch (e) {}
+}
+
+function loadGaugeData() {
+  try {
+    const saved = localStorage.getItem('lcdc_gaugeData');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      for (const scope of ['national', ...Object.keys(parsed)]) {
+        if (!gaugeData[scope]) {
+          gaugeData[scope] = { today: [{ picto: null, segs: [] }], tomorrow: [{ picto: null, segs: [] }] };
+        }
+        if (parsed[scope]) {
+          if (parsed[scope].today) gaugeData[scope].today = parsed[scope].today;
+          if (parsed[scope].tomorrow) gaugeData[scope].tomorrow = parsed[scope].tomorrow;
+        }
+      }
+    }
+  } catch (e) {}
+}
+
+// Exposer gaugeData sur window pour Firebase
+window.gaugeData = gaugeData;
+
+// Charger les données sauvegardées
+loadGaugeData();
 function gRows(scope) {
   const k = scope || 'national';
   if (!gaugeData[k]) gaugeData[k] = { today:[{ picto:null, segs:[] }], tomorrow:[{ picto:null, segs:[] }] };
@@ -2090,9 +2121,10 @@ function renderGauges(scope) {
 
   const addBtn = document.createElement('button'); addBtn.className = 'g-add';
   addBtn.textContent = '+ Phénomène';
-  addBtn.onclick = () => { gRows(scope).push({ picto: null, segs: [] }); renderGauges(scope); };
+  addBtn.onclick = () => { gRows(scope).push({ picto: null, segs: [] }); renderGauges(scope); saveGaugeData();};
   wrap.appendChild(addBtn);
   sec.appendChild(wrap);
+  saveGaugeData();
 }
 
 function buildGRow(scope, ri, row, canDel) {
@@ -2126,7 +2158,7 @@ function buildGRow(scope, ri, row, canDel) {
 
   if (canDel) {
     const d = document.createElement('button'); d.className = 'g-del'; d.textContent = '×';
-    d.onclick = () => { gRows(scope).splice(ri,1); renderGauges(zoomedDept); };
+    d.onclick = () => { gRows(scope).splice(ri,1); renderGauges(zoomedDept); saveGaugeData(); };
     el.appendChild(d);
   }
   return el;
@@ -2180,6 +2212,7 @@ function drawSeg(svgT, tlEl, scope, ri, si, seg) {
     const nl=(ns2/24)*100, nr=((ns2+dur)/24)*100;
     rect.setAttribute('x',nl+'%'); rect.setAttribute('width',(nr-nl)+'%');
     hL.setAttribute('x',nl+'%'); hR.setAttribute('x',`calc(${nr}% - 8px)`);
+    saveGaugeData();
   }));
 
   hL.addEventListener('mousedown', makeDrag((mv, rc, sx) => {
@@ -2189,6 +2222,7 @@ function drawSeg(svgT, tlEl, scope, ri, si, seg) {
     rows[ri].segs[si].s = ns2;
     const nl=(ns2/24)*100, nr=(rows[ri].segs[si].e/24)*100;
     rect.setAttribute('x',nl+'%'); rect.setAttribute('width',(nr-nl)+'%'); hL.setAttribute('x',nl+'%');
+    saveGaugeData();
   }));
 
   hR.addEventListener('mousedown', makeDrag((mv, rc, sx) => {
@@ -2198,10 +2232,11 @@ function drawSeg(svgT, tlEl, scope, ri, si, seg) {
     rows[ri].segs[si].e = ne;
     const nl=(rows[ri].segs[si].s/24)*100, nr=(ne/24)*100;
     rect.setAttribute('x',nl+'%'); rect.setAttribute('width',(nr-nl)+'%'); hR.setAttribute('x',`calc(${nr}% - 8px)`);
+    saveGaugeData();
   }));
 
   g.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); openLvlPop(e, scope, ri, si); });
-  g.addEventListener('dblclick', e => { e.stopPropagation(); gRows(scope)[ri].segs.splice(si,1); renderGauges(zoomedDept); });
+  g.addEventListener('dblclick', e => { e.stopPropagation(); gRows(scope)[ri].segs.splice(si,1); renderGauges(zoomedDept);  saveGaugeData(); });
   svgT.appendChild(g);
 }
 
@@ -2211,7 +2246,7 @@ function openLvlPop(e, scope, ri, si) {
   Object.entries(LEVELS).forEach(([lv, info]) => {
     const it = document.createElement('div'); it.className = 'lp-item';
     it.innerHTML = `<span class="lp-dot" style="background:${info.color}"></span>${info.label}`;
-    it.onclick = () => { gRows(scope)[ri].segs[si].lv=lv; renderGauges(zoomedDept); p.classList.remove('open'); };
+    it.onclick = () => { gRows(scope)[ri].segs[si].lv=lv; renderGauges(zoomedDept); p.classList.remove('open'); saveGaugeData();};
     p.appendChild(it);
   });
   p.style.left = e.clientX+'px'; p.style.top = e.clientY+'px'; p.classList.add('open'); e.stopPropagation();
@@ -2227,7 +2262,7 @@ function openPhenPop(e, scope, ri) {
   });
   const none = document.createElement('div'); none.className='pp-item';
   none.innerHTML = `<span style="font-size:18px;color:var(--t3)">—</span><span>Aucun</span>`;
-  none.onclick = () => { gRows(scope)[ri].picto=null; renderGauges(zoomedDept); p.classList.remove('open'); };
+  none.onclick = () => { gRows(scope)[ri].picto=null; renderGauges(zoomedDept); p.classList.remove('open'); saveGaugeData(); };
   p.appendChild(none);
   const r = e.currentTarget.getBoundingClientRect();
   p.style.left = (r.right+6)+'px'; p.style.top = r.top+'px'; p.classList.add('open'); e.stopPropagation();
@@ -2486,7 +2521,11 @@ async function applyPublishedState() {
       if (remote.neighborData) neighborData = remote.neighborData;
       if (remote.probData)     probData     = remote.probData;
       if (remote.nextData)     nextData     = remote.nextData;
-      if (remote.gaugeData)    Object.assign(gaugeData, remote.gaugeData);
+if (remote.gaugeData) {
+  Object.assign(gaugeData, remote.gaugeData);
+  // Sauvegarde immédiate pour persister localement
+  saveGaugeData();
+}
       if (remote.riskData)     riskData     = remote.riskData;
 setTimeout(() => {
   try {
@@ -2501,8 +2540,8 @@ setTimeout(() => {
 
     if (typeof buildRiskSidebar === "function") buildRiskSidebar();
     if (typeof redrawRiskMap === "function") redrawRiskMap();
-
-    if (typeof refreshGauges === "function") refreshGauges();
+    
+if (typeof renderGauges === "function") renderGauges(zoomedDept);
 
     if (typeof updateLeg === "function") updateLeg();
     if (typeof updateLegProb === "function") updateLegProb();
