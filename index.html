@@ -8,6 +8,17 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
+  .gauge-readonly .g-tl,
+.gauge-readonly .g-picto,
+.gauge-readonly .g-add,
+.gauge-readonly .g-del {
+  pointer-events: none !important;
+  opacity: 0.6;
+  cursor: default !important;
+}
+.gauge-readonly .g-del { display: none !important; }
+.gauge-readonly .g-add { display: none !important; }
+.gauge-readonly .g-picto { opacity: 0.6; }
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0a0d12;--surf:#12161d;--surf2:#1a1f28;
@@ -478,7 +489,9 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
     </div>
   </div>
 
+  <div class="edit-zone">
   <div id="gauges"></div>
+</div>
 
   <div class="site-ftr">
     <span>La Colère du Ciel — données de vigilance météorologique</span>
@@ -2091,9 +2104,15 @@ function dlMap() {
 function renderGauges(scope) {
   const sec = document.getElementById('gauges');
   sec.innerHTML = '';
+  
+  const isEditable = currentRole === 'admin';
   const rows = gRows(scope);
   const wrap = document.createElement('div');
   wrap.className = 'g-wrap' + (scope ? ' dept' : '');
+  
+  if (!isEditable) {
+    wrap.classList.add('gauge-readonly');
+  }
 
   const hdr = document.createElement('div'); hdr.className = 'g-hdr';
   const ttl = document.createElement('div'); ttl.className = 'g-title';
@@ -2116,23 +2135,34 @@ function renderGauges(scope) {
   wrap.appendChild(ticks);
 
   const rowsEl = document.createElement('div'); rowsEl.className = 'g-rows';
-  rows.forEach((row, ri) => rowsEl.appendChild(buildGRow(scope, ri, row, rows.length > 1)));
+  rows.forEach((row, ri) => rowsEl.appendChild(buildGRow(scope, ri, row, rows.length > 1, isEditable)));
   wrap.appendChild(rowsEl);
 
-  const addBtn = document.createElement('button'); addBtn.className = 'g-add';
-  addBtn.textContent = '+ Phénomène';
-  addBtn.onclick = () => { gRows(scope).push({ picto: null, segs: [] }); renderGauges(scope); saveGaugeData();};
-  wrap.appendChild(addBtn);
+  if (isEditable) {
+    const addBtn = document.createElement('button'); addBtn.className = 'g-add';
+    addBtn.textContent = '+ Phénomène';
+    addBtn.onclick = () => { 
+      gRows(scope).push({ picto: null, segs: [] }); 
+      renderGauges(scope); 
+      saveGaugeData(); 
+    };
+    wrap.appendChild(addBtn);
+  }
+  
   sec.appendChild(wrap);
   saveGaugeData();
 }
-
-function buildGRow(scope, ri, row, canDel) {
+function buildGRow(scope, ri, row, canDel, isEditable) {
   const el = document.createElement('div'); el.className = 'g-row';
 
   const pw = document.createElement('div'); pw.className = 'g-picto';
   pw.innerHTML = row.picto ? ico(row.picto, 20) : '<span style="font-size:13px;color:var(--t3)">+</span>';
-  pw.onclick = e => openPhenPop(e, scope, ri);
+  if (isEditable) {
+    pw.onclick = e => openPhenPop(e, scope, ri);
+  } else {
+    pw.style.cursor = 'default';
+    pw.title = 'Connecte-toi pour modifier';
+  }
   el.appendChild(pw);
 
   const lbl = document.createElement('div'); lbl.className = 'g-lbl';
@@ -2145,30 +2175,52 @@ function buildGRow(scope, ri, row, canDel) {
   svgT.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none';
   svgT.setAttribute('preserveAspectRatio','none');
   tl.appendChild(svgT);
-  row.segs.forEach((seg, si) => drawSeg(svgT, tl, scope, ri, si, seg));
-  tl.addEventListener('mousedown', e => {
-    if (e.target !== tl && e.target !== bg) return;
-    const r = tl.getBoundingClientRect();
-    const h = Math.round(((e.clientX-r.left)/r.width)*24*4)/4;
-    gRows(scope)[ri].segs.push({ s: Math.max(0,h-1), e: Math.min(24,h+1), lv: activeLevel });
-    gRows(scope)[ri].segs.sort((a,b) => a.s-b.s);
-    renderGauges(zoomedDept);
-  });
+  
+  row.segs.forEach((seg, si) => drawSeg(svgT, tl, scope, ri, si, seg, isEditable));
+  
+  if (isEditable) {
+    tl.addEventListener('mousedown', e => {
+      if (e.target !== tl && e.target !== bg) return;
+      const r = tl.getBoundingClientRect();
+      const h = Math.round(((e.clientX - r.left) / r.width) * 24 * 4) / 4;
+      const rows = gRows(scope);
+      rows[ri].segs.push({ s: Math.max(0, h - 1), e: Math.min(24, h + 1), lv: activeLevel });
+      rows[ri].segs.sort((a, b) => a.s - b.s);
+      renderGauges(zoomedDept);
+      saveGaugeData();
+    });
+  }
   el.appendChild(tl);
 
-  if (canDel) {
+  if (canDel && isEditable) {
     const d = document.createElement('button'); d.className = 'g-del'; d.textContent = '×';
-    d.onclick = () => { gRows(scope).splice(ri,1); renderGauges(zoomedDept); saveGaugeData(); };
+    d.onclick = () => { 
+      gRows(scope).splice(ri, 1); 
+      renderGauges(zoomedDept); 
+      saveGaugeData(); 
+    };
     el.appendChild(d);
   }
   return el;
 }
 
-function drawSeg(svgT, tlEl, scope, ri, si, seg) {
+function drawSeg(svgT, tlEl, scope, ri, si, seg, isEditable) {
   const ns = 'http://www.w3.org/2000/svg';
   const pL = (seg.s/24)*100, pR = (seg.e/24)*100, wPct = pR-pL;
   const color = LEVELS[seg.lv].color;
   const g = document.createElementNS(ns,'g');
+  
+  if (!isEditable) {
+    g.style.cursor = 'default';
+    const rect = document.createElementNS(ns,'rect');
+    rect.setAttribute('x',pL+'%'); rect.setAttribute('y','0');
+    rect.setAttribute('width',wPct+'%'); rect.setAttribute('height','100%');
+    rect.setAttribute('fill',color); rect.setAttribute('rx','3');
+    g.appendChild(rect);
+    svgT.appendChild(g);
+    return;
+  }
+  
   g.style.pointerEvents = 'all'; g.style.cursor = 'grab';
 
   const rect = document.createElementNS(ns,'rect');
@@ -2236,8 +2288,9 @@ function drawSeg(svgT, tlEl, scope, ri, si, seg) {
   }));
 
   g.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); openLvlPop(e, scope, ri, si); });
-  g.addEventListener('dblclick', e => { e.stopPropagation(); gRows(scope)[ri].segs.splice(si,1); renderGauges(zoomedDept);  saveGaugeData(); });
+  g.addEventListener('dblclick', e => { e.stopPropagation(); gRows(scope)[ri].segs.splice(si,1); renderGauges(zoomedDept); saveGaugeData(); });
   svgT.appendChild(g);
+}
 }
 
 /* ── POPUPS ── */
