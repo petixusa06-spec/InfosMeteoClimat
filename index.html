@@ -1116,7 +1116,7 @@ const gaugeData = {
     tomorrow: [{ picto: null,    segs: [] }]
   }
 };
-  // Sauvegarde des jauges dans localStorage
+
 function saveGaugeData() {
   try {
     localStorage.setItem('lcdc_gaugeData', JSON.stringify(gaugeData));
@@ -1141,10 +1141,7 @@ function loadGaugeData() {
   } catch (e) {}
 }
 
-// Exposer gaugeData sur window pour Firebase
 window.gaugeData = gaugeData;
-
-// Charger les données sauvegardées
 loadGaugeData();
 function gRows(scope) {
   const k = scope || 'national';
@@ -2751,7 +2748,7 @@ const _publishedStateReady = applyPublishedState();
     setTimeout(() => { if (!svgNextEl) initNextMap(); }, 150);
     setTimeout(() => { if (!svgProbEl) initProbMap(); }, 200);
   }
-)();
+})();
 </script>
 </body>
 </html>
