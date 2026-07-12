@@ -348,9 +348,28 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
             <div class="pgrid" id="dv-pgrid"></div>
           </div>
         </div>
-        <p class="hint">Clic = appliquer · Dbl-clic = zoom</p>
+                <p class="hint">Clic = appliquer · Dbl-clic = zoom</p>
         <button class="rst-btn" onclick="resetAll()">↺ Réinitialiser</button>
-      </div>
+
+        <!-- AJOUTE CETTE CARTE ICI -->
+        <div class="card" style="border-color:rgba(34,211,238,.2);margin-top:4px">
+          <p class="stitle" style="color:#22d3ee">Sélection multiple</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+            <button class="vtab" id="btn-select-mode" onclick="toggleSelectMode()" style="font-size:10px;padding:4px 10px;border-color:rgba(34,211,238,.3);color:#22d3ee">
+              ☐ Mode sélection
+            </button>
+            <button class="vtab" id="btn-apply-selection" onclick="applySelection()" style="font-size:10px;padding:4px 10px;border-color:rgba(34,211,238,.2);color:#7ce4f5;display:none">
+              ✓ Appliquer aux sélectionnés
+            </button>
+            <button class="vtab" id="btn-clear-selection" onclick="clearSelection()" style="font-size:10px;padding:4px 10px;border-color:rgba(239,68,68,.2);color:#ef4444;display:none">
+              ✕ Effacer
+            </button>
+          </div>
+          <p id="select-status" style="font-size:10px;color:var(--t3);margin:2px 0 0">
+            <span id="select-count">0</span> département(s) sélectionné(s)
+          </p>
+          <p style="font-size:9px;color:var(--t3);margin-top:4px;opacity:.6">Touche <kbd style="background:var(--surf2);padding:0 5px;border-radius:2px">S</kbd> pour activer · <kbd style="background:var(--surf2);padding:0 5px;border-radius:2px">Échap</kbd> pour effacer</p>
+        </div>
       <div class="edit-zone dl-zone">
         <button class="act-btn publish-btn" id="publish-btn" onclick="publishState()">⇪ Publier les prévisions</button>
         <p class="publish-status" id="publish-status"></p>
@@ -491,6 +510,23 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
     </div>
   </div>
 
+  <div class="card" style="border-color:rgba(34,211,238,.2);margin-top:4px">
+  <p class="stitle" style="color:#22d3ee">Sélection multiple</p>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+    <button class="vtab" id="btn-select-mode" onclick="toggleSelectMode()" style="font-size:10px;padding:4px 10px;border-color:rgba(34,211,238,.3);color:#22d3ee">
+      ☐ Mode sélection
+    </button>
+    <button class="vtab" id="btn-apply-selection" onclick="applySelection()" style="font-size:10px;padding:4px 10px;border-color:rgba(34,211,238,.2);color:#7ce4f5;display:none">
+      ✓ Appliquer aux sélectionnés
+    </button>
+    <button class="vtab" id="btn-clear-selection" onclick="clearSelection()" style="font-size:10px;padding:4px 10px;border-color:rgba(239,68,68,.2);color:#ef4444;display:none">
+      ✕ Effacer
+    </button>
+  </div>
+  <p id="select-status" style="font-size:10px;color:var(--t3);margin:2px 0 0">
+    <span id="select-count">0</span> département(s) sélectionné(s)
+  </p>
+</div>
   <!-- VUE RADAR EN DIRECT -->
   <div class="top" id="view-radar" style="display:none;flex-direction:column;gap:10px">
     <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -1105,6 +1141,9 @@ window.zoomedDept = zoomedDept;  // <-- AJOUTE CETTE LIGNE
 let activeDay    = 'today';
 let svgEl=null, svgSel=null, geoPath=null, layerSel=null;
 let features=[], pathMap={}, hatchIds={};
+  // AJOUTE CES 2 LIGNES ICI
+let selectMode = false;         // Mode sélection activé ?
+let selectedDepts = new Set();  // Noms des départements sélectionnés
 
 /* ── ÉTAT CARTE PROBABLE ── */
 let probData     = {};          // { deptName: { level, picto } }
@@ -1904,6 +1943,112 @@ function resetAll() {
   redrawAllNeighbors();
 }
 
+/* ── SÉLECTION MULTIPLE ── */
+function toggleSelectMode() {
+  selectMode = !selectMode;
+  const btn = document.getElementById('btn-select-mode');
+  const applyBtn = document.getElementById('btn-apply-selection');
+  const clearBtn = document.getElementById('btn-clear-selection');
+  
+  if (selectMode) {
+    btn.textContent = '☑ Mode sélection (actif)';
+    btn.style.borderColor = '#22d3ee';
+    btn.style.background = 'rgba(34,211,238,.15)';
+    applyBtn.style.display = 'inline-block';
+    clearBtn.style.display = 'inline-block';
+    showToast('🖱 Clique sur les départements pour les sélectionner', 2500);
+  } else {
+    btn.textContent = '☐ Mode sélection';
+    btn.style.borderColor = 'rgba(34,211,238,.3)';
+    btn.style.background = 'transparent';
+    applyBtn.style.display = 'none';
+    clearBtn.style.display = 'none';
+    clearSelection();
+  }
+}
+
+function toggleDeptSelection(name) {
+  if (!selectMode) return;
+  
+  if (selectedDepts.has(name)) {
+    selectedDepts.delete(name);
+  } else {
+    selectedDepts.add(name);
+  }
+  updateSelectUI();
+  highlightSelectedDepts();
+}
+
+function clearSelection() {
+  selectedDepts.clear();
+  updateSelectUI();
+  highlightSelectedDepts();
+}
+
+function updateSelectUI() {
+  document.getElementById('select-count').textContent = selectedDepts.size;
+}
+
+function highlightSelectedDepts() {
+  if (!layerSel) return;
+  
+  layerSel.selectAll('path.dept').each(function(d) {
+    const nm = d.properties && (d.properties.name || d.properties.NAME || '');
+    const isSelected = selectedDepts.has(nm);
+    const sel = d3.select(this);
+    
+    if (isSelected) {
+      sel.attr('stroke', '#22d3ee')
+         .attr('stroke-width', 3)
+         .attr('stroke-dasharray', '6,4');
+    } else {
+      // Rétablir le style normal (sauf si zoomé)
+      if (nm === zoomedDept) {
+        sel.attr('stroke', '#fff').attr('stroke-width', 2.5).attr('stroke-dasharray', 'none');
+      } else {
+        const dd = curData()[nm];
+        if (dd && dd.probable) {
+          sel.attr('stroke', LEVELS[dd.level].color).attr('stroke-width', 2).attr('stroke-dasharray', '4,3');
+        } else {
+          sel.attr('stroke', DSTROKE).attr('stroke-width', 0.6).attr('stroke-dasharray', 'none');
+        }
+      }
+    }
+  });
+}
+
+function applySelection() {
+  if (selectedDepts.size === 0) {
+    showToast('Aucun département sélectionné', 2000);
+    return;
+  }
+  
+  if (!requireAuth()) return;
+  
+  const data = curData();
+  const isProb = !!probLevel;
+  const lvl = activeLevel;
+  const picto = activePicto || null;
+  
+  selectedDepts.forEach(name => {
+    const dd = data[name];
+    if (dd && dd.level === lvl && dd.picto === picto && !!dd.probable === isProb) {
+      // Si déjà identique, on efface (toggle)
+      delete data[name];
+    } else {
+      const prevDv = dd ? dd.dv : null;
+      data[name] = { level: lvl, picto: picto, dv: prevDv || null };
+      if (isProb) data[name].probable = true;
+    }
+  });
+  
+  redrawMap();
+  showToast(`✅ Appliqué à ${selectedDepts.size} département${selectedDepts.size > 1 ? 's' : ''}`, 2500);
+  
+  // Optionnel : désactiver le mode sélection après application
+  // toggleSelectMode();
+}
+
 /* ── VOISINS : RENDU ── */
 function redrawNeighborPath(sel, name) {
   const nd = neighborData[activeDay]['nb:'+name];
@@ -2352,6 +2497,22 @@ document.addEventListener('keydown', e => {
   if (e.key==='Escape') { document.getElementById('lvl-pop').classList.remove('open'); document.getElementById('phen-pop').classList.remove('open'); if(zoomedDept) unzoom(); }
 });
 
+// AJOUTE CE NOUVEAU LISTENER ICI
+document.addEventListener('keydown', function(e) {
+  // Touche S pour activer/désactiver le mode sélection
+  if (e.key === 's' || e.key === 'S') {
+    if (!e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      if (typeof toggleSelectMode === 'function') toggleSelectMode();
+    }
+  }
+  
+  // Échap pour effacer la sélection
+  if (e.key === 'Escape' && selectMode) {
+    clearSelection();
+  }
+});
+
 /* ── INIT ── */
 /* ══════════════════════════════════════════════════════════
    RADAR EN DIRECT
@@ -2740,25 +2901,34 @@ const _publishedStateReady = applyPublishedState();
       if (nm !== zoomedDept) d3.select(this).attr('stroke',DSTROKE).attr('stroke-width',0.6);
     })
     .on('click', function(event, d) {
-      if (!requireAuth()) return;
-      const nm = d.properties&&(d.properties.name||d.properties.NAME||''); if(!nm) return;
-      const data = curData(); const dd = data[nm];
-      if (dvActive) {
-        if (!dd) return;
-        if (dd.dv && dd.dv.level===dvLevel && dd.dv.picto===(dvPicto||null)) delete dd.dv;
-        else dd.dv = { level:dvLevel, picto:dvPicto||null };
-        updateDVBadges(); return;
-      }
-      const isProb = !!probLevel;
-      if (dd && dd.level===activeLevel && dd.picto===(activePicto||null) && !!dd.probable===isProb) {
-        delete data[nm];
-      } else {
-        const prevDv = dd ? dd.dv : null;
-        data[nm] = { level:activeLevel, picto:activePicto||null, dv:prevDv||null };
-        if (isProb) data[nm].probable = true;
-      }
-      redrawMap();
-    })
+  const nm = d.properties&&(d.properties.name||d.properties.NAME||''); 
+  if(!nm) return;
+  
+  // Si en mode sélection, on sélectionne/désélectionne
+  if (selectMode) {
+    toggleDeptSelection(nm);
+    return;
+  }
+  
+  // Sinon, comportement normal
+  if (!requireAuth()) return;
+  const data = curData(); const dd = data[nm];
+  if (dvActive) {
+    if (!dd) return;
+    if (dd.dv && dd.dv.level===dvLevel && dd.dv.picto===(dvPicto||null)) delete dd.dv;
+    else dd.dv = { level:dvLevel, picto:dvPicto||null };
+    updateDVBadges(); return;
+  }
+  const isProb = !!probLevel;
+  if (dd && dd.level===activeLevel && dd.picto===(activePicto||null) && !!dd.probable===isProb) {
+    delete data[nm];
+  } else {
+    const prevDv = dd ? dd.dv : null;
+    data[nm] = { level:activeLevel, picto:activePicto||null, dv:prevDv||null };
+    if (isProb) data[nm].probable = true;
+  }
+  redrawMap();
+})
     .on('dblclick', function(event, d) {
       event.stopPropagation();
       const nm = d.properties&&(d.properties.name||d.properties.NAME||''); if(!nm) return;
