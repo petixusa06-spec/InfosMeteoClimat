@@ -1890,19 +1890,29 @@ function resetAll() {
 /* ── VOISINS : RENDU ── */
 function redrawNeighborPath(sel, name) {
   const nd = neighborData[activeDay]['nb:'+name];
-  // Si pas d'alerte → vert
+  
+  // Pas d'alerte du tout → vert
   if (!nd) {
     sel.attr('fill', DFILL)
        .attr('stroke', '#000').attr('stroke-width', 0.6);
     return;
   }
   
-  // Si un filtre est actif ET que le picto ne correspond pas → vert
-  if (mapPictoFilter && nd.picto && nd.picto !== mapPictoFilter) {
-    sel.attr('fill', DFILL)
-       .attr('stroke', '#000').attr('stroke-width', 0.6);
+  // Si un filtre est actif
+  if (mapPictoFilter) {
+    // On vérifie si l'alerte a un picto ET qu'il correspond au filtre
+    const hasMatchingPicto = nd.picto && nd.picto === mapPictoFilter;
+    if (hasMatchingPicto) {
+      // L'alerte correspond au filtre → on affiche la couleur
+      sel.attr('fill', LEVELS[nd.level].color)
+         .attr('stroke', 'rgba(0,0,0,.3)').attr('stroke-width', 0.7);
+    } else {
+      // Pas de picto ou picto différent → vert
+      sel.attr('fill', DFILL)
+         .attr('stroke', '#000').attr('stroke-width', 0.6);
+    }
   } else {
-    // Sinon on affiche la couleur de l'alerte
+    // Pas de filtre → on affiche la couleur de l'alerte
     sel.attr('fill', LEVELS[nd.level].color)
        .attr('stroke', 'rgba(0,0,0,.3)').attr('stroke-width', 0.7);
   }
@@ -1913,8 +1923,10 @@ function redrawNeighborPictos() {
   pLayer.selectAll('*').remove();
   
   Object.entries(neighborData[activeDay]).forEach(([key, nd]) => {
+    // Si pas de picto → on n'affiche rien
     if (!nd.picto) return;
-    // Si filtre actif ET que le picto ne correspond pas → on n'affiche pas le picto
+    
+    // Si filtre actif ET que le picto ne correspond pas → on n'affiche pas
     if (mapPictoFilter && nd.picto !== mapPictoFilter) return;
     
     const name = key.slice(3);
