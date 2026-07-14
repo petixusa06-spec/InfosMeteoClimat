@@ -612,6 +612,21 @@ window.loadPublishedState = async function() {
 };
 </script>
 <script>
+  // Correspondance entre le nom du phénomène et son picto associé
+const PHENOM_TO_PICTO = {
+  'canicule': 'chaleur',
+  'chaleur': 'chaleur',
+  'froid': 'froid',
+  'vent': 'vent',
+  'orage': 'orage',
+  'pluies': 'pluies',
+  'inondation': 'inondation',
+  'neige': 'neige',
+  'verglas': 'verglas',
+  'vagues': 'vagues',
+  'avalanches': 'avalanches',
+  'neigeverglas': 'neigeverglas'
+};
 /* ── ICÔNES SVG (paths purs, net à toute résolution) ── */
 /* URLs Météo France officielles (PNG haute qualité) */
 const PICTO_URLS = {
@@ -1891,28 +1906,27 @@ function resetAll() {
 function redrawNeighborPath(sel, name) {
   const nd = neighborData[activeDay]['nb:'+name];
   
-  // Pas d'alerte du tout → vert
   if (!nd) {
     sel.attr('fill', DFILL)
        .attr('stroke', '#000').attr('stroke-width', 0.6);
     return;
   }
   
-  // Si un filtre est actif
   if (mapPictoFilter) {
-    // On vérifie si l'alerte a un picto ET qu'il correspond au filtre
+    // L'alerte a le bon picto
     const hasMatchingPicto = nd.picto && nd.picto === mapPictoFilter;
-    if (hasMatchingPicto) {
-      // L'alerte correspond au filtre → on affiche la couleur
+    
+    // Pour Canicule : on garde les alertes orange/rouge sans picto
+    const isCanicule = mapPictoFilter === 'chaleur' && !nd.picto && (nd.level === 'orange' || nd.level === 'rouge');
+    
+    if (hasMatchingPicto || isCanicule) {
       sel.attr('fill', LEVELS[nd.level].color)
          .attr('stroke', 'rgba(0,0,0,.3)').attr('stroke-width', 0.7);
     } else {
-      // Pas de picto ou picto différent → vert
       sel.attr('fill', DFILL)
          .attr('stroke', '#000').attr('stroke-width', 0.6);
     }
   } else {
-    // Pas de filtre → on affiche la couleur de l'alerte
     sel.attr('fill', LEVELS[nd.level].color)
        .attr('stroke', 'rgba(0,0,0,.3)').attr('stroke-width', 0.7);
   }
@@ -1962,8 +1976,18 @@ function displayItem(dd) {
   const items = getItems(dd);
   if (!items.length) return null;
   if (!mapPictoFilter) return maxItem(items);
+  
+  // On cherche les items qui ont le bon picto
   const matching = items.filter(it => it.picto === mapPictoFilter);
-  return matching.length ? maxItem(matching) : null;
+  if (matching.length) return maxItem(matching);
+  
+  // Si on filtre par "chaleur" (Canicule) et qu'il y a une alerte orange/rouge sans picto
+  if (mapPictoFilter === 'chaleur') {
+    const caniculeAlert = items.find(it => !it.picto && (it.level === 'orange' || it.level === 'rouge'));
+    if (caniculeAlert) return caniculeAlert;
+  }
+  
+  return null;
 }
 
 function redrawMap() {
