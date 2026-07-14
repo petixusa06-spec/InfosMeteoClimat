@@ -1259,8 +1259,7 @@ function buildProbSidebar() {
 function initProbMap() {
   if (!features.length) return;
   const mapDiv = document.getElementById('map-prob');
-  const W = 600;
-  const H = 624;
+ const W = 600, H = 624;
   
   d3.select(mapDiv).selectAll('svg').remove();
   
@@ -2779,12 +2778,7 @@ const _publishedStateReady = applyPublishedState();
   const key = Object.keys(topo.objects)[0];
   features = topojson.feature(topo, topo.objects[key]).features;
 const W = 480, H = 500;
-  const proj = d3.geoConicConformal()
-  .parallels([44,49])
-  .rotate([-3,0])
-  .center([0,46.5])
-  .scale(1500)
-  .translate([240, 255]);
+  const proj = d3.geoConicConformal().parallels([44,49]).rotate([-3,0]).center([0,46.5]).scale(1860).translate([300,312]);
   geoPath = d3.geoPath().projection(proj);
 
   const svg = d3.select(mapDiv).append('svg')
