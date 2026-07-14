@@ -8,46 +8,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
-  /* La jauge est visible pour tout le monde */
-.gauge-zone { display: block; }
-
-/* Mais les interactions sont désactivées par défaut (visiteur) */
-.gauge-zone .g-tl,
-.gauge-zone .g-picto,
-.gauge-zone .g-add,
-.gauge-zone .g-del {
-  pointer-events: none !important;
-  cursor: default !important;
-}
-.gauge-zone .g-del { display: none !important; }
-.gauge-zone .g-add { display: none !important; }
-.gauge-zone .g-picto { opacity: 0.6; }
-.gauge-zone .g-picto img { opacity: 0.7; }
-
-/* Quand l'admin est connecté, tout devient interactif */
-body.role-admin .gauge-zone .g-tl,
-body.role-admin .gauge-zone .g-picto,
-body.role-admin .gauge-zone .g-add,
-body.role-admin .gauge-zone .g-del {
-  pointer-events: auto !important;
-  cursor: pointer !important;
-}
-body.role-admin .gauge-zone .g-del { display: inline-block !important; }
-body.role-admin .gauge-zone .g-add { display: inline-flex !important; }
-body.role-admin .gauge-zone .g-picto { opacity: 1; }
-body.role-admin .gauge-zone .g-picto img { opacity: 1; }
-  
-  .gauge-readonly .g-tl,
-.gauge-readonly .g-picto,
-.gauge-readonly .g-add,
-.gauge-readonly .g-del {
-  pointer-events: none !important;
-  opacity: 0.6;
-  cursor: default !important;
-}
-.gauge-readonly .g-del { display: none !important; }
-.gauge-readonly .g-add { display: none !important; }
-.gauge-readonly .g-picto { opacity: 0.6; }
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0a0d12;--surf:#12161d;--surf2:#1a1f28;
@@ -215,7 +175,17 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
 .rst-btn:hover{background:var(--surf2);color:var(--t2)}
 .hint{font-size:10px;color:var(--t3);line-height:1.5;text-align:center}
 
-.tip{position:absolute;background:var(--surf);border:1px solid var(--b2);border-left:2px solid var(--acc);border-radius:var(--rs);padding:5px 11px;font-size:11px;font-family:var(--font-m);color:var(--t1);pointer-events:none;display:none;z-index:10;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.55)}
+.tip{position:absolute;background:var(--surf);border:1px solid var(--b2);border-left:2px solid var(--acc);border-radius:var(--rs);padding:8px 12px;font-size:11px;font-family:var(--font-m);color:var(--t1);pointer-events:none;display:none;z-index:10;white-space:nowrap;box-shadow:0 10px 28px rgba(0,0,0,.6)}
+.tip-hdr{display:flex;align-items:baseline;gap:6px;margin-bottom:2px}
+.tip-name{font-family:var(--font-d);font-size:12px;font-weight:700;color:var(--t1)}
+.tip-code{font-family:var(--font-m);font-size:10px;color:var(--acc2);background:rgba(232,162,60,.14);border:1px solid rgba(232,162,60,.3);border-radius:4px;padding:0 5px}
+.tip-alerts{display:flex;flex-direction:column;gap:3px;margin-top:5px;padding-top:5px;border-top:1px solid var(--b1)}
+.tip-alert{display:flex;align-items:center;gap:7px}
+.tip-alert-ring{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.tip-alert-ring img{width:13px;height:13px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
+.tip-alert-txt{font-family:var(--font-b);font-size:11px;color:var(--t1)}
+.tip-alert-lvl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.03em;margin-left:2px}
+.tip-none{font-size:10px;color:var(--t3);margin-top:4px}
 
 .leg-card{position:relative;background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);box-shadow:var(--sh-sm)}
 #leg,#leg-next,#leg-prob{display:none!important}
@@ -228,6 +198,13 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
 #leg img,.prob-legend-item img{background:none!important;box-shadow:none!important;border:none!important}
 
 #gauges{display:flex;flex-direction:column;gap:8px}
+.mapf-btn{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--b2);background:rgba(12,15,20,.82);backdrop-filter:blur(8px);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:all .14s var(--ease);box-shadow:var(--sh-sm)}
+.mapf-btn img{width:17px;height:17px;display:block}
+.mapf-btn.on{border-color:var(--acc);box-shadow:0 0 0 2px rgba(232,162,60,.28)}
+.mapf-btn.all{font-family:var(--font-m);font-size:9px;font-weight:700;color:var(--t2);letter-spacing:.02em}
+.mapf-btn.all.on{color:var(--acc2)}
+.mapf-badge{position:absolute;top:-3px;right:-3px;background:var(--acc);color:#181008;border-radius:50%;width:14px;height:14px;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:var(--font-m);box-shadow:0 0 0 1.5px var(--surf)}
+path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-dasharray:3,2}
 .g-wrap{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);padding:12px 16px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--sh-sm);transition:border-color .2s var(--ease)}
 .g-wrap:hover{border-color:var(--b2)}
 .g-wrap.dept{border-left:2px solid var(--acc)}
@@ -308,6 +285,7 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
   <div class="top" id="view-vigilance">
     <div id="map-col">
       <div id="map" style="width:100%;border-radius:4px;overflow:hidden;background:var(--surf);border:1px solid var(--b1)"></div>
+      <div id="map-filters" style="position:absolute;top:10px;right:10px;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:70%"></div>
       <div class="tip" id="tip"></div>
     </div>
     <div class="sb">
@@ -321,6 +299,18 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
         <div class="card legend-zone">
           <p class="stitle">Phénomène</p>
           <div class="pgrid" id="pgrid"></div>
+        </div>
+        <div class="card" id="multisel-card">
+          <p class="stitle" style="margin-bottom:6px">Sélection multiple</p>
+          <div class="tog-row" onclick="toggleMultiSelect()">
+            <span style="font-size:11px;color:var(--t2)">Activer</span>
+            <div class="tog" id="multisel-tog"><div class="tog-k"></div></div>
+          </div>
+          <div id="multisel-opts" style="display:none;margin-top:8px">
+            <p id="multisel-count" style="font-size:10px;color:var(--t3);margin-bottom:7px">0 département sélectionné</p>
+            <button class="act-btn primary" style="margin-bottom:6px" onclick="applyToSelection()">Appliquer à la sélection</button>
+            <button class="rst-btn" onclick="clearSelection()">Vider la sélection</button>
+          </div>
         </div>
         <div class="card">
           <p class="stitle" style="margin-bottom:6px">Submersion marine</p>
@@ -518,9 +508,7 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
     </div>
   </div>
 
-  <div class="gauge-zone">
   <div id="gauges"></div>
-</div>
 
   <div class="site-ftr">
     <span>La Colère du Ciel — données de vigilance météorologique</span>
@@ -1085,9 +1073,30 @@ const LVL_DEFS = [
   { k:'violet',        l:'Violet',        semi:false }
 ];
 const COASTAL = new Set(['Manche','Calvados','Seine-Maritime','Somme','Pas-de-Calais','Nord','Finistère',"Côtes-d'Armor",'Ille-et-Vilaine','Morbihan','Loire-Atlantique','Vendée','Charente-Maritime','Gironde','Landes','Hérault','Gard','Bouches-du-Rhône','Var','Alpes-Maritimes','Pyrénées-Orientales','Aude','Corse-du-Sud','Haute-Corse']);
+const DEPT_CODES = {'Ain':'01','Aisne':'02','Allier':'03','Alpes-de-Haute-Provence':'04','Hautes-Alpes':'05','Alpes-Maritimes':'06','Ardèche':'07','Ardennes':'08','Ariège':'09','Aube':'10','Aude':'11','Aveyron':'12','Bouches-du-Rhône':'13','Calvados':'14','Cantal':'15','Charente':'16','Charente-Maritime':'17','Cher':'18','Corrèze':'19','Corse-du-Sud':'2A','Haute-Corse':'2B',"Côte-d'Or":'21',"Côtes-d'Armor":'22','Creuse':'23','Dordogne':'24','Doubs':'25','Drôme':'26','Eure':'27','Eure-et-Loir':'28','Finistère':'29','Gard':'30','Haute-Garonne':'31','Gers':'32','Gironde':'33','Hérault':'34','Ille-et-Vilaine':'35','Indre':'36','Indre-et-Loire':'37','Isère':'38','Jura':'39','Landes':'40','Loir-et-Cher':'41','Loire':'42','Haute-Loire':'43','Loire-Atlantique':'44','Loiret':'45','Lot':'46','Lot-et-Garonne':'47','Lozère':'48','Maine-et-Loire':'49','Manche':'50','Marne':'51','Haute-Marne':'52','Mayenne':'53','Meurthe-et-Moselle':'54','Meuse':'55','Morbihan':'56','Moselle':'57','Nièvre':'58','Nord':'59','Oise':'60','Orne':'61','Pas-de-Calais':'62','Puy-de-Dôme':'63','Pyrénées-Atlantiques':'64','Hautes-Pyrénées':'65','Pyrénées-Orientales':'66','Bas-Rhin':'67','Haut-Rhin':'68','Rhône':'69','Haute-Saône':'70','Saône-et-Loire':'71','Sarthe':'72','Savoie':'73','Haute-Savoie':'74','Paris':'75','Seine-Maritime':'76','Seine-et-Marne':'77','Yvelines':'78','Deux-Sèvres':'79','Somme':'80','Tarn':'81','Tarn-et-Garonne':'82','Var':'83','Vaucluse':'84','Vendée':'85','Vienne':'86','Haute-Vienne':'87','Vosges':'88','Yonne':'89','Territoire de Belfort':'90','Essonne':'91','Hauts-de-Seine':'92','Seine-Saint-Denis':'93','Val-de-Marne':'94',"Val-d'Oise":'95'};
 
 const DFILL  = '#1e2535';
 const DSTROKE= '#000000';
+const LEVEL_RANK = Object.fromEntries(LVL_DEFS.map((d,i)=>[d.k,i]));
+
+/* ── Helper : lit les alertes d'un département, compatible avec l'ancien format
+   (un seul {level,picto}) et le nouveau format multi-alertes ({items:[...]}) ── */
+function getItems(dd) {
+  if (!dd) return [];
+  if (dd.items) return dd.items;
+  if (dd.level) return [{ level: dd.level, picto: dd.picto || null, probable: !!dd.probable }];
+  return [];
+}
+function maxItem(items) {
+  if (!items.length) return null;
+  return items.reduce((a,b) => LEVEL_RANK[b.level] > LEVEL_RANK[a.level] ? b : a);
+}
+
+/* ── ÉTAT — sélection multiple de départements ── */
+let multiSelectMode = false;
+let selectedDepts   = new Set();
+/* ── ÉTAT — filtre d'affichage de la carte principale par phénomène ── */
+let mapPictoFilter  = null; // null = "Toutes" (niveau max par département)
 
 /* ── ÉTAT ── */
 let activeLevel  = 'vert';
@@ -1101,7 +1110,6 @@ let dvActive     = false;
 let dvLevel      = 'orange';
 let dvPicto      = null;
 let zoomedDept   = null;
-window.zoomedDept = zoomedDept;  // <-- AJOUTE CETTE LIGNE
 let activeDay    = 'today';
 let svgEl=null, svgSel=null, geoPath=null, layerSel=null;
 let features=[], pathMap={}, hatchIds={};
@@ -1145,33 +1153,6 @@ const gaugeData = {
     tomorrow: [{ picto: null,    segs: [] }]
   }
 };
-
-function saveGaugeData() {
-  try {
-    localStorage.setItem('lcdc_gaugeData', JSON.stringify(gaugeData));
-  } catch (e) {}
-}
-
-function loadGaugeData() {
-  try {
-    const saved = localStorage.getItem('lcdc_gaugeData');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      for (const scope of ['national', ...Object.keys(parsed)]) {
-        if (!gaugeData[scope]) {
-          gaugeData[scope] = { today: [{ picto: null, segs: [] }], tomorrow: [{ picto: null, segs: [] }] };
-        }
-        if (parsed[scope]) {
-          if (parsed[scope].today) gaugeData[scope].today = parsed[scope].today;
-          if (parsed[scope].tomorrow) gaugeData[scope].tomorrow = parsed[scope].tomorrow;
-        }
-      }
-    }
-  } catch (e) {}
-}
-
-window.gaugeData = gaugeData;
-loadGaugeData();
 function gRows(scope) {
   const k = scope || 'national';
   if (!gaugeData[k]) gaugeData[k] = { today:[{ picto:null, segs:[] }], tomorrow:[{ picto:null, segs:[] }] };
@@ -1900,6 +1881,8 @@ function toggleDV() {
 function resetAll() {
   deptData[activeDay] = {};
   neighborData[activeDay] = {};
+  mapPictoFilter = null;
+  selectedDepts.clear();
   redrawMap();
   redrawAllNeighbors();
 }
@@ -1940,7 +1923,23 @@ function redrawAllNeighbors() {
 }
 
 /* ── RENDU CARTE ── */
+function hexBlend(hex1, hex2, t) {
+  const p = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+  const [r1,g1,b1] = p(hex1), [r2,g2,b2] = p(hex2);
+  const mix = (a,b) => Math.round(a + (b-a)*t);
+  return '#' + [mix(r1,r2), mix(g1,g2), mix(b1,b2)].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
 function curData() { return deptData[activeDay]; }
+
+/* Retourne l'item à afficher pour un département selon le filtre actif :
+   soit le niveau max (mode "Toutes"), soit l'alerte correspondant au picto filtré. */
+function displayItem(dd) {
+  const items = getItems(dd);
+  if (!items.length) return null;
+  if (!mapPictoFilter) return maxItem(items);
+  const matching = items.filter(it => it.picto === mapPictoFilter);
+  return matching.length ? maxItem(matching) : null;
+}
 
 function redrawMap() {
   if (!layerSel) return;
@@ -1949,45 +1948,52 @@ function redrawMap() {
   layerSel.selectAll('path.dept')
     .attr('fill', d => {
       const n = d.properties && (d.properties.name || d.properties.NAME || '');
-      const dd = data[n];
-      if (!dd) return DFILL;
-      if (dd.probable) {
-        return hexBlend(LEVELS[dd.level].color, '#1e2535', 0.18);
-      }
-      return LEVELS[dd.level].color;
+      const it = displayItem(data[n]);
+      if (!it) return DFILL;
+      if (it.probable) return hexBlend(LEVELS[it.level].color, '#1e2535', 0.18);
+      return LEVELS[it.level].color;
     })
-    .attr('stroke', d => {
+    .attr('stroke', function(d) {
       const n = d.properties && (d.properties.name || d.properties.NAME || '');
-      const dd = data[n];
-      if (dd && dd.probable) return LEVELS[dd.level].color;
+      if (multiSelectMode && selectedDepts.has(n)) return null;
+      const it = displayItem(data[n]);
+      if (it && it.probable) return LEVELS[it.level].color;
       if (n === zoomedDept) return '#fff';
       return DSTROKE;
     })
     .attr('stroke-width', d => {
       const n = d.properties && (d.properties.name || d.properties.NAME || '');
-      const dd = data[n];
-      if (dd && dd.probable) return 2;
+      if (multiSelectMode && selectedDepts.has(n)) return null;
+      const it = displayItem(data[n]);
+      if (it && it.probable) return 2;
       if (n === zoomedDept) return 2.5;
       return 0.6;
     })
     .attr('stroke-dasharray', d => {
       const n = d.properties && (d.properties.name || d.properties.NAME || '');
-      const dd = data[n];
-      return (dd && dd.probable) ? '4,3' : 'none';
+      if (multiSelectMode && selectedDepts.has(n)) return null;
+      const it = displayItem(data[n]);
+      return (it && it.probable) ? '4,3' : 'none';
+    })
+    .classed('dept-selected', d => {
+      const n = d.properties && (d.properties.name || d.properties.NAME || '');
+      return multiSelectMode && selectedDepts.has(n);
     });
 
-  layerSel.selectAll('.dept-picto-g').remove();
-  Object.entries(data).forEach(([name, dd]) => {
-    if (!dd.picto || !PICTO_FALLBACK[dd.picto]) return;
-    const feat = features.find(f => (f.properties.name || f.properties.NAME) === name);
-    if (!feat) return;
-    const b  = geoPath.bounds(feat);
-    const cx = (b[0][0] + b[1][0]) / 2;
-    const cy = (b[0][1] + b[1][1]) / 2;
-    const sz = Math.max(9, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.36, 18));
-    placeIcoImg(layerSel, dd.picto, cx, cy, sz).attr('class', 'dept-picto-g');
-  });
+  layerSel.selectAll('.dept-picto-g,.dept-multi-badge').remove();
+Object.entries(data).forEach(([name, dd]) => {
+  const it = displayItem(dd);
+  if (!it || !it.picto || !PICTO_FALLBACK[it.picto]) return;
+  const feat = features.find(f => (f.properties.name || f.properties.NAME) === name);
+  if (!feat) return;
+  const b  = geoPath.bounds(feat);
+  const cx = (b[0][0] + b[1][0]) / 2;
+  const cy = (b[0][1] + b[1][1]) / 2;
+  const sz = Math.max(9, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.36, 18));
+  placeIcoImg(layerSel, it.picto, cx, cy, sz).attr('class', 'dept-picto-g');
+});
 
+  buildMapFilters();
   updateDVBadges();
   updateLeg();
 }
@@ -2061,10 +2067,66 @@ function drawSub() {
 }
 
 /* ── LÉGENDE ── */
+/* ── Filtre carte : ronds phénomène en haut à droite ── */
+function buildMapFilters() {
+  const wrap = document.getElementById('map-filters');
+  if (!wrap) return;
+  const data = curData();
+  const pictos = [...new Set(Object.values(data).flatMap(getItems).map(it=>it.picto).filter(Boolean))];
+  if (!pictos.length) { wrap.innerHTML = ''; return; }
+  let html = `<button class="mapf-btn all${mapPictoFilter===null?' on':''}" title="Toutes les alertes" onclick="setMapFilter(null)">Tt</button>`;
+  pictos.forEach(pk => {
+    html += `<button class="mapf-btn${mapPictoFilter===pk?' on':''}" title="${pk}" onclick="setMapFilter('${pk}')">${ico(pk,17)}</button>`;
+  });
+  wrap.innerHTML = html;
+}
+function setMapFilter(pk) {
+  mapPictoFilter = pk;
+  redrawMap();
+}
+
+/* ── Sélection multiple de départements ── */
+function toggleMultiSelect() {
+  multiSelectMode = !multiSelectMode;
+  document.getElementById('multisel-tog').classList.toggle('on', multiSelectMode);
+  document.getElementById('multisel-opts').style.display = multiSelectMode ? 'block' : 'none';
+  if (!multiSelectMode) { selectedDepts.clear(); }
+  redrawMap();
+}
+function updateSelCount() {
+  const p = document.getElementById('multisel-count');
+  if (p) p.textContent = selectedDepts.size + ' département' + (selectedDepts.size>1?'s':'') + ' sélectionné' + (selectedDepts.size>1?'s':'');
+}
+function clearSelection() {
+  selectedDepts.clear();
+  updateSelCount();
+  redrawMap();
+}
+function applyToSelection() {
+  if (!selectedDepts.size) return;
+  const data = curData();
+  const wantProbable = !!probLevel;
+  selectedDepts.forEach(nm => {
+    const dd = data[nm] || {};
+    const items = getItems(dd);
+    const dup = items.some(it => it.level===activeLevel && it.picto===(activePicto||null) && !!it.probable===wantProbable);
+    const newItems = dup ? items : [...items, { level: activeLevel, picto: activePicto||null, probable: wantProbable }];
+    data[nm] = { items: newItems, dv: dd.dv || null };
+  });
+  redrawMap();
+}
+function applyGaugeToSelection() {
+  if (!selectedDepts.size || !zoomedDept) return;
+  const src = gaugeData[zoomedDept];
+  if (!src) return;
+  selectedDepts.forEach(nm => { gaugeData[nm] = JSON.parse(JSON.stringify(src)); });
+  showToast('Jauge appliquée à ' + selectedDepts.size + ' département(s)', 2600);
+}
+
 function updateLeg() {
   const el = document.getElementById('leg');
   const data = curData(), nbData = neighborData[activeDay]||{};
-  const vals = [...Object.values(data), ...Object.values(nbData)];
+  const vals = [...Object.values(data).flatMap(getItems), ...Object.values(nbData).flatMap(getItems)];
   const lvls  = [...new Set(vals.filter(d=>!d.probable).map(d=>d.level).filter(l=>l!=='vert'))];
   const probs = [...new Set(vals.filter(d=>d.probable).map(d=>d.level))];
   const pics  = [...new Set(vals.map(d=>d.picto).filter(Boolean))];
@@ -2098,8 +2160,10 @@ function zoomTo(feat, name) {
   const dx = b[1][0]-b[0][0], dy = b[1][1]-b[0][1];
   const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
   const sc = Math.min(0.82*W/dx, 0.82*H/dy, 6);
-  layerSel.transition().duration(480).ease(d3.easeCubicInOut)
-    .attr('transform', `translate(${W/2-sc*cx},${H/2-sc*cy}) scale(${sc})`);
+  const tf = `translate(${W/2-sc*cx},${H/2-sc*cy}) scale(${sc})`;
+  layerSel.transition().duration(480).ease(d3.easeCubicInOut).attr('transform', tf);
+  svgSel.select('.neighbor-layer').transition().duration(480).ease(d3.easeCubicInOut).attr('transform', tf);
+  svgSel.select('.neighbor-picto-layer').transition().duration(480).ease(d3.easeCubicInOut).attr('transform', tf);
   renderGauges(name);
 }
 function unzoom() {
@@ -2107,6 +2171,8 @@ function unzoom() {
   zoomedDept = null;
   layerSel.selectAll('path.dept').attr('stroke', DSTROKE).attr('stroke-width', 0.6);
   layerSel.transition().duration(450).ease(d3.easeCubicInOut).attr('transform','');
+  svgSel.select('.neighbor-layer').transition().duration(450).ease(d3.easeCubicInOut).attr('transform','');
+  svgSel.select('.neighbor-picto-layer').transition().duration(450).ease(d3.easeCubicInOut).attr('transform','');
   renderGauges(null);
 }
 
@@ -2130,13 +2196,9 @@ function dlMap() {
 function renderGauges(scope) {
   const sec = document.getElementById('gauges');
   sec.innerHTML = '';
-  
-  const isEditable = currentRole === 'admin';
   const rows = gRows(scope);
   const wrap = document.createElement('div');
   wrap.className = 'g-wrap' + (scope ? ' dept' : '');
-  
-  // On n'ajoute PLUS la classe gauge-readonly
 
   const hdr = document.createElement('div'); hdr.className = 'g-hdr';
   const ttl = document.createElement('div'); ttl.className = 'g-title';
@@ -2159,34 +2221,31 @@ function renderGauges(scope) {
   wrap.appendChild(ticks);
 
   const rowsEl = document.createElement('div'); rowsEl.className = 'g-rows';
-  rows.forEach((row, ri) => rowsEl.appendChild(buildGRow(scope, ri, row, rows.length > 1, isEditable)));
+  rows.forEach((row, ri) => rowsEl.appendChild(buildGRow(scope, ri, row, rows.length > 1)));
   wrap.appendChild(rowsEl);
 
-  if (isEditable) {
-    const addBtn = document.createElement('button'); addBtn.className = 'g-add';
-    addBtn.textContent = '+ Phénomène';
-    addBtn.onclick = () => { 
-      gRows(scope).push({ picto: null, segs: [] }); 
-      renderGauges(scope); 
-      saveGaugeData(); 
-    };
-    wrap.appendChild(addBtn);
+  const addBtn = document.createElement('button'); addBtn.className = 'g-add';
+  addBtn.textContent = '+ Phénomène';
+  addBtn.onclick = () => { gRows(scope).push({ picto: null, segs: [] }); renderGauges(scope); };
+  wrap.appendChild(addBtn);
+
+  if (scope && multiSelectMode && selectedDepts.size) {
+    const applyBtn = document.createElement('button'); applyBtn.className = 'act-btn primary';
+    applyBtn.style.marginTop = '4px';
+    applyBtn.textContent = `↦ Appliquer cette jauge à la sélection (${selectedDepts.size})`;
+    applyBtn.onclick = () => applyGaugeToSelection();
+    wrap.appendChild(applyBtn);
   }
-  
+
   sec.appendChild(wrap);
-  saveGaugeData();
 }
-function buildGRow(scope, ri, row, canDel, isEditable) {
+
+function buildGRow(scope, ri, row, canDel) {
   const el = document.createElement('div'); el.className = 'g-row';
 
   const pw = document.createElement('div'); pw.className = 'g-picto';
   pw.innerHTML = row.picto ? ico(row.picto, 20) : '<span style="font-size:13px;color:var(--t3)">+</span>';
-  if (isEditable) {
-    pw.onclick = e => openPhenPop(e, scope, ri);
-  } else {
-    pw.style.cursor = 'default';
-    pw.title = 'Connecte-toi pour modifier';
-  }
+  pw.onclick = e => openPhenPop(e, scope, ri);
   el.appendChild(pw);
 
   const lbl = document.createElement('div'); lbl.className = 'g-lbl';
@@ -2199,52 +2258,30 @@ function buildGRow(scope, ri, row, canDel, isEditable) {
   svgT.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none';
   svgT.setAttribute('preserveAspectRatio','none');
   tl.appendChild(svgT);
-  
-  row.segs.forEach((seg, si) => drawSeg(svgT, tl, scope, ri, si, seg, isEditable));
-  
-  if (isEditable) {
-    tl.addEventListener('mousedown', e => {
-      if (e.target !== tl && e.target !== bg) return;
-      const r = tl.getBoundingClientRect();
-      const h = Math.round(((e.clientX - r.left) / r.width) * 24 * 4) / 4;
-      const rows = gRows(scope);
-      rows[ri].segs.push({ s: Math.max(0, h - 1), e: Math.min(24, h + 1), lv: activeLevel });
-      rows[ri].segs.sort((a, b) => a.s - b.s);
-      renderGauges(zoomedDept);
-      saveGaugeData();
-    });
-  }
+  row.segs.forEach((seg, si) => drawSeg(svgT, tl, scope, ri, si, seg));
+  tl.addEventListener('mousedown', e => {
+    if (e.target !== tl && e.target !== bg) return;
+    const r = tl.getBoundingClientRect();
+    const h = Math.round(((e.clientX-r.left)/r.width)*24*4)/4;
+    gRows(scope)[ri].segs.push({ s: Math.max(0,h-1), e: Math.min(24,h+1), lv: activeLevel });
+    gRows(scope)[ri].segs.sort((a,b) => a.s-b.s);
+    renderGauges(zoomedDept);
+  });
   el.appendChild(tl);
 
-  if (canDel && isEditable) {
+  if (canDel) {
     const d = document.createElement('button'); d.className = 'g-del'; d.textContent = '×';
-    d.onclick = () => { 
-      gRows(scope).splice(ri, 1); 
-      renderGauges(zoomedDept); 
-      saveGaugeData(); 
-    };
+    d.onclick = () => { gRows(scope).splice(ri,1); renderGauges(zoomedDept); };
     el.appendChild(d);
   }
   return el;
 }
 
-function drawSeg(svgT, tlEl, scope, ri, si, seg, isEditable) {
+function drawSeg(svgT, tlEl, scope, ri, si, seg) {
   const ns = 'http://www.w3.org/2000/svg';
   const pL = (seg.s/24)*100, pR = (seg.e/24)*100, wPct = pR-pL;
   const color = LEVELS[seg.lv].color;
   const g = document.createElementNS(ns,'g');
-  
-  if (!isEditable) {
-    g.style.cursor = 'default';
-    const rect = document.createElementNS(ns,'rect');
-    rect.setAttribute('x',pL+'%'); rect.setAttribute('y','0');
-    rect.setAttribute('width',wPct+'%'); rect.setAttribute('height','100%');
-    rect.setAttribute('fill',color); rect.setAttribute('rx','3');
-    g.appendChild(rect);
-    svgT.appendChild(g);
-    return;
-  }
-  
   g.style.pointerEvents = 'all'; g.style.cursor = 'grab';
 
   const rect = document.createElementNS(ns,'rect');
@@ -2288,7 +2325,6 @@ function drawSeg(svgT, tlEl, scope, ri, si, seg, isEditable) {
     const nl=(ns2/24)*100, nr=((ns2+dur)/24)*100;
     rect.setAttribute('x',nl+'%'); rect.setAttribute('width',(nr-nl)+'%');
     hL.setAttribute('x',nl+'%'); hR.setAttribute('x',`calc(${nr}% - 8px)`);
-    saveGaugeData();
   }));
 
   hL.addEventListener('mousedown', makeDrag((mv, rc, sx) => {
@@ -2298,7 +2334,6 @@ function drawSeg(svgT, tlEl, scope, ri, si, seg, isEditable) {
     rows[ri].segs[si].s = ns2;
     const nl=(ns2/24)*100, nr=(rows[ri].segs[si].e/24)*100;
     rect.setAttribute('x',nl+'%'); rect.setAttribute('width',(nr-nl)+'%'); hL.setAttribute('x',nl+'%');
-    saveGaugeData();
   }));
 
   hR.addEventListener('mousedown', makeDrag((mv, rc, sx) => {
@@ -2308,11 +2343,10 @@ function drawSeg(svgT, tlEl, scope, ri, si, seg, isEditable) {
     rows[ri].segs[si].e = ne;
     const nl=(rows[ri].segs[si].s/24)*100, nr=(ne/24)*100;
     rect.setAttribute('x',nl+'%'); rect.setAttribute('width',(nr-nl)+'%'); hR.setAttribute('x',`calc(${nr}% - 8px)`);
-    saveGaugeData();
   }));
 
   g.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); openLvlPop(e, scope, ri, si); });
-  g.addEventListener('dblclick', e => { e.stopPropagation(); gRows(scope)[ri].segs.splice(si,1); renderGauges(zoomedDept); saveGaugeData(); });
+  g.addEventListener('dblclick', e => { e.stopPropagation(); gRows(scope)[ri].segs.splice(si,1); renderGauges(zoomedDept); });
   svgT.appendChild(g);
 }
 
@@ -2322,7 +2356,7 @@ function openLvlPop(e, scope, ri, si) {
   Object.entries(LEVELS).forEach(([lv, info]) => {
     const it = document.createElement('div'); it.className = 'lp-item';
     it.innerHTML = `<span class="lp-dot" style="background:${info.color}"></span>${info.label}`;
-    it.onclick = () => { gRows(scope)[ri].segs[si].lv=lv; renderGauges(zoomedDept); p.classList.remove('open'); saveGaugeData();};
+    it.onclick = () => { gRows(scope)[ri].segs[si].lv=lv; renderGauges(zoomedDept); p.classList.remove('open'); };
     p.appendChild(it);
   });
   p.style.left = e.clientX+'px'; p.style.top = e.clientY+'px'; p.classList.add('open'); e.stopPropagation();
@@ -2338,7 +2372,7 @@ function openPhenPop(e, scope, ri) {
   });
   const none = document.createElement('div'); none.className='pp-item';
   none.innerHTML = `<span style="font-size:18px;color:var(--t3)">—</span><span>Aucun</span>`;
-  none.onclick = () => { gRows(scope)[ri].picto=null; renderGauges(zoomedDept); p.classList.remove('open'); saveGaugeData(); };
+  none.onclick = () => { gRows(scope)[ri].picto=null; renderGauges(zoomedDept); p.classList.remove('open'); };
   p.appendChild(none);
   const r = e.currentTarget.getBoundingClientRect();
   p.style.left = (r.right+6)+'px'; p.style.top = r.top+'px'; p.classList.add('open'); e.stopPropagation();
@@ -2597,11 +2631,7 @@ async function applyPublishedState() {
       if (remote.neighborData) neighborData = remote.neighborData;
       if (remote.probData)     probData     = remote.probData;
       if (remote.nextData)     nextData     = remote.nextData;
-if (remote.gaugeData) {
-  Object.assign(gaugeData, remote.gaugeData);
-  // Sauvegarde immédiate pour persister localement
-  saveGaugeData();
-}
+      if (remote.gaugeData)    Object.assign(gaugeData, remote.gaugeData);
       if (remote.riskData)     riskData     = remote.riskData;
 setTimeout(() => {
   try {
@@ -2616,8 +2646,8 @@ setTimeout(() => {
 
     if (typeof buildRiskSidebar === "function") buildRiskSidebar();
     if (typeof redrawRiskMap === "function") redrawRiskMap();
-    
-if (typeof renderGauges === "function") renderGauges(zoomedDept);
+
+    if (typeof refreshGauges === "function") refreshGauges();
 
     if (typeof updateLeg === "function") updateLeg();
     if (typeof updateLegProb === "function") updateLegProb();
@@ -2726,22 +2756,41 @@ const _publishedStateReady = applyPublishedState();
     .attr('fill', DFILL).attr('stroke', DSTROKE).attr('stroke-width', 0.6).style('cursor','pointer')
     .on('mousemove', function(event, d) {
       const nm = d.properties&&(d.properties.name||d.properties.NAME||'Département');
-      const dd = curData()[nm];
+      const items = getItems(curData()[nm]);
       tip.style.display = 'block';
       const r = mapDiv.getBoundingClientRect();
       tip.style.left = (event.clientX-r.left+14)+'px';
       tip.style.top  = (event.clientY-r.top-36)+'px';
-      tip.textContent = nm + (dd ? ' — '+(dd.probable?'~ ':'')+LEVELS[dd.level].label+(dd.picto?' · '+dd.picto:'') : '');
-      if (nm !== zoomedDept) d3.select(this).attr('stroke','rgba(255,255,255,.6)').attr('stroke-width',1.2);
+      const code = DEPT_CODES[nm] || '';
+      let html = `<div class="tip-hdr"><span class="tip-name">${nm}</span>${code?`<span class="tip-code">${code}</span>`:''}</div>`;
+      if (items.length) {
+        html += `<div class="tip-alerts">` + items.map(it => {
+          const lv = LEVELS[it.level];
+          return `<div class="tip-alert">
+            <span class="tip-alert-ring" style="background:${lv.color}">${it.picto?ico(it.picto,13):''}</span>
+            <span class="tip-alert-txt">${it.picto||'—'}<span class="tip-alert-lvl">${it.probable?'~ ':''}${lv.label}</span></span>
+          </div>`;
+        }).join('') + `</div>`;
+      } else {
+        html += `<div class="tip-none">Pas d'alerte</div>`;
+      }
+      tip.innerHTML = html;
+      if (nm !== zoomedDept && !(multiSelectMode && selectedDepts.has(nm))) d3.select(this).attr('stroke','rgba(255,255,255,.6)').attr('stroke-width',1.2);
     })
     .on('mouseleave', function(event, d) {
       tip.style.display = 'none';
       const nm = d.properties&&(d.properties.name||d.properties.NAME||'');
-      if (nm !== zoomedDept) d3.select(this).attr('stroke',DSTROKE).attr('stroke-width',0.6);
+      if (nm !== zoomedDept && !(multiSelectMode && selectedDepts.has(nm))) d3.select(this).attr('stroke',DSTROKE).attr('stroke-width',0.6);
     })
     .on('click', function(event, d) {
       if (!requireAuth()) return;
       const nm = d.properties&&(d.properties.name||d.properties.NAME||''); if(!nm) return;
+      if (multiSelectMode) {
+        if (selectedDepts.has(nm)) selectedDepts.delete(nm); else selectedDepts.add(nm);
+        updateSelCount();
+        redrawMap();
+        return;
+      }
       const data = curData(); const dd = data[nm];
       if (dvActive) {
         if (!dd) return;
@@ -2750,13 +2799,13 @@ const _publishedStateReady = applyPublishedState();
         updateDVBadges(); return;
       }
       const isProb = !!probLevel;
-      if (dd && dd.level===activeLevel && dd.picto===(activePicto||null) && !!dd.probable===isProb) {
-        delete data[nm];
-      } else {
-        const prevDv = dd ? dd.dv : null;
-        data[nm] = { level:activeLevel, picto:activePicto||null, dv:prevDv||null };
-        if (isProb) data[nm].probable = true;
-      }
+      const items = getItems(dd);
+      const idx = items.findIndex(it => it.level===activeLevel && it.picto===(activePicto||null) && !!it.probable===isProb);
+      let newItems;
+      if (idx !== -1) newItems = items.filter((_,i) => i!==idx);
+      else newItems = [...items, { level:activeLevel, picto:activePicto||null, probable:isProb }];
+      if (newItems.length) data[nm] = { items:newItems, dv:(dd&&dd.dv)||null };
+      else delete data[nm];
       redrawMap();
     })
     .on('dblclick', function(event, d) {
