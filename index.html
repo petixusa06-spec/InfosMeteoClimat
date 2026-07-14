@@ -1890,32 +1890,33 @@ function resetAll() {
 /* ── VOISINS : RENDU ── */
 function redrawNeighborPath(sel, name) {
   const nd = neighborData[activeDay]['nb:'+name];
-  // Vérifier si l'alerte correspond au filtre actif
-  if (nd && nd.picto) {
-    // Si un filtre est actif, on vérifie que le picto correspond
-    if (mapPictoFilter && nd.picto !== mapPictoFilter) {
-      // L'alerte ne correspond pas au filtre → on affiche en vert
-      sel.attr('fill', DFILL)
-         .attr('stroke', '#000').attr('stroke-width', 0.6);
-    } else {
-      // L'alerte correspond au filtre → on affiche la couleur
-      sel.attr('fill', LEVELS[nd.level].color)
-         .attr('stroke', 'rgba(0,0,0,.3)').attr('stroke-width', 0.7);
-    }
-  } else {
-    // Pas d'alerte → vert
+  // Si pas d'alerte → vert
+  if (!nd) {
     sel.attr('fill', DFILL)
        .attr('stroke', '#000').attr('stroke-width', 0.6);
+    return;
+  }
+  
+  // Si un filtre est actif ET que le picto ne correspond pas → vert
+  if (mapPictoFilter && nd.picto && nd.picto !== mapPictoFilter) {
+    sel.attr('fill', DFILL)
+       .attr('stroke', '#000').attr('stroke-width', 0.6);
+  } else {
+    // Sinon on affiche la couleur de l'alerte
+    sel.attr('fill', LEVELS[nd.level].color)
+       .attr('stroke', 'rgba(0,0,0,.3)').attr('stroke-width', 0.7);
   }
 }
 function redrawNeighborPictos() {
   if (!svgSel) return;
-  svgSel.select('.neighbor-picto-layer').selectAll('*').remove();
   const pLayer = svgSel.select('.neighbor-picto-layer');
+  pLayer.selectAll('*').remove();
+  
   Object.entries(neighborData[activeDay]).forEach(([key, nd]) => {
     if (!nd.picto) return;
-    // Si un filtre est actif, on vérifie que le picto correspond
+    // Si filtre actif ET que le picto ne correspond pas → on n'affiche pas le picto
     if (mapPictoFilter && nd.picto !== mapPictoFilter) return;
+    
     const name = key.slice(3);
     const feat = NEIGHBORS_GEOJSON.features.find(f => f.properties.name === name);
     if (!feat) return;
@@ -2095,6 +2096,7 @@ function buildMapFilters() {
 function setMapFilter(pk) {
   mapPictoFilter = pk;
   redrawMap();
+  redrawAllNeighbors(); 
 }
 
 /* ── Sélection multiple de départements ── */
