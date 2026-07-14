@@ -1612,7 +1612,7 @@ function redrawNextMap() {
 }
 
 function zoomToNext(feat, name) {
-  const W = 600, H = 624;
+const W = 480, H = 500;
   zoomedRegionNext = name;
   layerNextSel.selectAll('path.region-next').attr('stroke', '#000').attr('stroke-width', 0.9);
   layerNextSel.selectAll('path.region-next').filter(d => d.properties.nom === name)
@@ -2223,7 +2223,7 @@ function zoomTo(feat, name) {
   const b = geoPath.bounds(feat);
   const dx = b[1][0]-b[0][0], dy = b[1][1]-b[0][1];
   const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
-  const sc = Math.min(0.82*W/dx, 0.82*H/dy, 6);
+  const sc = Math.min(0.75*W/dx, 0.75*H/dy, 6);
   const tf = `translate(${W/2-sc*cx},${H/2-sc*cy}) scale(${sc})`;
   layerSel.transition().duration(480).ease(d3.easeCubicInOut).attr('transform', tf);
   svgSel.select('.neighbor-layer').transition().duration(480).ease(d3.easeCubicInOut).attr('transform', tf);
@@ -2744,7 +2744,12 @@ const _publishedStateReady = applyPublishedState();
   const key = Object.keys(topo.objects)[0];
   features = topojson.feature(topo, topo.objects[key]).features;
   const W = 600, H = 624;
-  const proj = d3.geoConicConformal().parallels([44,49]).rotate([-3,0]).center([0,46.5]).scale(1860).translate([300,312]);
+  const proj = d3.geoConicConformal()
+  .parallels([44,49])
+  .rotate([-3,0])
+  .center([0,46.5])
+  .scale(1480)
+  .translate([240, 250]);
   geoPath = d3.geoPath().projection(proj);
 
   const svg = d3.select(mapDiv).append('svg')
