@@ -8,30 +8,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
-  #map-col {
-  max-height: 480px;
-  overflow: hidden;
-}
-#map {
-  max-height: 480px;
-}
-#map svg {
-  max-height: 480px;
-  width: 100%;
-  height: auto;
-}
-#map-next-col, #map-prob-col {
-  max-height: 480px;
-  overflow: hidden;
-}
-#map-next, #map-prob {
-  max-height: 480px;
-}
-#map-next svg, #map-prob svg {
-  max-height: 480px;
-  width: 100%;
-  height: auto;
-}
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0a0d12;--surf:#12161d;--surf2:#1a1f28;
@@ -94,18 +70,7 @@ body{
 .dtab.on{background:var(--acc);color:#181008;border-color:var(--acc);box-shadow:0 2px 10px rgba(232,162,60,.3);font-weight:700}
 
 .top{display:flex;gap:12px;align-items:flex-start}
-#map-col{
-  max-height: 480px;
-  overflow: hidden;
-}
-#map {
-  max-height: 480px;
-}
-#map svg {
-  max-height: 480px;
-  width: 100%;
-  height: auto;
-}{flex:1;min-width:0;position:relative;display:flex;justify-content:center}
+#map-col{flex:1;min-width:0;position:relative;display:flex;justify-content:center}
 .sb{width:212px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
 .card{position:relative;background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);padding:13px;box-shadow:var(--sh-sm);transition:border-color .2s var(--ease),box-shadow .2s var(--ease)}
 .card:hover{border-color:var(--b2);box-shadow:var(--sh-md)}
@@ -1259,7 +1224,8 @@ function buildProbSidebar() {
 function initProbMap() {
   if (!features.length) return;
   const mapDiv = document.getElementById('map-prob');
- const W = 600, H = 624;
+  const W = 600;
+  const H = 624;
   
   d3.select(mapDiv).selectAll('svg').remove();
   
@@ -1646,7 +1612,7 @@ function redrawNextMap() {
 }
 
 function zoomToNext(feat, name) {
-const W = 480, H = 500;
+  const W = 600, H = 624;
   zoomedRegionNext = name;
   layerNextSel.selectAll('path.region-next').attr('stroke', '#000').attr('stroke-width', 0.9);
   layerNextSel.selectAll('path.region-next').filter(d => d.properties.nom === name)
@@ -2257,7 +2223,7 @@ function zoomTo(feat, name) {
   const b = geoPath.bounds(feat);
   const dx = b[1][0]-b[0][0], dy = b[1][1]-b[0][1];
   const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
-  const sc = Math.min(0.75*W/dx, 0.75*H/dy, 6);
+  const sc = Math.min(0.82*W/dx, 0.82*H/dy, 6);
   const tf = `translate(${W/2-sc*cx},${H/2-sc*cy}) scale(${sc})`;
   layerSel.transition().duration(480).ease(d3.easeCubicInOut).attr('transform', tf);
   svgSel.select('.neighbor-layer').transition().duration(480).ease(d3.easeCubicInOut).attr('transform', tf);
@@ -2777,7 +2743,7 @@ const _publishedStateReady = applyPublishedState();
 
   const key = Object.keys(topo.objects)[0];
   features = topojson.feature(topo, topo.objects[key]).features;
-const W = 480, H = 500;
+  const W = 600, H = 624;
   const proj = d3.geoConicConformal().parallels([44,49]).rotate([-3,0]).center([0,46.5]).scale(1860).translate([300,312]);
   geoPath = d3.geoPath().projection(proj);
 
