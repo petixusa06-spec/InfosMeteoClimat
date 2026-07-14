@@ -1473,19 +1473,33 @@ function initNextMap() {
     .attr('d', d => geoPath(d))
     .attr('fill', DFILL).attr('stroke', '#000').attr('stroke-width', 0.9)
     .style('cursor', 'pointer')
-    .on('mousemove', function(event, d) {
-      const nm = d.properties.nom;
-      const tip = document.getElementById('tip-next');
-      const entries = nextData[nm];
-      tip.style.display = 'block';
-      const r = mapDiv.getBoundingClientRect();
-      tip.style.left = (event.clientX - r.left + 14) + 'px';
-      tip.style.top  = (event.clientY - r.top - 36) + 'px';
-      tip.textContent = nm + (entries && entries.length
-        ? ' — ' + entries.map(e => e.phenom + ' ' + RISK_MAP[e.band].label).join(' · ')
-        : '');
-      if (nm !== zoomedRegionNext) d3.select(this).attr('stroke', 'rgba(255,255,255,.6)').attr('stroke-width', 1.4);
-    })
+   .on('mousemove', function(event, d) {
+  const nm = d.properties && (d.properties.name || d.properties.NAME || '');
+  const info = probData[nm];
+  const tip = document.getElementById('tip-prob');
+  
+  tip.style.display = 'block';
+  const r = document.getElementById('map-prob').getBoundingClientRect();
+  tip.style.left = (event.clientX - r.left + 14) + 'px';
+  tip.style.top  = (event.clientY - r.top - 36) + 'px';
+  
+  let html = `<div class="tip-hdr"><span class="tip-name">${nm}</span><span class="tip-code">Évolution</span></div>`;
+  
+  if (info) {
+    const lv = LEVELS[info.level];
+    html += `<div class="tip-alerts">
+      <div class="tip-alert">
+        <span class="tip-alert-ring" style="background:${lv.color}">${info.picto ? ico(info.picto, 13) : ''}</span>
+        <span class="tip-alert-txt">Probable → ${lv.label}</span>
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="tip-none">Pas de changement prévu</div>`;
+  }
+  
+  tip.innerHTML = html;
+  if (nm !== zoomedDeptProb) d3.select(this).attr('stroke','rgba(255,255,255,.5)').attr('stroke-width',1.1);
+})
     .on('mouseleave', function(event, d) {
       document.getElementById('tip-next').style.display = 'none';
       const nm = d.properties.nom;
@@ -2746,31 +2760,49 @@ const _publishedStateReady = applyPublishedState();
     .append('feDropShadow').attr('dx',0).attr('dy',0.6).attr('stdDeviation',1).attr('flood-color','#000').attr('flood-opacity',0.5);
 
   const nbLayer = svg.append('g').attr('class','neighbor-layer');
-  nbLayer.selectAll('path.neighbor')
-    .data(NEIGHBORS_GEOJSON.features)
-    .join('path')
-      .attr('class', 'neighbor')
-      .attr('d', d => geoPath(d))
-      .attr('fill', DFILL)
-      .attr('stroke', '#000')
-      .attr('stroke-width', 0.6)
-      .style('cursor','pointer')
-      .on('mousemove', function(event, d) {
-        const nm = d.properties.name;
-        const country = d.properties.country;
-        const dd = neighborData[activeDay]['nb:'+nm];
-        tip.style.display = 'block';
-        const r = mapDiv.getBoundingClientRect();
-        tip.style.left = (event.clientX-r.left+14)+'px';
-        tip.style.top  = (event.clientY-r.top-36)+'px';
-        const countryLabel = {BE:'Belgique',CH:'Suisse',LU:'Luxembourg',DE:'Allemagne'}[country]||country;
-        tip.textContent = nm + ' (' + countryLabel + ')' + (dd ? ' — ' + LEVELS[dd.level].label : '');
-        d3.select(this).attr('stroke','rgba(255,255,255,.7)').attr('stroke-width',1.2);
-      })
-      .on('mouseleave', function(event, d) {
-        tip.style.display = 'none';
-        redrawNeighborPath(d3.select(this), d.properties.name);
-      })
+ nbLayer.selectAll('path.neighbor')
+  .data(NEIGHBORS_GEOJSON.features)
+  .join('path')
+    .attr('class', 'neighbor')
+    .attr('d', d => geoPath(d))
+    .attr('fill', DFILL)
+    .attr('stroke', '#000')
+    .attr('stroke-width', 0.6)
+    .style('cursor','pointer')
+    .on('mousemove', function(event, d) {
+  const nm = d.properties.name;
+  const country = d.properties.country;
+  const dd = neighborData[activeDay]['nb:'+nm];
+  
+  tip.style.display = 'block';
+  const r = mapDiv.getBoundingClientRect();
+  tip.style.left = (event.clientX - r.left + 14) + 'px';
+  tip.style.top  = (event.clientY - r.top - 36) + 'px';
+  
+  const countryLabel = {BE:'Belgique',CH:'Suisse',LU:'Luxembourg',DE:'Allemagne'}[country]||country;
+  
+  // Construire le tooltip comme pour les départements français
+  let html = `<div class="tip-hdr"><span class="tip-name">${nm}</span><span class="tip-code">${countryLabel}</span></div>`;
+  
+  if (dd) {
+    const lv = LEVELS[dd.level];
+    html += `<div class="tip-alerts">
+      <div class="tip-alert">
+        <span class="tip-alert-ring" style="background:${lv.color}">${dd.picto ? ico(dd.picto, 13) : ''}</span>
+        <span class="tip-alert-txt">${dd.picto || '—'}<span class="tip-alert-lvl">${lv.label}</span></span>
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="tip-none">Pas d'alerte</div>`;
+  }
+  
+  tip.innerHTML = html;
+  d3.select(this).attr('stroke','rgba(255,255,255,.7)').attr('stroke-width',1.2);
+})
+    .on('mouseleave', function(event, d) {
+      tip.style.display = 'none';
+      redrawNeighborPath(d3.select(this), d.properties.name);
+    })
       .on('click', function(event, d) {
         if (!requireAuth()) return;
         const nm = d.properties.name;
