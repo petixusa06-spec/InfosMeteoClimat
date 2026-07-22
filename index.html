@@ -1292,6 +1292,7 @@ function switchView(view) {
   document.getElementById('view-probable').style.display   = view === 'probable'  ? 'flex' : 'none';
   document.getElementById('view-risk').style.display       = view === 'risk'      ? 'flex' : 'none';
   document.getElementById('view-radar').style.display      = view === 'radar'     ? 'flex' : 'none';
+  document.getElementById('view-zone').style.display       = view === 'zone'      ? 'flex' : 'none';  // <-- AJOUTE CETTE LIGNE
   document.getElementById('day-tabs-wrap').style.display   = (view === 'vigilance' || view === 'risk') ? 'flex' : 'none';
   ['vigil','next','prob','risk','radar'].forEach(k =>
     document.getElementById('vtab-'+k)?.classList.toggle('on', k === view.replace('nextday','next').replace('probable','prob').replace('vigilance','vigil'))
@@ -3163,7 +3164,7 @@ function openZoneView(zoneKey) {
   buildZonePictoGrid();
   
   // Passer en mode zone
-  switchView('zone');
+  switchView('zone');  // <-- Utilise la fonction existante
   
   // Initialiser la carte
   initZoneMap(zoneKey);
@@ -3351,26 +3352,6 @@ document.addEventListener('click', function(e) {
     }
   }
 });
-
-function switchView(view) {
-  activeView = view;
-  document.getElementById('view-vigilance').style.display  = view === 'vigilance' ? 'flex' : 'none';
-  document.getElementById('view-nextday').style.display    = view === 'nextday'   ? 'flex' : 'none';
-  document.getElementById('view-probable').style.display   = view === 'probable'  ? 'flex' : 'none';
-  document.getElementById('view-risk').style.display       = view === 'risk'      ? 'flex' : 'none';
-  document.getElementById('view-radar').style.display      = view === 'radar'     ? 'flex' : 'none';
-  document.getElementById('view-zone').style.display       = view === 'zone'      ? 'flex' : 'none';
-  document.getElementById('day-tabs-wrap').style.display   = (view === 'vigilance' || view === 'risk') ? 'flex' : 'none';
-  ['vigil','next','prob','risk','radar'].forEach(k =>
-    document.getElementById('vtab-'+k)?.classList.toggle('on', k === view.replace('nextday','next').replace('probable','prob').replace('vigilance','vigil'))
-  );
-  if (view === 'nextday'  && !svgNextEl) initNextMap();
-  if (view === 'probable' && !svgProbEl) initProbMap();
-  if (view === 'risk') buildRiskSidebar();
-  if (view === 'radar') { initRadarMap(); radarTab(radarMode); }
-  if (view === 'probable') redrawProbMap();
-  // La vue zone est initialisée par openZoneView()
-}
 
 // Exposer les fonctions globalement pour qu'elles soient accessibles depuis le HTML
 // Exposer les fonctions globalement
