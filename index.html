@@ -8,6 +8,12 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
+
+  #map-zone{width:100%;aspect-ratio:1/1.04;border-radius:var(--r);overflow:hidden;background:var(--surf);border:1px solid rgba(232,162,60,.25);position:relative}
+#map-zone svg{display:block;width:100%;height:100%}
+.zone-shape{cursor:pointer;transition:all .15s var(--ease)}
+.zone-shape:hover{stroke:rgba(255,255,255,.7)!important;stroke-width:1.4!important}
+.zone-picto{pointer-events:none}
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0a0d12;--surf:#12161d;--surf2:#1a1f28;
@@ -564,29 +570,35 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
     </div>
   </div>
 
-  <!-- VUE ZONE VOISINE (Belgique / Suisse / Allemagne / Italie) -->
-  <div class="top" id="view-zone" style="display:none">
-    <div id="map-zone-col" style="flex:1;min-width:0;position:relative">
-      <div id="map-zone"></div>
-      <div class="tip" id="tip-zone"></div>
+<!-- VUE ZONE VOISINE (Belgique / Suisse / Allemagne / Italie) -->
+<div class="top" id="view-zone" style="display:none">
+  <div id="map-zone-col" style="flex:1;min-width:0;position:relative">
+    <div id="map-zone" style="width:100%;border-radius:4px;overflow:hidden;background:var(--surf);border:1px solid var(--b1)"></div>
+    <div id="zone-filters" style="position:absolute;top:10px;right:10px;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:70%;z-index:5"></div>
+    <div class="tip" id="tip-zone"></div>
+  </div>
+  <div class="sb">
+    <div class="card">
+      <p class="stitle" id="zone-title">Zone voisine</p>
+      <p id="zone-note" style="font-size:10px;color:var(--t3);line-height:1.5;margin:0"></p>
+      <button class="rst-btn" style="margin-top:8px;border-color:var(--b2);color:var(--t2)" onclick="backToFrance()">← Retour à la France</button>
     </div>
-    <div class="sb">
-      <div class="card">
-        <p class="stitle" id="zone-title">Zone voisine</p>
-        <p id="zone-note" style="font-size:10px;color:var(--t3);line-height:1.5;margin:0"></p>
+    <div id="leg-zone" class="leg-card"></div>
+    <p class="lock-hint">🔒 Connecte-toi pour modifier</p>
+    <div class="edit-zone">
+      <div class="card legend-zone">
+        <p class="stitle">Niveau de vigilance</p>
+        <div id="zone-lvl-container" style="margin-top:8px"></div>
       </div>
-      <div id="leg-zone" class="leg-card"></div>
-      <p class="lock-hint">🔒 Connecte-toi pour modifier</p>
-      <div class="edit-zone">
-        <div class="card legend-zone">
-          <p class="stitle">Niveau de vigilance</p>
-          <div id="zone-lvl-container" style="margin-top:8px"></div>
-        </div>
-        <p class="hint">Clic = appliquer · Re-clic = effacer</p>
-        <button class="rst-btn" onclick="resetZone()">↺ Réinitialiser la zone</button>
+      <div class="card legend-zone">
+        <p class="stitle">Phénomène</p>
+        <div class="pgrid" id="zone-pgrid"></div>
       </div>
+      <p class="hint">Clic = appliquer · Re-clic = effacer</p>
+      <button class="rst-btn" onclick="resetZone()">↺ Réinitialiser la zone</button>
     </div>
   </div>
+</div>
 
   <div id="gauges"></div>
 
@@ -3069,24 +3081,24 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// Fonctions pour ouvrir une zone (à définir)
-function openZoneView(zoneKey) {
-  // Fermer le menu
-  const menu = document.getElementById('zone-menu');
-  const btn = document.getElementById('zone-menu-btn');
-  if (menu) menu.classList.remove('open');
-  if (btn) btn.classList.remove('open');
-  
-  // Le reste de la logique est déjà dans le code plus haut
-  // Cette fonction est appelée par les boutons du menu
-  // La vraie implémentation est dans les fonctions globales
-  if (typeof window.openZoneView === 'function') {
-    window.openZoneView(zoneKey);
-  } else {
-    // Fallback : afficher un message
-    console.log('Ouverture de la zone:', zoneKey);
-    showToast('Zone ' + zoneKey + ' - Fonctionnalité disponible', 2000);
-  }
+function switchView(view) {
+  activeView = view;
+  document.getElementById('view-vigilance').style.display  = view === 'vigilance' ? 'flex' : 'none';
+  document.getElementById('view-nextday').style.display    = view === 'nextday'   ? 'flex' : 'none';
+  document.getElementById('view-probable').style.display   = view === 'probable'  ? 'flex' : 'none';
+  document.getElementById('view-risk').style.display       = view === 'risk'      ? 'flex' : 'none';
+  document.getElementById('view-radar').style.display      = view === 'radar'     ? 'flex' : 'none';
+  document.getElementById('view-zone').style.display       = view === 'zone'      ? 'flex' : 'none';
+  document.getElementById('day-tabs-wrap').style.display   = (view === 'vigilance' || view === 'risk') ? 'flex' : 'none';
+  ['vigil','next','prob','risk','radar'].forEach(k =>
+    document.getElementById('vtab-'+k)?.classList.toggle('on', k === view.replace('nextday','next').replace('probable','prob').replace('vigilance','vigil'))
+  );
+  if (view === 'nextday'  && !svgNextEl) initNextMap();
+  if (view === 'probable' && !svgProbEl) initProbMap();
+  if (view === 'risk') buildRiskSidebar();
+  if (view === 'radar') { initRadarMap(); radarTab(radarMode); }
+  if (view === 'probable') redrawProbMap();
+  // La vue zone est initialisée par openZoneView()
 }
 
 // Exposer les fonctions globalement pour qu'elles soient accessibles depuis le HTML
