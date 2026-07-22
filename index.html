@@ -9,7 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 
-  #map-zone{width:100%;aspect-ratio:1/1.04;border-radius:var(--r);overflow:hidden;background:var(--surf);border:1px solid rgba(232,162,60,.25);position:relative}
+#map-zone{width:100%;aspect-ratio:1/1.04;border-radius:var(--r);overflow:hidden;background:var(--surf);border:1px solid rgba(232,162,60,.25);position:relative}
 #map-zone svg{display:block;width:100%;height:100%}
 .zone-shape{cursor:pointer;transition:all .15s var(--ease)}
 .zone-shape:hover{stroke:rgba(255,255,255,.7)!important;stroke-width:1.4!important}
@@ -571,10 +571,10 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
   </div>
 
 <!-- VUE ZONE VOISINE (Belgique / Suisse / Allemagne / Italie) -->
+<!-- VUE ZONE VOISINE (Belgique / Suisse / Allemagne / Italie) -->
 <div class="top" id="view-zone" style="display:none">
   <div id="map-zone-col" style="flex:1;min-width:0;position:relative">
     <div id="map-zone" style="width:100%;border-radius:4px;overflow:hidden;background:var(--surf);border:1px solid var(--b1)"></div>
-    <div id="zone-filters" style="position:absolute;top:10px;right:10px;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:70%;z-index:5"></div>
     <div class="tip" id="tip-zone"></div>
   </div>
   <div class="sb">
@@ -3058,15 +3058,286 @@ const _publishedStateReady = applyPublishedState();
 // ============================================================
 // GESTION DU MENU DÉROULANT "VOISINS" (en haut à gauche de la carte)
 // ============================================================
+/* ═══════════════════════════════════════════════════════════════════
+   MENU ZONES VOISINES — Belgique / Suisse / Allemagne (frontalier) /
+   Italie (Nord-Ouest), chacune avec sa propre carte et la MÊME légende
+   de vigilance que la France (LEVELS).
+   ═══════════════════════════════════════════════════════════════════ */
+const ZONE_DEFS = {
+  BE: { 
+    label: 'Belgique', 
+    filter: f => f.properties.country === 'BE',
+    regionLabel: 'Province'
+  },
+  CH: { 
+    label: 'Suisse', 
+    filter: f => f.properties.country === 'CH',
+    regionLabel: 'Canton'
+  },
+  DE: { 
+    label: 'Allemagne — Länder frontaliers', 
+    filter: f => f.properties.country === 'DE' && (f.properties.name === 'Baden-Württemberg' || f.properties.name === 'Rhénanie-Palatinat' || f.properties.name === 'Sarre'),
+    regionLabel: 'Land'
+  },
+  IT: { 
+    label: 'Italie — Nord-Ouest', 
+    filter: f => f.properties.country === 'IT' && (f.properties.name === 'Piémont' || f.properties.name === 'Vallée d\'Aoste' || f.properties.name === 'Ligurie'),
+    regionLabel: 'Région'
+  }
+};
+let zoneData = { BE:{}, CH:{}, DE:{}, IT:{} };
+let zoneActiveLevel = 'jaune';
+let zoneActivePicto = null;
+let currentZoneKey = null;
+let zoneGeoPath = null;
+let zoneSvgSel = null;
+let zoneFeatures = [];
+
 function toggleZoneMenu(e) {
   e && e.stopPropagation();
+  const m = document.getElementById('zone-menu');
+  if (m) {
+    m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  }
+}
+
+// Fermer le menu en cliquant ailleurs
+document.addEventListener('click', (e) => {
+  const m = document.getElementById('zone-menu');
+  const btn = document.getElementById('zone-menu-btn');
+  if (m && btn && m.style.display !== 'none') {
+    if (!m.contains(e.target) && !btn.contains(e.target)) {
+      m.style.display = 'none';
+    }
+  }
+});
+
+function buildZoneLevelPicker() {
+  const c = document.getElementById('zone-lvl-container');
+  if (!c) return;
+  c.innerHTML = '';
+  LVL_DEFS.forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'lvl-btn' + (d.semi ? ' semi' : '') + (d.k === zoneActiveLevel ? ' on' : '');
+    const yc = (d.k === 'pre-alerte' || d.k === 'jaune' || d.k === 'jaune-orange') ? 'border:1px solid rgba(0,0,0,.4)' : '';
+    btn.innerHTML = `<span class="lvl-dot" style="background:${LEVELS[d.k].color};${yc}"></span>${LEVELS[d.k].label}`;
+    btn.onclick = () => {
+      zoneActiveLevel = d.k;
+      buildZoneLevelPicker();
+    };
+    c.appendChild(btn);
+  });
+}
+
+function buildZonePictoGrid() {
+  const g = document.getElementById('zone-pgrid');
+  if (!g) return;
+  g.innerHTML = '';
+  Object.keys(PICTO_FALLBACK).forEach(k => {
+    const btn = document.createElement('button');
+    btn.className = 'pbtn' + (k === zoneActivePicto ? ' on' : '');
+    btn.dataset.ik = k;
+    btn.innerHTML = ico(k, 26) + `<span>${k.slice(0,7)}</span>`;
+    btn.onclick = () => {
+      zoneActivePicto = zoneActivePicto === k ? null : k;
+      document.querySelectorAll('#zone-pgrid .pbtn').forEach(b => b.classList.toggle('on', b.dataset.ik === k));
+    };
+    g.appendChild(btn);
+  });
+}
+
+function openZoneView(zoneKey) {
+  // Fermer le menu
   const menu = document.getElementById('zone-menu');
   const btn = document.getElementById('zone-menu-btn');
-  if (menu) {
-    const isOpen = menu.classList.contains('open');
-    menu.classList.toggle('open');
-    if (btn) btn.classList.toggle('open');
+  if (menu) menu.style.display = 'none';
+  if (btn) btn.classList.remove('open');
+  
+  currentZoneKey = zoneKey;
+  const def = ZONE_DEFS[zoneKey];
+  document.getElementById('zone-title').textContent = def.label;
+  document.getElementById('zone-note').textContent = 'Vigilance indicative — mêmes niveaux que la carte France.';
+  
+  // Initialiser les sélecteurs
+  buildZoneLevelPicker();
+  buildZonePictoGrid();
+  
+  // Passer en mode zone
+  switchView('zone');
+  
+  // Initialiser la carte
+  initZoneMap(zoneKey);
+}
+
+function initZoneMap(zoneKey) {
+  const mapDiv = document.getElementById('map-zone');
+  const tip = document.getElementById('tip-zone');
+  mapDiv.innerHTML = '';
+  
+  const def = ZONE_DEFS[zoneKey];
+  const feats = NEIGHBORS_GEOJSON.features.filter(def.filter);
+  zoneFeatures = feats;
+  
+  if (!feats.length) {
+    mapDiv.innerHTML = `<p style="color:var(--t3);text-align:center;padding:40px">Aucune région disponible pour ${def.label}.</p>`;
+    return;
   }
+  
+  const W = 600, H = 624;
+  const proj = d3.geoMercator();
+  proj.fitExtent([[30,30],[W-30,H-30]], { type:'FeatureCollection', features: feats });
+  zoneGeoPath = d3.geoPath().projection(proj);
+
+  const svg = d3.select(mapDiv).append('svg')
+    .attr('viewBox', `0 0 ${W} ${H}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .style('display', 'block').style('width', '100%').style('height', '100%');
+  zoneSvgSel = svg;
+  
+  // Fond
+  svg.append('rect').attr('width', W).attr('height', H).attr('fill', '#131823');
+  
+  // Fond de carte (autres pays voisins en gris pour contexte)
+  svg.selectAll('path.neighbor-ctx-zone')
+    .data(NEIGHBORS_GEOJSON.features)
+    .join('path')
+    .attr('class', 'neighbor-ctx-zone')
+    .attr('d', d => zoneGeoPath(d))
+    .attr('fill', '#1a1f2a')
+    .attr('stroke', 'rgba(255,255,255,.06)')
+    .attr('stroke-width', 0.5)
+    .style('pointer-events', 'none');
+  
+  // Régions cliquables
+  svg.selectAll('path.zone-shape')
+    .data(feats)
+    .join('path')
+    .attr('class', 'zone-shape')
+    .attr('d', d => zoneGeoPath(d))
+    .attr('fill', d => {
+      const it = zoneData[zoneKey][d.properties.name];
+      return it ? LEVELS[it.level].color : '#2a3a4a';
+    })
+    .attr('stroke', 'rgba(0,0,0,.5)')
+    .attr('stroke-width', 0.8)
+    .style('cursor', 'pointer')
+    .on('mousemove', function(event, d) {
+      const nm = d.properties.name;
+      const it = zoneData[zoneKey][nm];
+      tip.style.display = 'block';
+      const r = mapDiv.getBoundingClientRect();
+      tip.style.left = (event.clientX - r.left + 14) + 'px';
+      tip.style.top  = (event.clientY - r.top - 36) + 'px';
+      
+      const regionType = def.regionLabel || 'Région';
+      
+      let html = `<div class="tip-hdr"><span class="tip-name">${nm}</span><span class="tip-code">${regionType}</span></div>`;
+      if (it) {
+        const lv = LEVELS[it.level];
+        html += `<div class="tip-alerts">
+          <div class="tip-alert">
+            <span class="tip-alert-ring" style="background:${lv.color}">${it.picto ? ico(it.picto, 13) : ''}</span>
+            <span class="tip-alert-txt">${it.picto || '—'}<span class="tip-alert-lvl">${lv.label}</span></span>
+          </div>
+        </div>`;
+      } else {
+        html += `<div class="tip-none">Pas d'alerte</div>`;
+      }
+      tip.innerHTML = html;
+      d3.select(this).attr('stroke', 'rgba(255,255,255,.6)').attr('stroke-width', 1.4);
+    })
+    .on('mouseleave', function() {
+      tip.style.display = 'none';
+      d3.select(this).attr('stroke', 'rgba(0,0,0,.5)').attr('stroke-width', 0.8);
+    })
+    .on('click', function(event, d) {
+      if (!requireAuth()) return;
+      const nm = d.properties.name;
+      const cur = zoneData[zoneKey][nm];
+      if (cur && cur.level === zoneActiveLevel && cur.picto === (zoneActivePicto || null)) {
+        delete zoneData[zoneKey][nm];
+      } else {
+        zoneData[zoneKey][nm] = { level: zoneActiveLevel, picto: zoneActivePicto || null };
+      }
+      d3.select(this).attr('fill', zoneData[zoneKey][nm] ? LEVELS[zoneData[zoneKey][nm].level].color : '#2a3a4a');
+      updateZoneLeg();
+    });
+  
+  // Pictos sur les régions
+  updateZonePictos(zoneKey);
+  updateZoneLeg();
+}
+
+function updateZonePictos(zoneKey) {
+  if (!zoneSvgSel) return;
+  const key = zoneKey || currentZoneKey;
+  if (!key) return;
+  
+  zoneSvgSel.selectAll('.zone-picto').remove();
+  
+  Object.entries(zoneData[key]).forEach(([name, info]) => {
+    if (!info.picto) return;
+    const feat = zoneFeatures.find(f => f.properties.name === name);
+    if (!feat) return;
+    const b = zoneGeoPath.bounds(feat);
+    const cx = (b[0][0] + b[1][0]) / 2;
+    const cy = (b[0][1] + b[1][1]) / 2;
+    const sz = Math.max(12, Math.min(Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1]) * 0.3, 22));
+    placeIcoImg(zoneSvgSel, info.picto, cx, cy, sz).attr('class', 'zone-picto');
+  });
+}
+
+function updateZoneLeg() {
+  const leg = document.getElementById('leg-zone');
+  if (!leg || !currentZoneKey) return;
+  
+  const used = Object.values(zoneData[currentZoneKey] || {});
+  if (!used.length) {
+    leg.style.display = 'none';
+    return;
+  }
+  
+  leg.style.display = 'block';
+  const lvls = [...new Set(used.map(d => d.level))].sort((a,b) => LEVEL_RANK[b] - LEVEL_RANK[a]);
+  const pics = [...new Set(used.map(d => d.picto).filter(Boolean))];
+  
+  let html = `<div style="padding:12px 14px">
+    <p class="stitle" style="margin-bottom:8px;color:var(--acc)">${ZONE_DEFS[currentZoneKey]?.label || 'Zone'}</p>`;
+  
+  html += `<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px">`;
+  lvls.forEach(k => {
+    html += `<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t2)">
+      <span class="lvl-dot" style="background:${LEVELS[k].color}"></span>${LEVELS[k].label}
+    </div>`;
+  });
+  html += `</div>`;
+  
+  if (pics.length) {
+    html += `<div style="display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid var(--b1);padding-top:8px">`;
+    pics.forEach(p => {
+      html += `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;width:28px">${ico(p,20)}<span style="font-size:7px;color:var(--t3)">${p.slice(0,5)}</span></div>`;
+    });
+    html += `</div>`;
+  }
+  
+  html += `</div>`;
+  leg.innerHTML = html;
+}
+
+function resetZone() {
+  if (!currentZoneKey) return;
+  zoneData[currentZoneKey] = {};
+  updateZonePictos(currentZoneKey);
+  // Rafraîchir les couleurs des régions
+  if (zoneSvgSel) {
+    zoneSvgSel.selectAll('path.zone-shape')
+      .attr('fill', '#2a3a4a');
+  }
+  updateZoneLeg();
+}
+
+function backToFrance() {
+  switchView('vigilance');
 }
 
 // Fermer le menu en cliquant ailleurs
@@ -3102,8 +3373,13 @@ function switchView(view) {
 }
 
 // Exposer les fonctions globalement pour qu'elles soient accessibles depuis le HTML
-window.toggleZoneMenu = toggleZoneMenu;
+// Exposer les fonctions globalement
 window.openZoneView = openZoneView;
+window.backToFrance = backToFrance;
+window.resetZone = resetZone;
+window.buildZoneLevelPicker = buildZoneLevelPicker;
+window.buildZonePictoGrid = buildZonePictoGrid;
+window.toggleZoneMenu = toggleZoneMenu;
 </script>
 </body>
 </html>
