@@ -1346,14 +1346,10 @@ function updateAlertTicker() {
   const maxLevel = Object.keys(LEVEL_RANK).find(k => LEVEL_RANK[k] === maxRank);
   const lvlLabel = LEVELS[maxLevel].label.toUpperCase();
   
-  // Construire le message avec le nombre de départements
-// Construire le message avec le nombre de départements
-const deptMsg = totalDepts > 0 ? ` <span class="badge">${totalDepts} département${totalDepts > 1 ? 's' : ''}</span>` : '';
-const phenomLabels = phenoms.map(p => (PHENOM_LABEL_FR[p] || p).toUpperCase());
-const text = `${lvlLabel} — ${phenomLabels.join(' • ')}${deptMsg} • `;
-  
-  // Dupliquer le texte pour l'effet infini
-  const fullText = text + text;
+  // Construire le message avec le badge
+  const deptMsg = totalDepts > 0 ? ` <span class="badge">${totalDepts}</span>` : '';
+  const phenomLabels = phenoms.map(p => (PHENOM_LABEL_FR[p] || p).toUpperCase());
+  const text = `${lvlLabel} — ${phenomLabels.join(' • ')}${deptMsg} • `;
   
   // Créer les segments
   track.innerHTML = '';
@@ -1362,7 +1358,7 @@ const text = `${lvlLabel} — ${phenomLabels.join(' • ')}${deptMsg} • `;
   for (let i = 0; i < 2; i++) {
     const seg = document.createElement('span');
     seg.className = 'alert-ticker-seg';
-    seg.textContent = text;
+    seg.innerHTML = text;  // ⚠️ CHANGEMENT ICI : innerHTML au lieu de textContent
     track.appendChild(seg);
   }
   
@@ -1374,7 +1370,7 @@ const text = `${lvlLabel} — ${phenomLabels.join(' • ')}${deptMsg} • `;
   wrap.style.display = 'block';
   
   // Calculer la vitesse en fonction du nombre de caractères
-  const charCount = text.length;
+  const charCount = text.replace(/<[^>]*>/g, '').length;
   const duration = Math.max(12, charCount * 0.12);
   track.style.animationDuration = duration + 's';
   
@@ -1382,6 +1378,7 @@ const text = `${lvlLabel} — ${phenomLabels.join(' • ')}${deptMsg} • `;
   track.style.animation = 'none';
   void track.offsetWidth;
   track.style.animation = `tickerScroll ${duration}s linear infinite`;
+}
 }
 
 /* ── ÉTAT — sélection multiple de départements ── */
