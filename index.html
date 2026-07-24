@@ -77,6 +77,7 @@ body{
 
 .top{display:flex;gap:12px;align-items:flex-start}
 #map-col{flex:1;min-width:0;position:relative;display:flex;justify-content:center}
+#map-col #map{transform:none}
 .sb{width:212px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
 .card{position:relative;background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);padding:13px;box-shadow:var(--sh-sm);transition:border-color .2s var(--ease),box-shadow .2s var(--ease)}
 .card:hover{border-color:var(--b2);box-shadow:var(--sh-md)}
@@ -107,9 +108,9 @@ body{
 .prob-level-btn.on{border-color:rgba(124,58,237,.4);background:rgba(124,58,237,.08);color:#c084fc}
 
 #map-prob-col{flex:1;min-width:0;position:relative}
-#map-prob{width:100%;aspect-ratio:1/1.04;border-radius:var(--r);overflow:hidden;background:var(--surf);border:1px solid rgba(124,58,237,.25);position:relative}
+#map-prob{width:100%;aspect-ratio:1/1.04;border-radius:var(--r);overflow:hidden;background:var(--surf);position:relative}
 #map-next-col{flex:1;min-width:0;position:relative}
-#map-next{width:100%;aspect-ratio:1/1.04;border-radius:var(--r);overflow:hidden;background:var(--surf);border:1px solid rgba(20,184,196,.25);position:relative}
+#map-next{width:100%;aspect-ratio:1/1.04;border-radius:var(--r);overflow:hidden;background:var(--surf);position:relative}
 .next-sidebar-note{font-size:10px;color:var(--t3);line-height:1.5;padding:8px;background:rgba(20,184,196,.07);border:1px solid rgba(20,184,196,.18);border-radius:8px;margin-bottom:2px}
 .radar-rep-btn{padding:5px 10px;border-radius:7px;border:1px solid var(--b2);background:rgba(12,15,20,.82);backdrop-filter:blur(8px);cursor:pointer;font-size:12px;color:var(--t2);font-family:inherit;transition:all .12s;box-shadow:var(--sh-sm)}
 .radar-rep-btn.on{border-color:#22d3ee;color:#22d3ee;background:rgba(34,211,238,.12)}
@@ -262,16 +263,7 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
 .nb-menu-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--rs);border:none;background:transparent;cursor:pointer;font-family:var(--font-b);font-size:12px;color:var(--t2);text-align:left;transition:all .12s var(--ease)}
 .nb-menu-item:hover{background:var(--surf2);color:var(--t1)}
 .nb-flag{font-size:15px}
-.nb-modal{display:none;position:fixed;inset:0;background:rgba(4,6,9,.72);backdrop-filter:blur(4px);z-index:2000;align-items:center;justify-content:center;padding:24px}
-.nb-modal.open{display:flex}
-.nb-modal-box{background:var(--surf);border:1px solid var(--b2);border-radius:var(--r);max-width:820px;width:100%;max-height:88vh;overflow:auto;box-shadow:var(--sh-md)}
-.nb-modal-hdr{padding:15px 18px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between}
-.nb-modal-body{display:flex;gap:16px;padding:18px;flex-wrap:wrap}
-.nb-map-col{flex:2;min-width:300px;position:relative}
-.nb-sb-col{flex:1;min-width:200px}
-.nb-hint{font-size:11px;color:var(--t3);line-height:1.6;padding:10px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.15);border-radius:var(--rs);margin-bottom:10px}
-.nb-active-sel{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--b1);border-radius:var(--rs);font-size:11px;color:var(--t2)}
-.nb-active-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.nb-back-pill{position:absolute;top:10px;left:10px;z-index:51;display:none;align-items:center;gap:6px;font-family:var(--font-m);font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--t1);background:rgba(12,15,20,.82);backdrop-filter:blur(8px);border:1px solid var(--b2);border-radius:20px;padding:5px 11px;box-shadow:var(--sh-sm)}
 
 .pop{position:fixed;background:var(--surf);border:1px solid var(--b2);border-top:2px solid var(--acc);border-radius:var(--r);box-shadow:0 14px 42px rgba(0,0,0,.7);z-index:9999;display:none;animation:authIn .14s var(--ease)}
 .pop.open{display:flex}
@@ -346,10 +338,11 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
 
   <div class="top" id="view-vigilance">
     <div id="map-col">
-      <div id="map" style="width:100%;border-radius:4px;overflow:hidden;background:var(--surf);border:1px solid var(--b1)"></div>
+      <div id="map" style="width:100%;height:520px;border-radius:4px;overflow:hidden;background:var(--surf);border:1px solid var(--b1)"></div>
       <div class="nb-menu-wrap" id="nb-menu-wrap" style="position:absolute;top:10px;left:10px;z-index:50">
-        <button class="vtab" onclick="toggleNbMenu(event)" style="color:#a78bfa;border-color:rgba(167,139,250,.5);background:rgba(12,15,20,.82);backdrop-filter:blur(8px);box-shadow:var(--sh-sm)">🌍 Régions voisines</button>
+        <button class="vtab" onclick="toggleNbMenu(event)" style="color:#a78bfa;border-color:rgba(167,139,250,.5);background:rgba(12,15,20,.82);backdrop-filter:blur(8px);box-shadow:var(--sh-sm)" id="nb-menu-btn">🌍 Régions voisines</button>
         <div class="nb-menu" id="nb-menu">
+          <button class="nb-menu-item" onclick="openNeighborCountry('FR','France')"><span class="nb-flag">🇫🇷</span>France <span style="color:var(--t3);margin-left:auto;font-size:10px">retour</span></button>
           <button class="nb-menu-item" onclick="openNeighborCountry('BE','Belgique')"><span class="nb-flag">🇧🇪</span>Belgique <span style="color:var(--t3);margin-left:auto;font-size:10px">provinces</span></button>
           <button class="nb-menu-item" onclick="openNeighborCountry('LU','Luxembourg')"><span class="nb-flag">🇱🇺</span>Luxembourg</button>
           <button class="nb-menu-item" onclick="openNeighborCountry('DE','Allemagne')"><span class="nb-flag">🇩🇪</span>Allemagne <span style="color:var(--t3);margin-left:auto;font-size:10px">Länder</span></button>
@@ -357,6 +350,7 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
           <button class="nb-menu-item" onclick="openNeighborCountry('IT','Italie')"><span class="nb-flag">🇮🇹</span>Italie <span style="color:var(--t3);margin-left:auto;font-size:10px">régions</span></button>
         </div>
       </div>
+      <button class="nb-back-pill" id="nb-back-pill" onclick="openNeighborCountry('FR','France')">← Retour à la France</button>
       <div id="map-filters" style="position:absolute;top:10px;right:10px;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:70%"></div>
       <div class="tip" id="tip"></div>
     </div>
@@ -699,23 +693,6 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
     </div>
 
     <p class="seuils-note">ⓘ Grille générale à visée pédagogique — pour les seuils précis par département, se référer aux outils dédiés (canicule, vent) et au site officiel Météo-France.</p>
-  </div>
-
-  <!-- MODALE RÉGIONS VOISINES -->
-  <div class="nb-modal" id="nb-modal" onclick="if(event.target===this)closeNbModal()">
-    <div class="nb-modal-box">
-      <div class="nb-modal-hdr">
-        <p style="font-family:var(--font-d);font-size:14px;font-weight:700;color:var(--t1)" id="nb-modal-title">—</p>
-        <button onclick="closeNbModal()" style="background:transparent;border:none;color:var(--t3);font-size:16px;cursor:pointer;line-height:1;padding:4px">✕</button>
-      </div>
-      <div class="nb-modal-body">
-        <div class="nb-map-col" id="nb-modal-map"></div>
-        <div class="nb-sb-col">
-          <p class="nb-hint">Le niveau et le phénomène actifs sont ceux sélectionnés dans l'onglet <b>Vigilance</b> (colonne de droite). Clique une région ici pour lui appliquer la même sélection.</p>
-          <p class="nb-active-sel"><span class="nb-active-dot" id="nb-active-dot"></span><span id="nb-active-txt">Vert — aucun phénomène</span></p>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div id="gauges"></div>
@@ -1134,50 +1111,68 @@ function nbColorFor(name) {
   return (dd && LEVELS[dd.level]) ? LEVELS[dd.level].color : DFILL;
 }
 
-function updateNbActiveSel() {
-  const dot = document.getElementById('nb-active-dot');
-  const txt = document.getElementById('nb-active-txt');
-  if (!dot || !txt) return;
-  dot.style.background = LEVELS[activeLevel] ? LEVELS[activeLevel].color : DFILL;
-  txt.textContent = (LEVELS[activeLevel] ? LEVELS[activeLevel].label : activeLevel) + ' — ' + (activePicto || 'aucun phénomène');
-}
+let nbMode = false; // true = carte pays voisin affichée à la place de la France
 
 function openNeighborCountry(code, label) {
   document.getElementById('nb-menu').classList.remove('open');
+  if (code === 'FR') {
+    nbMode = false;
+    nbModalCountry = null;
+    document.getElementById('nb-back-pill').style.display = 'none';
+    document.getElementById('nb-menu-btn').textContent = '🌍 Régions voisines';
+    buildFranceMap(); // reconstruit entièrement le SVG France (carte + tooltip + handlers)
+    return;
+  }
+  nbMode = true;
   nbModalCountry = code;
-  document.getElementById('nb-modal-title').textContent = label + ' — vigilance (' + (NB_COUNTRY_LABEL[code]||code) + ')';
-  document.getElementById('nb-modal').classList.add('open');
-  updateNbActiveSel();
-  renderNbModalMap();
-}
-function closeNbModal() {
-  document.getElementById('nb-modal').classList.remove('open');
+  document.getElementById('nb-back-pill').style.display = 'flex';
+  document.getElementById('nb-menu-btn').textContent = '🌍 ' + (NB_COUNTRY_LABEL[code]||code);
+  renderNeighborMap(code);
 }
 
-function renderNbModalMap() {
-  const feats = NEIGHBORS_GEOJSON.features.filter(f => f.properties.country === nbModalCountry);
-  const holder = document.getElementById('nb-modal-map');
-  holder.innerHTML = '<div class="tip" id="nb-tip"></div>';
-  if (!feats.length) { holder.innerHTML += '<p style="color:var(--t3);font-size:12px;padding:20px">Aucune donnée géographique pour cette zone.</p>'; return; }
-  const W = 520, H = 460;
-  const proj = d3.geoMercator().fitExtent([[14,14],[W-14,H-14]], { type:'FeatureCollection', features:feats });
+async function renderNeighborMap(code) {
+  const feats = NEIGHBORS_GEOJSON.features.filter(f => f.properties.country === code);
+  const mapDiv = document.getElementById('map');
+  mapDiv.innerHTML = '';
+  if (!feats.length) { mapDiv.innerHTML = '<p style="color:var(--t3);font-size:12px;padding:20px">Aucune donnée géographique pour cette zone.</p>'; return; }
+  if (!_worldTopo) {
+    try { _worldTopo = await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json'); }
+    catch(e) { _worldTopo = null; }
+  }
+  const W = 900, H = 560;
+  const proj = d3.geoMercator().fitExtent([[20,20],[W-20,H-20]], { type:'FeatureCollection', features:feats });
   const path = d3.geoPath().projection(proj);
-  const svg = d3.select(holder).insert('svg', ':first-child')
+  const svg = d3.select(mapDiv).append('svg')
     .attr('viewBox', `0 0 ${W} ${H}`)
-    .style('display','block').style('width','100%').style('height','auto')
-    .style('background','#131823').style('border-radius','8px').style('border','1px solid var(--b1)');
-  const tip = document.getElementById('nb-tip');
+    .style('display','block').style('width','100%').style('height','auto');
+  const tip = document.getElementById('tip');
+
+  svg.append('rect').attr('width',W).attr('height',H).attr('fill','#5B7DAA');
+
+  if (_worldTopo) {
+    const worldKey = Object.keys(_worldTopo.objects)[0];
+    const excludeName = { BE:'Belgium', LU:'Luxembourg', DE:'Germany', CH:'Switzerland', IT:'Italy' }[code] || '';
+    const worldMerged = topojson.merge(_worldTopo, _worldTopo.objects[worldKey].geometries.filter(g => g.properties && g.properties.name !== excludeName && g.properties.name !== 'France'));
+    svg.append('path')
+      .attr('class','neighbor-ctx-bg')
+      .attr('d', path(worldMerged))
+      .attr('fill', '#4A70A4')
+      .attr('stroke', 'rgba(230,235,240,.35)')
+      .attr('stroke-width', 0.4)
+      .attr('stroke-linejoin','round')
+      .style('pointer-events','none');
+  }
 
   svg.selectAll('path.nbm').data(feats).join('path')
     .attr('class','nbm')
     .attr('d', d => path(d))
     .attr('fill', d => nbColorFor(d.properties.name))
-    .attr('stroke', '#000').attr('stroke-width', 0.6).style('cursor','pointer')
+    .attr('stroke', 'rgba(230,235,240,.5)').attr('stroke-width', 0.4).style('cursor','pointer')
     .on('mousemove', function(event, d) {
       const nm = d.properties.name;
       const dd = neighborData[activeDay] && neighborData[activeDay]['nb:'+nm];
       tip.style.display = 'block';
-      const r = holder.getBoundingClientRect();
+      const r = mapDiv.getBoundingClientRect();
       tip.style.left = (event.clientX - r.left + 14) + 'px';
       tip.style.top  = (event.clientY - r.top - 36) + 'px';
       let html = `<div class="tip-hdr"><span class="tip-name">${nm}</span></div>`;
@@ -1191,11 +1186,11 @@ function renderNbModalMap() {
         html += `<div class="tip-none">Pas d'alerte</div>`;
       }
       tip.innerHTML = html;
-      d3.select(this).attr('stroke','rgba(255,255,255,.7)').attr('stroke-width',1.2);
+      d3.select(this).attr('stroke','rgba(255,255,255,.7)').attr('stroke-width',0.8);
     })
     .on('mouseleave', function(event, d) {
       tip.style.display = 'none';
-      d3.select(this).attr('fill', nbColorFor(d.properties.name)).attr('stroke','#000').attr('stroke-width',0.6);
+      d3.select(this).attr('fill', nbColorFor(d.properties.name)).attr('stroke','rgba(230,235,240,.35)').attr('stroke-width',0.2);
     })
     .on('click', function(event, d) {
       if (!requireAuth()) return;
@@ -1418,7 +1413,7 @@ const COASTAL = new Set(['Manche','Calvados','Seine-Maritime','Somme','Pas-de-Ca
 const DEPT_CODES = {'Ain':'01','Aisne':'02','Allier':'03','Alpes-de-Haute-Provence':'04','Hautes-Alpes':'05','Alpes-Maritimes':'06','Ardèche':'07','Ardennes':'08','Ariège':'09','Aube':'10','Aude':'11','Aveyron':'12','Bouches-du-Rhône':'13','Calvados':'14','Cantal':'15','Charente':'16','Charente-Maritime':'17','Cher':'18','Corrèze':'19','Corse-du-Sud':'2A','Haute-Corse':'2B',"Côte-d'Or":'21',"Côtes-d'Armor":'22','Creuse':'23','Dordogne':'24','Doubs':'25','Drôme':'26','Eure':'27','Eure-et-Loir':'28','Finistère':'29','Gard':'30','Haute-Garonne':'31','Gers':'32','Gironde':'33','Hérault':'34','Ille-et-Vilaine':'35','Indre':'36','Indre-et-Loire':'37','Isère':'38','Jura':'39','Landes':'40','Loir-et-Cher':'41','Loire':'42','Haute-Loire':'43','Loire-Atlantique':'44','Loiret':'45','Lot':'46','Lot-et-Garonne':'47','Lozère':'48','Maine-et-Loire':'49','Manche':'50','Marne':'51','Haute-Marne':'52','Mayenne':'53','Meurthe-et-Moselle':'54','Meuse':'55','Morbihan':'56','Moselle':'57','Nièvre':'58','Nord':'59','Oise':'60','Orne':'61','Pas-de-Calais':'62','Puy-de-Dôme':'63','Pyrénées-Atlantiques':'64','Hautes-Pyrénées':'65','Pyrénées-Orientales':'66','Bas-Rhin':'67','Haut-Rhin':'68','Rhône':'69','Haute-Saône':'70','Saône-et-Loire':'71','Sarthe':'72','Savoie':'73','Haute-Savoie':'74','Paris':'75','Seine-Maritime':'76','Seine-et-Marne':'77','Yvelines':'78','Deux-Sèvres':'79','Somme':'80','Tarn':'81','Tarn-et-Garonne':'82','Var':'83','Vaucluse':'84','Vendée':'85','Vienne':'86','Haute-Vienne':'87','Vosges':'88','Yonne':'89','Territoire de Belfort':'90','Essonne':'91','Hauts-de-Seine':'92','Seine-Saint-Denis':'93','Val-de-Marne':'94',"Val-d'Oise":'95'};
 
 const DFILL  = '#31AA35';
-const DSTROKE= '#000000';
+const DSTROKE= 'rgba(230,235,240,.35)';
 const LEVEL_RANK = Object.fromEntries(LVL_DEFS.map((d,i)=>[d.k,i]));
 
 /* ── Helper : lit les alertes d'un département, compatible avec l'ancien format
@@ -3102,34 +3097,54 @@ setTimeout(() => {
 }
 const _publishedStateReady = applyPublishedState();
 
-(async () => {
-  await _publishedStateReady;
+let _franceTopo = null;
+let _worldTopo = null;
+async function buildFranceMap() {
   const mapDiv = document.getElementById('map');
   const tip    = document.getElementById('tip');
-  let topo;
-  try { topo = await d3.json('https://cdn.jsdelivr.net/npm/datamaps@0.5.10/src/js/data/fra.topo.json'); }
-  catch(e) { mapDiv.innerHTML = '<p style="color:var(--t3);text-align:center;padding:60px">Données indisponibles.</p>'; return; }
+  mapDiv.innerHTML = '';
+  let topo = _franceTopo;
+  if (!topo) {
+    try { topo = await d3.json('https://cdn.jsdelivr.net/npm/datamaps@0.5.10/src/js/data/fra.topo.json'); _franceTopo = topo; }
+    catch(e) { mapDiv.innerHTML = '<p style="color:var(--t3);text-align:center;padding:60px">Données indisponibles.</p>'; return; }
+  }
+  if (!_worldTopo) {
+    try { _worldTopo = await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json'); }
+    catch(e) { _worldTopo = null; }
+  }
 
   const key = Object.keys(topo.objects)[0];
   features = topojson.feature(topo, topo.objects[key]).features;
-  const W = 600, H = 624;
-  const proj = d3.geoConicConformal().parallels([44,49]).rotate([-3,0]).center([0,46.5]).scale(1860).translate([300,312]);
+  const W = 600, H = 430;
+  const proj = d3.geoConicConformal().parallels([44,49]).rotate([-3,0]).center([0,46.5]).scale(1370).translate([300,215]);
   geoPath = d3.geoPath().projection(proj);
 
   const svg = d3.select(mapDiv).append('svg')
     .attr('viewBox',`0 0 ${W} ${H}`)
-    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .attr('preserveAspectRatio', 'xMidYMid slice')
     .style('display','block')
     .style('width','100%')
-    .style('height','auto');
+    .style('height','100%');
   svgEl = svg.node(); svgSel = svg;
-  svg.append('rect').attr('width',W).attr('height',H).attr('fill','#131823');
+  svg.append('rect').attr('width',W).attr('height',H).attr('fill','#5B7DAA');
   const defs0 = svg.append('defs');
   defs0.append('filter').attr('id','dvShadow').attr('x','-60%').attr('y','-60%').attr('width','220%').attr('height','220%')
     .append('feDropShadow').attr('dx',0).attr('dy',0.6).attr('stdDeviation',1).attr('flood-color','#000').attr('flood-opacity',0.5);
 
   const nbLayer = svg.append('g').attr('class','neighbor-layer');
-  /* Pays/régions voisins retirés de la carte France (déplacés dans le menu "🌍 Régions voisines") */
+  if (_worldTopo) {
+    const worldKey = Object.keys(_worldTopo.objects)[0];
+    const worldMerged = topojson.merge(_worldTopo, _worldTopo.objects[worldKey].geometries.filter(g => g.properties && g.properties.name !== 'France'));
+    nbLayer.selectAll('path.neighbor-country')
+      .data([worldMerged]).join('path')
+      .attr('class','neighbor-country')
+      .attr('d', geoPath.pointRadius ? geoPath : geoPath)
+      .attr('fill', '#4A70A4')
+      .attr('stroke', 'rgba(230,235,240,.35)')
+      .attr('stroke-width', 0.2)
+      .attr('stroke-linejoin','round')
+      .style('pointer-events','none');
+  }
 
   layerSel = svg.append('g').attr('class','dept-layer');
   svg.append('g').attr('class','neighbor-picto-layer');
@@ -3137,7 +3152,7 @@ const _publishedStateReady = applyPublishedState();
   layerSel.selectAll('path.dept').data(features).join('path')
     .attr('class','dept')
     .attr('d', d => { const pd = geoPath(d); const nm = d.properties&&(d.properties.name||d.properties.NAME||''); if(nm) pathMap[nm]=pd; return pd; })
-    .attr('fill', DFILL).attr('stroke', DSTROKE).attr('stroke-width', 0.6).style('cursor','pointer')
+    .attr('fill', DFILL).attr('stroke', DSTROKE).attr('stroke-width', 0.2).style('cursor','pointer')
     .on('mousemove', function(event, d) {
       const nm = d.properties&&(d.properties.name||d.properties.NAME||'Département');
       const items = getItems(curData()[nm]);
@@ -3208,6 +3223,11 @@ const _publishedStateReady = applyPublishedState();
     setTimeout(() => { if (!svgNextEl) initNextMap(); }, 150);
     setTimeout(() => { if (!svgProbEl) initProbMap(); }, 200);
   }
+}
+
+(async () => {
+  await _publishedStateReady;
+  await buildFranceMap();
 })();
 </script>
 </body>
