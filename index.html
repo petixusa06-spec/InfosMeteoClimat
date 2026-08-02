@@ -426,7 +426,6 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
         <button class="vtab" onclick="toggleNbMenu(event)" style="color:#a78bfa;border-color:rgba(167,139,250,.5);background:rgba(12,15,20,.82);backdrop-filter:blur(8px);box-shadow:var(--sh-sm)" id="nb-menu-btn">🌍 Régions voisines</button>
         <div class="nb-menu" id="nb-menu">
           <button class="nb-menu-item" onclick="openNeighborCountry('FR','France')"><span class="nb-flag">🇫🇷</span>France <span style="color:var(--t3);margin-left:auto;font-size:10px">retour</span></button>
-          <button class="nb-menu-item" onclick="openNeighborCountry('BE','Belgique')"><span class="nb-flag">🇧🇪</span>Belgique <span style="color:var(--t3);margin-left:auto;font-size:10px">provinces</span></button>
           <button class="nb-menu-item" onclick="openNeighborCountry('LU','Luxembourg')"><span class="nb-flag">🇱🇺</span>Luxembourg</button>
           <button class="nb-menu-item" onclick="openNeighborCountry('DE','Allemagne')"><span class="nb-flag">🇩🇪</span>Allemagne <span style="color:var(--t3);margin-left:auto;font-size:10px">Länder</span></button>
           <button class="nb-menu-item" onclick="openNeighborCountry('CH','Suisse')"><span class="nb-flag">🇨🇭</span>Suisse <span style="color:var(--t3);margin-left:auto;font-size:10px">cantons</span></button>
@@ -1122,7 +1121,7 @@ async function drawNeighborContext(gLayer) {
    (même structure que la carte principale) et le niveau/phénomène actifs choisis
    dans la vue Vigilance (activeLevel / activePicto).
    ══════════════════════════════════════════════════════════════════════════════ */
-const NB_COUNTRY_LABEL = { BE:'Belgique', LU:'Luxembourg', DE:'Allemagne', CH:'Suisse', IT:'Italie' };
+const NB_COUNTRY_LABEL = { LU:'Luxembourg', DE:'Allemagne', CH:'Suisse', IT:'Italie' };
 let nbModalCountry = null;
 
 function toggleNbMenu(event) {
@@ -1975,22 +1974,8 @@ function redrawNeighborPictos() {
   if (!svgSel) return;
   const pLayer = svgSel.select('.neighbor-picto-layer');
   pLayer.selectAll('*').remove();
-  
-  Object.entries(neighborData[activeDay]).forEach(([key, nd]) => {
-    // Si pas de picto → on n'affiche rien
-    if (!nd.picto) return;
-    
-    // Si filtre actif ET que le picto ne correspond pas → on n'affiche pas
-    if (mapPictoFilter && nd.picto !== mapPictoFilter) return;
-    
-    const name = key.slice(3);
-    const feat = NEIGHBORS_GEOJSON.features.find(f => f.properties.name === name);
-    if (!feat) return;
-    const b = geoPath.bounds(feat);
-    const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
-    const sz = Math.max(10, Math.min(Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])*0.45, 26));
-    placeIcoImg(pLayer, nd.picto, cx, cy, sz);
-  });
+  // Les pictos des zones voisines (Belgique, Suisse, etc.) ne s'affichent que
+  // dans leur propre carte dédiée (voir renderNeighborMap) — jamais sur la carte France.
 }
 function redrawAllNeighbors() {
   if (!svgSel) return;
