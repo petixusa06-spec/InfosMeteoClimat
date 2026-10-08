@@ -1786,7 +1786,7 @@ let infraDrawMode = false, infraDrawing = false, infraPts = [];
 let infraProj = null;
 
 function infraLine() {
-  return d3.line().x(d => d[0]).y(d => d[1]).curve(d3.curveCatmullRom.closed);
+  return d3.line().x(d => d[0]).y(d => d[1]).curve(d3.curveCatmullRomClosed);
 }
 
 function toggleInfraDraw() {
@@ -1794,7 +1794,11 @@ function toggleInfraDraw() {
   infraDrawMode = !infraDrawMode;
   document.getElementById('infra-tog').classList.toggle('on', infraDrawMode);
   document.getElementById('map-col').classList.toggle('infra-drawing', infraDrawMode);
+  const cnt = document.getElementById('infra-count');
   drawInfra(); // (re)active la suppression par clic
+  if (cnt && infraDrawMode) {
+    cnt.innerHTML = '<span style="color:var(--acc2)">✏️ Mode tracé ACTIF — maintiens le clic et entoure la zone. Les clics vigilance classiques sont désactivés tant que ce mode est allumé.</span>';
+  }
 }
 
 function clearInfra() {
@@ -1831,6 +1835,7 @@ function drawInfra() {
   const interactive = infraDrawMode && !isVisitor;
 
   (infraZones[activeDay] || []).forEach(z => {
+    try {
     if (!z.pts || z.pts.length < 3) return;
     const lv = LEVELS[z.level] || LEVELS.vert;
     const uid = 'infra-' + z.id;
@@ -1867,6 +1872,7 @@ function drawInfra() {
     } else {
       p.attr('pointer-events', 'none');
     }
+    } catch(e) { console.warn('Zone infra ignorée :', e); }
   });
   updateInfraCount();
 }
