@@ -1828,52 +1828,80 @@ function drawInfra() {
   const g = svgSel.select('.infra-layer');
   if (g.empty()) return;
   g.selectAll('*').remove();
-  svgSel.selectAll('defs > [id^="infra-"]').remove();
   let defs = svgSel.select('defs');
   if (defs.empty()) defs = svgSel.append('defs');
+  defs.selectAll('[id^="infra-"]').remove();
+
+  const [,, W, H] = svgEl.getAttribute('viewBox').split(' ').map(Number);
   const isVisitor = (document.body.className || '').indexOf('role-visitor') !== -1;
   const interactive = infraDrawMode && !isVisitor;
+  const zones = (infraZones[activeDay] || []).slice()
+    .sort((a, b) => LEVEL_RANK[a.level] - LEVEL_RANK[b.level]); // le niveau le plus haut au-dessus
 
-  (infraZones[activeDay] || []).forEach(z => {
-    try {
-    if (!z.pts || z.pts.length < 3) return;
-    const lv = LEVELS[z.level] || LEVELS.vert;
-    const uid = 'infra-' + z.id;
-    const grad = defs.append('radialGradient').attr('id', uid + '-g');
-    grad.append('stop').attr('offset', '0%').attr('stop-color', lv.color).attr('stop-opacity', .95);
-    grad.append('stop').attr('offset', '55%').attr('stop-color', lv.color).attr('stop-opacity', .62);
-    grad.append('stop').attr('offset', '100%').attr('stop-color', lv.color).attr('stop-opacity', .07);
-    const flt = defs.append('filter').attr('id', uid + '-f')
-      .attr('x', '-40%').attr('y', '-40%').attr('width', '180%').attr('height', '180%');
-    flt.append('feGaussianBlur').attr('stdDeviation', 3.5);
+  if (!zones.length) { updateInfraCount(); return; }
 
-    const p = g.append('path')
-      .attr('class', 'infra-zone')
-      .attr('d', infraLine()(z.pts))
-      .attr('fill', 'url(#' + uid + '-g)')
-      .attr('stroke', lv.color).attr('stroke-width', .8)
-      .attr('stroke-opacity', .55).attr('stroke-dasharray', '5,3')
-      .attr('filter', 'url(#' + uid + '-f)');
-
-    if (z.dept && pathMap[z.dept]) {
-      const cp = defs.append('clipPath').attr('id', uid + '-c');
-      cp.append('path').attr('d', pathMap[z.dept]);
-      p.attr('clip-path', 'url(#' + uid + '-c)');
-    }
-
-    if (interactive) {
-      p.attr('pointer-events', 'visiblePainted').style('cursor', 'pointer')
-        .on('click', function(ev) {
-          ev.stopPropagation();
-          if (!requireAuth()) return;
-          infraZones[activeDay] = infraZones[activeDay].filter(x => x.id !== z.id);
-          drawInfra();
-        });
-    } else {
-      p.attr('pointer-events', 'none');
-    }
-    } catch(e) { console.warn('Zone infra ignorée :', e); }
+  // Découpe = union de tous les départements (la zone peut traverser plusieurs départements)
+  const clip = defs.append('clipPath').attr('id', 'infra-france-clip');
+  features.forEach(f => {
+    const nm = f.properties && (f.properties.name || f.properties.NAME || '');
+    if (pathMap[nm]) clip.append('path').attr('d', pathMap[nm]);
   });
+  const clipped = g.append('g').attr('clip-path', 'url(#infra-france-clip)');
+
+  zones.forEach(z => {
+    try {
+      if (!z.pts || z.pts.length < 3) return;
+      const lv = LEVELS[z.level] || LEVELS.vert;
+      const uid = 'infra-' + z.id;
+      const d = infraLine()(z.pts);
+
+      // Taille de la zone → finesse du flou proportionnelle
+      const xs = z.pts.map(p => p[0]), ys = z.pts.map(p => p[1]);
+      const size = Math.sqrt((Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)));
+      const sd = Math.max(2.5, Math.min(9, size * 0.09));
+
+      // Halo extérieur : longue transition douce
+      const fHalo = defs.append('filter').attr('id', uid + '-h').attr('filterUnits', 'userSpaceOnUse')
+        .attr('x', -W).attr('y', -H).attr('width', W * 3).attr('height', H * 3);
+      fHalo.append('feGaussianBlur').attr('stdDeviation', sd * 2.3);
+
+      // Cœur : flou + alpha renforcé = centre franc, bord qui s'estompe
+      const fCore = defs.append('filter').attr('id', uid + '-c').attr('filterUnits', 'userSpaceOnUse')
+        .attr('x', -W).attr('y', -H).attr('width', W * 3).attr('height', H * 3);
+      fCore.append('feGaussianBlur').attr('stdDeviation', sd).attr('result', 'b');
+      const ct = fCore.append('feComponentTransfer').attr('in', 'b');
+      ct.append('feFuncA').attr('type', 'linear').attr('slope', 1.6);
+
+      clipped.append('path').attr('d', d)
+        .attr('fill', lv.color).attr('opacity', .42)
+        .attr('filter', 'url(#' + uid + '-h)').attr('pointer-events', 'none');
+
+      const core = clipped.append('path').attr('class', 'infra-zone').attr('d', d)
+        .attr('fill', lv.color).attr('opacity', .82)
+        .attr('filter', 'url(#' + uid + '-c)');
+
+      if (interactive) {
+        core.attr('pointer-events', 'visiblePainted').style('cursor', 'pointer')
+          .on('click', function(ev) {
+            ev.stopPropagation();
+            if (!requireAuth()) return;
+            infraZones[activeDay] = infraZones[activeDay].filter(x => x.id !== z.id);
+            drawInfra();
+          });
+      } else {
+        core.attr('pointer-events', 'none');
+      }
+    } catch (e) { console.warn('Zone infra ignorée :', e); }
+  });
+
+  // Frontières des départements par-dessus la zone
+  features.forEach(f => {
+    const nm = f.properties && (f.properties.name || f.properties.NAME || '');
+    if (!pathMap[nm]) return;
+    clipped.append('path').attr('d', pathMap[nm]).attr('fill', 'none')
+      .attr('stroke', 'rgba(0,0,0,.4)').attr('stroke-width', .5).attr('pointer-events', 'none');
+  });
+
   updateInfraCount();
 }
 
@@ -1882,14 +1910,18 @@ function infraStartDraw(event) {
   if (!requireAuth()) return;
   event.preventDefault();
   infraDrawing = true;
-  infraPts = [d3.pointer(event, svgEl)];
+  const layerNode = svgSel.select('.infra-layer').node();
+  infraPts = [d3.pointer(event, layerNode)];
   const live = svgSel.select('.infra-layer').append('path')
     .attr('class', 'infra-live')
-    .attr('fill', 'none')
+    .attr('fill', (LEVELS[activeLevel] || LEVELS.vert).color).attr('fill-opacity', .25)
     .attr('stroke', (LEVELS[activeLevel] || LEVELS.vert).color)
     .attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
   const move = ev => {
-    infraPts.push(d3.pointer(ev, svgEl));
+    const p = d3.pointer(ev, layerNode);
+    const l = infraPts[infraPts.length - 1];
+    if (Math.hypot(p[0] - l[0], p[1] - l[1]) < 2) return;
+    infraPts.push(p);
     live.attr('d', infraLine()(infraPts));
   };
   const up = () => {
@@ -1897,14 +1929,11 @@ function infraStartDraw(event) {
     window.removeEventListener('mouseup', up);
     live.remove();
     infraDrawing = false;
-    if (infraPts.length >= 3) {
-      const cx = infraPts.reduce((s, p) => s + p[0], 0) / infraPts.length;
-      const cy = infraPts.reduce((s, p) => s + p[1], 0) / infraPts.length;
+    if (infraPts.length >= 4) {
       infraZones[activeDay].push({
         id: Date.now().toString(36) + Math.random().toString(16).slice(2, 6),
         level: activeLevel,
-        pts: infraPts.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]),
-        dept: infraDeptAt([cx, cy])
+        pts: infraPts.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10])
       });
       drawInfra();
     }
@@ -2213,6 +2242,7 @@ function zoomTo(feat, name) {
   layerSel.transition().duration(480).ease(d3.easeCubicInOut).attr('transform', tf);
   svgSel.select('.neighbor-layer').transition().duration(480).ease(d3.easeCubicInOut).attr('transform', tf);
   svgSel.select('.neighbor-picto-layer').transition().duration(480).ease(d3.easeCubicInOut).attr('transform', tf);
+  svgSel.select('.infra-layer').transition().duration(480).ease(d3.easeCubicInOut).attr('transform', tf);
   renderGauges(name);
 }
 function unzoom() {
@@ -2222,6 +2252,7 @@ function unzoom() {
   layerSel.transition().duration(450).ease(d3.easeCubicInOut).attr('transform','');
   svgSel.select('.neighbor-layer').transition().duration(450).ease(d3.easeCubicInOut).attr('transform','');
   svgSel.select('.neighbor-picto-layer').transition().duration(450).ease(d3.easeCubicInOut).attr('transform','');
+  svgSel.select('.infra-layer').transition().duration(450).ease(d3.easeCubicInOut).attr('transform','');
   renderGauges(null);
 }
 
