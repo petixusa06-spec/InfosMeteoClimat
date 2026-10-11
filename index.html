@@ -192,7 +192,7 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
 .tip-none{font-size:10px;color:var(--t3);margin-top:4px}
 
 .leg-card{position:relative;background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);box-shadow:var(--sh-sm)}
-#leg,#leg-next,#leg-prob{display:none!important}
+#leg-next,#leg-prob{display:none!important}
 .leg-sec{margin-bottom:8px}
 .leg-sec:last-child{margin-bottom:0}
 .leg-sec-t{font-family:var(--font-m);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--b1)}
@@ -306,6 +306,11 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
 .infra-layer{pointer-events:none}
 .infra-live{pointer-events:none}
 .infra-zone{transition:opacity .12s}
+  .mapf-btn{width:34px;height:34px}
+.mapf-btn img{width:22px;height:22px}
+.leg-chips{display:flex;flex-wrap:wrap;gap:8px 12px}
+.leg-chip{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--t2)}
+.leg-chip-ico{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(0,0,0,.35);flex-shrink:0}
 </style>
 </head>
 <body>
@@ -417,16 +422,17 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
             <div class="pgrid" id="dv-pgrid"></div>
           </div>
         </div>
-        <div class="card" id="infra-card">
-          <p class="stitle" style="margin-bottom:6px">Vigilance infra-départementale</p>
-          <div class="tog-row" onclick="toggleInfraDraw()">
-            <span style="font-size:11px;color:var(--t2)">Mode tracé à la souris</span>
-            <div class="tog" id="infra-tog"><div class="tog-k"></div></div>
-          </div>
-          <p style="font-size:10px;color:var(--t3);margin-top:7px;line-height:1.5">Maintiens le clic et entoure la zone : elle prend le niveau choisi dans « Niveau d'alerte », en dégradé, découpée dans son département. Mode activé = un clic sur une zone la supprime.</p>
-          <p id="infra-count" style="font-size:10px;color:var(--t3);margin-top:6px"></p>
-          <button class="rst-btn" onclick="clearInfra()">✕ Effacer les zones du jour</button>
-        </div>
+     <div class="card" id="infra-card">
+  <p class="stitle" style="margin-bottom:6px">Vigilance infra-départementale</p>
+  <div class="tog-row" onclick="toggleInfraDraw()">
+    <span style="font-size:11px;color:var(--t2)">Mode tracé à la souris</span>
+    <div class="tog" id="infra-tog"><div class="tog-k"></div></div>
+  </div>
+  <p style="font-size:10px;color:var(--t3);margin-top:7px;line-height:1.5">1) Choisis le niveau ci-dessus. 2) Clique le rond du phénomène en haut à droite de la carte (pas « Tt »). 3) Maintiens le clic et entoure la zone : dégradé, découpé aux frontières. Mode activé = un clic sur une zone la supprime. Les zones n'apparaissent que sur la carte de leur phénomène.</p>
+  <p id="infra-count" style="font-size:10px;color:var(--t3);margin-top:6px;line-height:1.5"></p>
+  <button class="rst-btn" style="margin-bottom:4px" onclick="undoInfra()">↶ Annuler la dernière zone</button>
+  <button class="rst-btn" onclick="clearInfra()">✕ Effacer les zones du phénomène</button>
+</div>
         <p class="hint">Clic = appliquer · Dbl-clic = zoom</p>
         <button class="rst-btn" onclick="resetAll()">↺ Réinitialiser</button>
       </div>
@@ -1057,7 +1063,7 @@ async function renderNeighborMap(code) {
       d3.select(this).attr('fill', nbColorFor(d.properties.name)).attr('stroke','rgba(230,235,240,.35)').attr('stroke-width',0.2);
     })
     .on('click', function(event, d) {
-      if (infraDrawMode) return;
+if (infraReady()) return;
       if (!requireAuth()) return;
       const nm = d.properties.name;
       const key = 'nb:'+nm;
@@ -1452,6 +1458,49 @@ const SEUILS_DATA = [
 let activeSeuil = SEUILS_DATA[0].key;
 let seuilsTabsBuilt = false;
 let svgSeuilsEl = null;
+  /* ── À AJOUTER juste après la ligne  let svgSeuilsEl = null; ── */
+const WIND_SEUILS = {'01':[75,95,135,175],'02':[75,95,135,175],'03':[70,90,130,170],'04':[80,120,160,200],'05':[80,120,160,200],'06':[85,120,160,200],'07':[70,100,140,180],'08':[75,95,135,175],'09':[80,120,160,200],'10':[70,90,130,170],'11':[90,120,160,200],'12':[70,95,135,175],'13':[80,115,155,195],'14':[80,110,150,190],'15':[65,90,130,170],'16':[75,100,140,180],'17':[85,120,160,200],'18':[70,90,130,170],'19':[70,90,130,170],'21':[70,90,130,170],'22':[85,115,155,195],'23':[70,90,130,170],'24':[75,95,135,175],'25':[70,95,140,180],'26':[75,105,145,185],'27':[75,100,140,180],'28':[70,95,135,175],'29':[90,120,160,200],'2A':[85,115,155,195],'2B':[90,120,160,200],'30':[75,100,140,180],'31':[70,90,130,170],'32':[70,95,135,175],'33':[85,120,160,200],'34':[70,95,135,175],'35':[75,105,145,185],'36':[70,90,130,170],'37':[70,90,130,170],'38':[80,110,155,195],'39':[70,90,135,175],'40':[85,120,160,200],'41':[70,90,130,170],'42':[70,90,130,170],'43':[65,90,130,170],'44':[80,110,150,190],'45':[70,90,130,170],'46':[70,90,130,170],'47':[75,95,135,175],'48':[65,90,130,170],'49':[70,95,140,180],'50':[90,120,160,200],'51':[70,90,130,170],'52':[70,90,130,170],'53':[75,100,140,180],'54':[70,90,130,170],'55':[70,95,135,175],'56':[85,115,155,195],'57':[70,90,130,170],'58':[70,90,130,170],'59':[80,100,140,180],'60':[75,95,135,175],'61':[75,100,140,180],'62':[85,110,150,190],'63':[75,100,140,180],'64':[85,120,160,200],'65':[80,120,160,200],'66':[85,120,160,200],'67':[65,90,130,170],'68':[70,95,135,175],'69':[70,90,130,170],'70':[70,90,130,175],'71':[75,90,135,175],'72':[70,95,135,175],'73':[85,120,160,200],'74':[85,120,160,200],'75':[65,85,125,165],'76':[85,105,145,185],'77':[70,90,130,170],'78':[70,95,130,170],'79':[75,100,140,180],'80':[80,100,140,180],'81':[75,95,135,175],'82':[70,90,130,170],'83':[75,110,150,190],'84':[75,110,150,190],'85':[80,115,155,195],'86':[70,95,135,175],'87':[75,95,135,175],'88':[70,90,140,180],'89':[70,90,130,170],'90':[65,90,130,170],'91':[70,90,130,170],'92':[65,85,125,165],'93':[65,85,125,165],'94':[65,85,125,165],'95':[65,90,125,165]};
+const WIND_LEVELS = [{k:'Jaune',c:'#facc15',col:{"65":"#fde68a","70":"#fbbf24","75":"#f97316","80":"#ef4444","85":"#be123c","90":"#6d0f3c"}},{k:'Orange',c:'#fb923c',col:{"85":"#fdba74","90":"#fb923c","95":"#f97316","100":"#ea580c","105":"#dc2626","110":"#b91c1c","115":"#8f1239","120":"#5b0f2e"}},{k:'Rouge',c:'#ef4444',col:{"125":"#fca5a5","130":"#f87171","135":"#ef4444","140":"#dc2626","145":"#b91c1c","150":"#991b1b","155":"#7f1d1d","160":"#4c0519"}},{k:'Violet',c:'#a855f7',col:{"165":"#d8b4fe","170":"#c084fc","175":"#a855f7","180":"#9333ea","185":"#7e22ce","190":"#6b21a8","195":"#581c87","200":"#3b0764"}}];
+let windLevel = 0;
+function windTextColor(hex) { const n = parseInt(hex.slice(1), 16); return (((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000) > 150 ? '#1a1a1a' : '#fff'; }
+function setWindLevel(i) { windLevel = i; selectSeuil('vent'); }
+
+function drawWindSeuils() {
+  if (!svgSeuilsEl) return;
+  const svg = d3.select(svgSeuilsEl);
+  svg.selectAll('.wind-txt').remove();
+  const on = activeSeuil === 'vent', L = WIND_LEVELS[windLevel];
+  svg.selectAll('path.seuils-dept').attr('fill', d => {
+    if (!on) return DFILL;
+    const v = (WIND_SEUILS[DEPT_CODES[d.properties.name || d.properties.NAME]] || [])[windLevel];
+    return v ? L.col[v] : DFILL;
+  });
+  if (!on) return;
+  features.forEach(f => {
+    const code = DEPT_CODES[f.properties.name || f.properties.NAME];
+    if (!code || ['75', '92', '93', '94'].includes(code)) return;       // petite couronne : voir la légende
+    const v = (WIND_SEUILS[code] || [])[windLevel]; if (!v) return;
+    const b = geoPath.bounds(f), c = geoPath.centroid(f);
+    const fs = Math.max(3.6, Math.min(9, Math.min(b[1][0] - b[0][0], b[1][1] - b[0][1]) * 0.36));
+    svg.append('text').attr('class', 'wind-txt').attr('x', c[0]).attr('y', c[1])
+      .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
+      .attr('font-size', fs).attr('font-weight', 800).attr('fill', windTextColor(L.col[v]))
+      .attr('pointer-events', 'none').style('font-family', 'var(--font-m)').text(v);
+  });
+}
+
+function windLegendHtml() {
+  const s = SEUILS_DATA.find(x => x.key === 'vent'), L = WIND_LEVELS[windLevel];
+  const pills = WIND_LEVELS.map((w, i) =>
+    `<button class="seuils-tab${i === windLevel ? ' on' : ''}" style="--tab-accent:${w.c};--tab-bg:${w.c}26;padding:5px 10px;font-size:10.5px" onclick="setWindLevel(${i})">${w.k}</button>`).join('');
+  const chips = Object.keys(L.col).sort((a, b) => b - a).map(v =>
+    `<div style="display:flex;align-items:center;gap:8px;font-size:11px;font-family:var(--font-m);color:var(--t2)"><i style="width:14px;height:14px;border-radius:3px;background:${L.col[v]};display:inline-block"></i>${v} km/h</div>`).join('');
+  return `<div class="seuils-legend-hdr"><span class="seuils-legend-ico" style="background:${s.bg}">${s.ico}</span><span class="seuils-legend-title">${s.name}</span></div>
+    <p class="seuils-legend-method">Seuil de rafales (km/h) par département pour le niveau choisi.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${pills}</div>
+    <div style="display:flex;flex-direction:column;gap:6px">${chips}</div>
+    <p style="font-size:10.5px;color:var(--t3);margin-top:12px">Paris + petite couronne : <b style="color:var(--t1)">${WIND_SEUILS['75'][windLevel]} km/h</b></p>`;
+}
 
 function buildSeuilsTabs() {
   if (seuilsTabsBuilt) return;
@@ -1488,6 +1537,8 @@ function selectSeuil(key) {
       <div class="seuils-legend-bar" style="background:linear-gradient(to top, ${stops})"></div>
       <div class="seuils-legend-ticks">${ticks}</div>
     </div>`;
+    if (key === 'vent') box.innerHTML = windLegendHtml();
+  drawWindSeuils();
 }
 
 function initSeuilsMap() {
@@ -1512,6 +1563,7 @@ function initSeuilsMap() {
     .attr('fill', DFILL)
     .attr('stroke', DSTROKE)
     .attr('stroke-width', 0.6);
+    drawWindSeuils();
 }
 
 function initSeuilsView() {
@@ -1727,7 +1779,7 @@ function selectLevel(l) {
   document.querySelectorAll('[data-lk]').forEach(b => b.classList.toggle('on', b.dataset.lk === l));
   if (typeof updateNbActiveSel === 'function') updateNbActiveSel();
 }
-function selectPicto(k) {
+function selectPicto(k)   buildMapFilters();{
   activePicto = activePicto === k ? null : k;
   document.querySelectorAll('#pgrid .pbtn').forEach(b => b.classList.toggle('on', b.dataset.ik === k));
   if (typeof updateNbActiveSel === 'function') updateNbActiveSel();
@@ -1783,46 +1835,63 @@ function resetAll() {
    ══════════════════════════════════════════════════════════ */
 let infraZones = { today: [], tomorrow: [] };
 let infraDrawMode = false, infraDrawing = false, infraPts = [];
-let infraProj = null;
+let infraProj = null;/* ── A) À AJOUTER juste après la ligne  let infraProj = null; ── */
+function infraReady() { return infraDrawMode && !!mapPictoFilter; }          // tracé possible ?
+function visibleInfraZones() {                                               // zones de la carte affichée
+  return (infraZones[activeDay] || []).filter(z => !z.picto || z.picto === mapPictoFilter);
+}
 
 function infraLine() {
   return d3.line().x(d => d[0]).y(d => d[1]).curve(d3.curveCatmullRomClosed);
 }
 
+/* ── B) REMPLACE toute la fonction toggleInfraDraw ── */
 function toggleInfraDraw() {
   if (!requireAuth()) return;
   infraDrawMode = !infraDrawMode;
   document.getElementById('infra-tog').classList.toggle('on', infraDrawMode);
-  document.getElementById('map-col').classList.toggle('infra-drawing', infraDrawMode);
-  const cnt = document.getElementById('infra-count');
-  drawInfra(); // (re)active la suppression par clic
-  if (cnt && infraDrawMode) {
-    cnt.innerHTML = '<span style="color:var(--acc2)">✏️ Mode tracé ACTIF — maintiens le clic et entoure la zone. Les clics vigilance classiques sont désactivés tant que ce mode est allumé.</span>';
-  }
-}
-
-function clearInfra() {
-  if (!requireAuth()) return;
-  infraZones[activeDay] = [];
+  document.getElementById('map-col').classList.toggle('infra-drawing', infraReady());
+  if (svgEl) svgEl.style.touchAction = infraDrawMode ? 'none' : '';
   drawInfra();
 }
 
+/* ── C) REMPLACE toute la fonction clearInfra ── */
+function clearInfra() {
+  if (!requireAuth()) return;
+  if (mapPictoFilter) {
+    infraZones[activeDay] = (infraZones[activeDay] || []).filter(z => z.picto && z.picto !== mapPictoFilter);
+  } else if (confirm('Effacer TOUTES les zones infra-départementales du jour ?')) {
+    infraZones[activeDay] = [];
+  }
+  drawInfra();
+}
+
+/* ── D) À AJOUTER juste après clearInfra ── */
+function undoInfra() {
+  if (!requireAuth()) return;
+  const arr = infraZones[activeDay] || [];
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (!arr[i].picto || arr[i].picto === mapPictoFilter) { arr.splice(i, 1); break; }
+  }
+  drawInfra();
+}
+
+/* ── E) REMPLACE toute la fonction updateInfraCount ── */
 function updateInfraCount() {
   const el = document.getElementById('infra-count');
   if (!el) return;
-  const n = (infraZones[activeDay] || []).length;
-  const lbl = activeDay === 'today' ? "aujourd'hui" : 'demain';
-  el.textContent = n + (n > 1 ? ' zones ' : n === 1 ? ' zone ' : 'Aucune zone ') + (n ? lbl : '');
+  const n = visibleInfraZones().length;
+  const cnt = n ? n + (n > 1 ? ' zones affichées' : ' zone affichée') : 'Aucune zone affichée';
+  let hint = '';
+  if (infraDrawMode) {
+    hint = mapPictoFilter
+      ? `<span style="color:var(--acc2)">✏️ Tracé actif pour « ${PHENOM_LABEL_FR[mapPictoFilter] || mapPictoFilter} » — maintiens le clic et entoure la zone.</span><br>`
+      : `<span style="color:#ff9b6b">⚠ Choisis d'abord un phénomène avec les ronds en haut à droite de la carte (« Tt » = tracé impossible).</span><br>`;
+  }
+  el.innerHTML = hint + cnt;
 }
 
-function infraDeptAt(pt) {
-  if (!infraProj || !infraProj.invert) return null;
-  const lonlat = infraProj.invert(pt);
-  if (!lonlat) return null;
-  const f = (features || []).find(f => d3.geoContains(f, lonlat));
-  return f ? (f.properties.name || f.properties.NAME || null) : null;
-}
-
+/* ── F) REMPLACE toute la fonction drawInfra ── */
 function drawInfra() {
   if (!svgSel) return;
   const g = svgSel.select('.infra-layer');
@@ -1834,13 +1903,12 @@ function drawInfra() {
 
   const [,, W, H] = svgEl.getAttribute('viewBox').split(' ').map(Number);
   const isVisitor = (document.body.className || '').indexOf('role-visitor') !== -1;
-  const interactive = infraDrawMode && !isVisitor;
-  const zones = (infraZones[activeDay] || []).slice()
+  const interactive = infraReady() && !isVisitor;
+  const zones = visibleInfraZones().slice()
     .sort((a, b) => LEVEL_RANK[a.level] - LEVEL_RANK[b.level]); // le niveau le plus haut au-dessus
 
   if (!zones.length) { updateInfraCount(); return; }
 
-  // Découpe = union de tous les départements (la zone peut traverser plusieurs départements)
   const clip = defs.append('clipPath').attr('id', 'infra-france-clip');
   features.forEach(f => {
     const nm = f.properties && (f.properties.name || f.properties.NAME || '');
@@ -1854,31 +1922,24 @@ function drawInfra() {
       const lv = LEVELS[z.level] || LEVELS.vert;
       const uid = 'infra-' + z.id;
       const d = infraLine()(z.pts);
-
-      // Taille de la zone → finesse du flou proportionnelle
       const xs = z.pts.map(p => p[0]), ys = z.pts.map(p => p[1]);
       const size = Math.sqrt((Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)));
       const sd = Math.max(2.5, Math.min(9, size * 0.09));
 
-      // Halo extérieur : longue transition douce
       const fHalo = defs.append('filter').attr('id', uid + '-h').attr('filterUnits', 'userSpaceOnUse')
         .attr('x', -W).attr('y', -H).attr('width', W * 3).attr('height', H * 3);
       fHalo.append('feGaussianBlur').attr('stdDeviation', sd * 2.3);
 
-      // Cœur : flou + alpha renforcé = centre franc, bord qui s'estompe
       const fCore = defs.append('filter').attr('id', uid + '-c').attr('filterUnits', 'userSpaceOnUse')
         .attr('x', -W).attr('y', -H).attr('width', W * 3).attr('height', H * 3);
       fCore.append('feGaussianBlur').attr('stdDeviation', sd).attr('result', 'b');
-      const ct = fCore.append('feComponentTransfer').attr('in', 'b');
-      ct.append('feFuncA').attr('type', 'linear').attr('slope', 1.6);
+      fCore.append('feComponentTransfer').attr('in', 'b').append('feFuncA').attr('type', 'linear').attr('slope', 1.6);
 
-      clipped.append('path').attr('d', d)
-        .attr('fill', lv.color).attr('opacity', .42)
+      clipped.append('path').attr('d', d).attr('fill', lv.color).attr('opacity', .42)
         .attr('filter', 'url(#' + uid + '-h)').attr('pointer-events', 'none');
 
       const core = clipped.append('path').attr('class', 'infra-zone').attr('d', d)
-        .attr('fill', lv.color).attr('opacity', .82)
-        .attr('filter', 'url(#' + uid + '-c)');
+        .attr('fill', lv.color).attr('opacity', .82).attr('filter', 'url(#' + uid + '-c)');
 
       if (interactive) {
         core.attr('pointer-events', 'visiblePainted').style('cursor', 'pointer')
@@ -1894,7 +1955,6 @@ function drawInfra() {
     } catch (e) { console.warn('Zone infra ignorée :', e); }
   });
 
-  // Frontières des départements par-dessus la zone
   features.forEach(f => {
     const nm = f.properties && (f.properties.name || f.properties.NAME || '');
     if (!pathMap[nm]) return;
@@ -1902,21 +1962,34 @@ function drawInfra() {
       .attr('stroke', 'rgba(0,0,0,.4)').attr('stroke-width', .5).attr('pointer-events', 'none');
   });
 
+  /* NOUVEAU : le picto du phénomène au centre de chaque zone */
+  zones.forEach(z => {
+    if (!z.picto || !PICTO_FALLBACK[z.picto] || !z.pts || z.pts.length < 3) return;
+    const c = d3.polygonCentroid(z.pts);
+    placeIcoImg(g, z.picto, c[0], c[1], 13);
+  });
+
   updateInfraCount();
 }
 
+/* ── G) REMPLACE toute la fonction infraStartDraw ── */
 function infraStartDraw(event) {
   if (!infraDrawMode || infraDrawing) return;
+  if (event.button !== undefined && event.button !== 0) return;
   if (!requireAuth()) return;
+  if (!mapPictoFilter) {
+    showToast("Sélectionne d'abord un phénomène avec les ronds en haut à droite de la carte", 3600);
+    return;
+  }
   event.preventDefault();
   infraDrawing = true;
+  const picto = mapPictoFilter, level = activeLevel;
+  const col = (LEVELS[level] || LEVELS.vert).color;
   const layerNode = svgSel.select('.infra-layer').node();
   infraPts = [d3.pointer(event, layerNode)];
   const live = svgSel.select('.infra-layer').append('path')
-    .attr('class', 'infra-live')
-    .attr('fill', (LEVELS[activeLevel] || LEVELS.vert).color).attr('fill-opacity', .25)
-    .attr('stroke', (LEVELS[activeLevel] || LEVELS.vert).color)
-    .attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
+    .attr('class', 'infra-live').attr('fill', col).attr('fill-opacity', .25)
+    .attr('stroke', col).attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
   const move = ev => {
     const p = d3.pointer(ev, layerNode);
     const l = infraPts[infraPts.length - 1];
@@ -1925,21 +1998,32 @@ function infraStartDraw(event) {
     live.attr('d', infraLine()(infraPts));
   };
   const up = () => {
-    window.removeEventListener('mousemove', move);
-    window.removeEventListener('mouseup', up);
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    window.removeEventListener('pointercancel', up);
     live.remove();
     infraDrawing = false;
     if (infraPts.length >= 4) {
       infraZones[activeDay].push({
         id: Date.now().toString(36) + Math.random().toString(16).slice(2, 6),
-        level: activeLevel,
+        level, picto,
         pts: infraPts.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10])
       });
       drawInfra();
     }
   };
-  window.addEventListener('mousemove', move);
-  window.addEventListener('mouseup', up);
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', up);
+}
+
+/* ── H) REMPLACE toute la fonction setMapFilter ── */
+function setMapFilter(pk) {
+  mapPictoFilter = pk;
+  document.getElementById('map-col').classList.toggle('infra-drawing', infraReady());
+  redrawMap();          // redessine aussi les zones infra (drawInfra) et les ronds
+  redrawAllNeighbors();
+  updateInfraCount();
 }
 
 /* ── VOISINS : RENDU ── */
@@ -2143,17 +2227,25 @@ function drawSub() {
   svgNode.insertBefore(g, layerSel.node());
 }
 
-/* ── LÉGENDE ── */
-/* ── Filtre carte : ronds phénomène en haut à droite ── */
+/* ── I) REMPLACE toute la fonction buildMapFilters ── */
 function buildMapFilters() {
   const wrap = document.getElementById('map-filters');
   if (!wrap) return;
-  const data = curData();
-  const pictos = [...new Set(Object.values(data).flatMap(getItems).map(it=>it.picto).filter(Boolean))];
+  const zones = infraZones[activeDay] || [];
+  const items = [
+    ...Object.values(curData()).flatMap(getItems),
+    ...zones.map(z => ({ level: z.level, picto: z.picto || null }))
+  ];
+  const set = new Set(items.map(it => it.picto).filter(Boolean));
+  if (activePicto) set.add(activePicto);        // le phénomène choisi à droite apparaît tout de suite
+  if (mapPictoFilter) set.add(mapPictoFilter);
+  const pictos = [...set];
   if (!pictos.length) { wrap.innerHTML = ''; return; }
   let html = `<button class="mapf-btn all${mapPictoFilter===null?' on':''}" title="Toutes les alertes" onclick="setMapFilter(null)">Tt</button>`;
   pictos.forEach(pk => {
-    html += `<button class="mapf-btn${mapPictoFilter===pk?' on':''}" title="${pk}" onclick="setMapFilter('${pk}')">${ico(pk,17)}</button>`;
+    const mx = maxItem(items.filter(it => it.picto === pk));
+    const bg = mx ? LEVELS[mx.level].color : '#e8edf5';          // rond coloré selon le niveau max
+    html += `<button class="mapf-btn${mapPictoFilter===pk?' on':''}" title="${PHENOM_LABEL_FR[pk]||pk}" style="background:${bg}" onclick="setMapFilter('${pk}')">${ico(pk,20)}</button>`;
   });
   wrap.innerHTML = html;
 }
@@ -2201,28 +2293,38 @@ function applyGaugeToSelection() {
   showToast('Jauge appliquée à ' + selectedDepts.size + ' département(s)', 2600);
 }
 
+/* ── J) REMPLACE toute la fonction updateLeg
+      (de « function updateLeg() { » jusqu'au commentaire « ZOOM » exclu) ── */
 function updateLeg() {
   const el = document.getElementById('leg');
-  const data = curData(), nbData = neighborData[activeDay]||{};
-  const vals = [...Object.values(data).flatMap(getItems), ...Object.values(nbData).flatMap(getItems)];
-  const lvls  = [...new Set(vals.filter(d=>!d.probable).map(d=>d.level).filter(l=>l!=='vert'))];
-  const probs = [...new Set(vals.filter(d=>d.probable).map(d=>d.level))];
-  const pics  = [...new Set(vals.map(d=>d.picto).filter(Boolean))];
-  if (!lvls.length && !probs.length && !pics.length && !subVisible) { el.style.display='none'; return; }
-  el.style.display='block';
-  const bands = [
-    ...lvls.map(lv=>({ color:LEVELS[lv].color, label:LEVELS[lv].label })),
-    ...probs.map(lv=>({ color:LEVELS[lv].color+'aa', label:'~ '+LEVELS[lv].label })),
-    ...(subVisible?[{ color:LEVELS[subLvl].color, label:'Submersion côtière' }]:[])
+  const data = curData(), nbData = neighborData[activeDay] || {};
+  const zones = infraZones[activeDay] || [];
+  const vals = [
+    ...Object.values(data).flatMap(getItems),
+    ...Object.values(nbData).flatMap(getItems),
+    ...zones.map(z => ({ level: z.level, picto: z.picto || null, probable: false }))
   ];
+  const lvls  = [...new Set(vals.filter(d => !d.probable).map(d => d.level).filter(l => l !== 'vert'))];
+  const probs = [...new Set(vals.filter(d => d.probable).map(d => d.level))];
+  const pics  = [...new Set(vals.map(d => d.picto).filter(Boolean))];
+  if (!lvls.length && !probs.length && !pics.length && !subVisible) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  const bands = [
+    ...lvls.map(lv => ({ color: LEVELS[lv].color, label: LEVELS[lv].label })),
+    ...probs.map(lv => ({ color: LEVELS[lv].color + 'aa', label: '~ ' + LEVELS[lv].label })),
+    ...(subVisible ? [{ color: LEVELS[subLvl].color, label: 'Submersion côtière' }] : [])
+  ];
+  const chips = pics.map(pk => {
+    const mx = maxItem(vals.filter(v => v.picto === pk));
+    const c = mx ? LEVELS[mx.level].color : '#888';
+    return `<div class="leg-chip"><span class="leg-chip-ico" style="background:${c}">${ico(pk,20)}</span><span>${PHENOM_LABEL_FR[pk] || pk}</span></div>`;
+  }).join('');
   buildSvgLegend(el, {
-    title:'Vigilance', subtitle:'Carte '+( activeDay==='today'?'Aujourd\'hui':'Demain' ),
-    accentColor:'#e8a23c', emoji:'⚠',
-    bands, hideBands:false,
+    title: 'Vigilance', subtitle: 'Carte ' + (activeDay === 'today' ? "Aujourd'hui" : 'Demain'),
+    accentColor: '#e8a23c', emoji: '⚠', bands, hideBands: false,
     extra: pics.length ? `<div style="padding:0 13px 12px;border-top:1px solid rgba(232,162,60,.14)">
-      <p style="font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin:8px 0 6px">Phénomènes</p>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">${pics.map(pk=>`<div style="display:flex;flex-direction:column;align-items:center;gap:2px;width:28px">${ico(pk,24)}<span style="font-size:8px;color:var(--t3)">${pk.slice(0,5)}</span></div>`).join('')}</div>
-    </div>` : ''
+      <p style="font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin:8px 0 7px">Phénomènes</p>
+      <div class="leg-chips">${chips}</div></div>` : ''
   });
 }
 
@@ -2594,7 +2696,7 @@ async function buildFranceMap() {
       if (nm !== zoomedDept && !(multiSelectMode && selectedDepts.has(nm))) d3.select(this).attr('stroke',DSTROKE).attr('stroke-width',0.6);
     })
     .on('click', function(event, d) {
-      if (infraDrawMode) return;
+  if (infraReady()) return;
       if (!requireAuth()) return;
       const nm = d.properties&&(d.properties.name||d.properties.NAME||''); if(!nm) return;
       if (multiSelectMode) {
@@ -2621,7 +2723,7 @@ async function buildFranceMap() {
       redrawMap();
     })
     .on('dblclick', function(event, d) {
-      if (infraDrawMode) return;
+if (infraReady()) return;
       event.stopPropagation();
       const nm = d.properties&&(d.properties.name||d.properties.NAME||''); if(!nm) return;
       if (zoomedDept===nm) { unzoom(); return; }
@@ -2631,7 +2733,7 @@ async function buildFranceMap() {
 
   svg.on('dblclick', function(event) { if (event.target===svgEl) unzoom(); });
   infraProj = proj;
-  svgEl.addEventListener('mousedown', infraStartDraw);
+  svgEl.addEventListener('pointerdown', infraStartDraw);
 
   redrawMap();
   renderGauges(null);
