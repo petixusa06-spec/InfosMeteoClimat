@@ -1779,10 +1779,11 @@ function selectLevel(l) {
   document.querySelectorAll('[data-lk]').forEach(b => b.classList.toggle('on', b.dataset.lk === l));
   if (typeof updateNbActiveSel === 'function') updateNbActiveSel();
 }
-function selectPicto(k)   buildMapFilters();{
+function selectPicto(k) {
   activePicto = activePicto === k ? null : k;
   document.querySelectorAll('#pgrid .pbtn').forEach(b => b.classList.toggle('on', b.dataset.ik === k));
   if (typeof updateNbActiveSel === 'function') updateNbActiveSel();
+  buildMapFilters();
 }
 function toggleProb(level) {
   if (probLevel === level) {
