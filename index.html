@@ -677,32 +677,14 @@ function ico(name, sz) {
   return `<img src="${nextIcoUrl(name)}" width="${realSz}" height="${realSz}" alt="${name}" onerror="${onerr}" style="image-rendering:auto;display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5));object-fit:contain">`;
 }
 
-/* PICTO AGRANDI + PASTILLE COLORÉE */
+/* ── Picto SANS pastille ronde NI ombre : juste l'icône ── */
 function placeIcoImg(sel, name, cx, cy, sz, bgColor) {
   const isCustom = !!NEXT_PICTO_OVERRIDE[name];
   const fb = resolvedUrls[name] || PICTO_FALLBACK[name];
-  const radius = (sz * 1.65) / 2;
   const icoSize = isCustom ? sz * NEXT_PICTO_SCALE : sz;
 
   const g = sel.append('g').attr('class','picto-badge')
     .attr('transform', `translate(${cx},${cy})`);
-
-  g.append('circle')
-    .attr('r', radius + 1.5)
-    .attr('fill', 'rgba(0,0,0,.55)')
-    .attr('opacity', .45);
-
-  g.append('circle')
-    .attr('r', radius)
-    .attr('fill', bgColor || '#1a1f28')
-    .attr('stroke', 'rgba(0,0,0,.55)')
-    .attr('stroke-width', 1.2);
-
-  g.append('circle')
-    .attr('r', radius - 1)
-    .attr('fill', 'none')
-    .attr('stroke', 'rgba(255,255,255,.35)')
-    .attr('stroke-width', 0.8);
 
   g.append('image')
     .attr('href', nextIcoUrl(name))
@@ -710,7 +692,7 @@ function placeIcoImg(sel, name, cx, cy, sz, bgColor) {
     .attr('width', icoSize).attr('height', icoSize)
     .attr('pointer-events', 'none')
     .style('image-rendering', 'auto')
-    .style('filter', 'drop-shadow(0 1px 2px rgba(0,0,0,.6))')
+    .style('filter', 'drop-shadow(0 1px 2px rgba(0,0,0,.65))')
     .on('error', function() {
       if (this.getAttribute('href') !== fb) {
         d3.select(this).attr('href', fb)
@@ -1602,6 +1584,7 @@ function toggleProb(level) {
 }
 function switchDay(d) {
   activeDay = d;
+  Object.keys(_deptPointsCache).forEach(k => delete _deptPointsCache[k]);
   document.getElementById('dtab-today').classList.toggle('on', d === 'today');
   document.getElementById('dtab-tomorrow').classList.toggle('on', d === 'tomorrow');
   redrawMap();
@@ -1630,6 +1613,7 @@ function resetAll() {
   infraZones[activeDay] = [];
   mapPictoFilter = null;
   selectedDepts.clear();
+  Object.keys(_deptPointsCache).forEach(k => delete _deptPointsCache[k]);
   redrawMap();
   redrawAllNeighbors();
 }
@@ -1637,6 +1621,7 @@ function resetAll() {
 let infraZones = { today: [], tomorrow: [] };
 let infraDrawMode = false, infraDrawing = false, infraPts = [];
 let infraProj = null;
+const _deptPointsCache = {};
 
 function infraReady() { return infraDrawMode && !!mapPictoFilter; }
 function visibleInfraZones() {
@@ -1656,6 +1641,85 @@ function availableMapPictos() {
   ];
   const set = new Set(items.map(it => it.picto).filter(Boolean));
   return [...set];
+}
+
+/* ✅ Détecte si une zone infra touche un département (test multi-points)
+   pictoFilter = undefined → toutes les zones
+   pictoFilter = string    → seulement ce picto
+   pictoFilter = null      → seulement les zones sans picto
+   Retourne { level, picto } du niveau max trouvé, ou null */
+function infraInfoForDept(deptName, pictoFilter = undefined) {
+  const zones = (infraZones[activeDay] || []).filter(z => {
+    if (!z.level || z.level === 'vert') return false;
+    if (!z.pts || z.pts.length < 3) return false;
+    if (pictoFilter === undefined) return true;
+    if (pictoFilter === null) return !z.picto;
+    return z.picto === pictoFilter;
+  });
+  if (!zones.length) return null;
+
+  const feat = features.find(f => (f.properties.name || f.properties.NAME) === deptName);
+  if (!feat) return null;
+
+  const points = deptTestPoints(feat);
+
+  let best = null;
+  for (const z of zones) {
+    const hit = points.some(p => d3.polygonContains(z.pts, p));
+    if (!hit) continue;
+    if (!best || LEVEL_RANK[z.level] > LEVEL_RANK[best.level]) {
+      best = { level: z.level, picto: z.picto || null };
+    }
+  }
+  return best;
+}
+
+/* Génère ~110 points répartis sur tout le département
+   (centre, grille 7×7, contour échantillonné) */
+function deptTestPoints(feat) {
+  const nm = feat.properties && (feat.properties.name || feat.properties.NAME || '');
+  if (_deptPointsCache[nm]) return _deptPointsCache[nm];
+
+  const pts = [];
+  const c = geoPath.centroid(feat);
+  pts.push(c);
+
+  const b = geoPath.bounds(feat);
+  const x0 = b[0][0], y0 = b[0][1], x1 = b[1][0], y1 = b[1][1];
+  const nx = 7, ny = 7;
+  for (let i = 0; i < nx; i++) {
+    for (let j = 0; j < ny; j++) {
+      const px = x0 + (x1 - x0) * (i + 0.5) / nx;
+      const py = y0 + (y1 - y0) * (j + 0.5) / ny;
+      pts.push([px, py]);
+    }
+  }
+
+  try {
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const pathEl = document.createElementNS(svgNS, 'path');
+    const d = geoPath(feat);
+    pathEl.setAttribute('d', d);
+    const tmpSvg = document.createElementNS(svgNS, 'svg');
+    tmpSvg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+    tmpSvg.appendChild(pathEl);
+    document.body.appendChild(tmpSvg);
+    const total = pathEl.getTotalLength();
+    if (total > 0) {
+      const N = 60;
+      for (let i = 0; i < N; i++) {
+        const pt = pathEl.getPointAtLength((i / N) * total);
+        const dx = c[0] - pt.x, dy = c[1] - pt.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const off = Math.min(len * 0.08, 3);
+        pts.push([pt.x + dx / len * off, pt.y + dy / len * off]);
+      }
+    }
+    document.body.removeChild(tmpSvg);
+  } catch (e) { /* fallback silencieux */ }
+
+  _deptPointsCache[nm] = pts;
+  return pts;
 }
 
 /* ✅ RESTRICTION : le mode tracé n'est activable que sur UN phénomène précis */
@@ -1687,7 +1751,7 @@ function toggleInfraDraw() {
 
   document.getElementById('map-col').classList.toggle('infra-drawing', infraReady());
   if (svgEl) svgEl.style.touchAction = infraReady() ? 'none' : '';
-  drawInfra();
+  redrawMap();
 }
 
 function clearInfra() {
@@ -1698,6 +1762,7 @@ function clearInfra() {
     infraZones[activeDay] = [];
   }
   drawInfra();
+  redrawMap();
 }
 function undoInfra() {
   if (!requireAuth()) return;
@@ -1706,6 +1771,7 @@ function undoInfra() {
     if (!arr[i].picto || arr[i].picto === mapPictoFilter) { arr.splice(i, 1); break; }
   }
   drawInfra();
+  redrawMap();
 }
 
 function updateInfraCount() {
@@ -1730,6 +1796,9 @@ function updateInfraCount() {
   el.innerHTML = hint + cnt;
 }
 
+/* ══════════════════════════════════════════════════════════
+   DESSIN DES ZONES INFRA — dégradé net, pas de picto
+   ══════════════════════════════════════════════════════════ */
 function drawInfra() {
   if (!svgSel) return;
   const g = svgSel.select('.infra-layer');
@@ -1760,18 +1829,14 @@ function drawInfra() {
       const d = infraLine()(z.pts);
       const xs = z.pts.map(p => p[0]), ys = z.pts.map(p => p[1]);
       const size = Math.sqrt((Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)));
-      const sd = Math.max(2.5, Math.min(9, size * 0.09));
-      const fHalo = defs.append('filter').attr('id', uid + '-h').attr('filterUnits', 'userSpaceOnUse')
-        .attr('x', -W).attr('y', -H).attr('width', W * 3).attr('height', H * 3);
-      fHalo.append('feGaussianBlur').attr('stdDeviation', sd * 2.3);
+      const sd = Math.max(0.8, Math.min(2.2, size * 0.022));
+
       const fCore = defs.append('filter').attr('id', uid + '-c').attr('filterUnits', 'userSpaceOnUse')
         .attr('x', -W).attr('y', -H).attr('width', W * 3).attr('height', H * 3);
-      fCore.append('feGaussianBlur').attr('stdDeviation', sd).attr('result', 'b');
-      fCore.append('feComponentTransfer').attr('in', 'b').append('feFuncA').attr('type', 'linear').attr('slope', 1.6);
-      clipped.append('path').attr('d', d).attr('fill', lv.color).attr('opacity', .42)
-        .attr('filter', 'url(#' + uid + '-h)').attr('pointer-events', 'none');
+      fCore.append('feGaussianBlur').attr('stdDeviation', sd * 0.3).attr('result', 'b');
+
       const core = clipped.append('path').attr('class', 'infra-zone').attr('d', d)
-        .attr('fill', lv.color).attr('opacity', .82).attr('filter', 'url(#' + uid + '-c)');
+        .attr('fill', lv.color).attr('opacity', 1).attr('filter', 'url(#' + uid + '-c)');
       if (interactive) {
         core.attr('pointer-events', 'visiblePainted').style('cursor', 'pointer')
           .on('click', function(ev) {
@@ -1779,6 +1844,7 @@ function drawInfra() {
             if (!requireAuth()) return;
             infraZones[activeDay] = infraZones[activeDay].filter(x => x.id !== z.id);
             drawInfra();
+            redrawMap();
           });
       } else { core.attr('pointer-events', 'none'); }
     } catch (e) { console.warn('Zone infra ignorée :', e); }
@@ -1788,14 +1854,7 @@ function drawInfra() {
     const nm = f.properties && (f.properties.name || f.properties.NAME || '');
     if (!pathMap[nm]) return;
     clipped.append('path').attr('d', pathMap[nm]).attr('fill', 'none')
-      .attr('stroke', 'rgba(0,0,0,.4)').attr('stroke-width', .5).attr('pointer-events', 'none');
-  });
-
-  /* Picto des zones infra : pastille colorée */
-  zones.forEach(z => {
-    if (!z.picto || !PICTO_FALLBACK[z.picto] || !z.pts || z.pts.length < 3) return;
-    const c = d3.polygonCentroid(z.pts);
-    placeIcoImg(g, z.picto, c[0], c[1], 16, LEVELS[z.level].color);
+      .attr('stroke', 'rgba(0,0,0,.55)').attr('stroke-width', 0.7).attr('pointer-events', 'none');
   });
 
   updateInfraCount();
@@ -1838,6 +1897,7 @@ function infraStartDraw(event) {
         pts: infraPts.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10])
       });
       drawInfra();
+      redrawMap();
     }
   };
   window.addEventListener('pointermove', move);
@@ -1916,13 +1976,26 @@ function displayItem(dd) {
   return null;
 }
 
+/* ══════════════════════════════════════════════════════════
+   REDRAW MAP — logique principale
+   - mode "Tt" : départements colorés selon vigilance normale +
+     override infra (dès qu'une zone touche le département)
+     + picto du phénomène infra si pas de picto vigilance classique
+   - mode phénomène précis : les départements ne prennent PAS
+     la couleur infra, seules les zones tracées restent visibles
+   ══════════════════════════════════════════════════════════ */
 function redrawMap() {
   if (!layerSel) return;
   const data = curData();
+  const isTtMode = !mapPictoFilter;
 
   layerSel.selectAll('path.dept')
     .attr('fill', d => {
       const n = d.properties && (d.properties.name || d.properties.NAME || '');
+      if (isTtMode) {
+        const infraInfo = infraInfoForDept(n);
+        if (infraInfo) return LEVELS[infraInfo.level].color;
+      }
       const it = displayItem(data[n]);
       if (!it) return DFILL;
       if (it.probable) return hexBlend(LEVELS[it.level].color, '#1e2535', 0.18);
@@ -1957,20 +2030,70 @@ function redrawMap() {
 
   layerSel.selectAll('.dept-picto-g,.dept-multi-badge').remove();
 
-  Object.entries(data).forEach(([name, dd]) => {
-    const it = displayItem(dd);
-    if (!it || !it.picto || !PICTO_FALLBACK[it.picto]) return;
-    const feat = features.find(f => (f.properties.name || f.properties.NAME) === name);
-    if (!feat) return;
-    const b  = geoPath.bounds(feat);
-    const cx = (b[0][0] + b[1][0]) / 2;
-    const cy = (b[0][1] + b[1][1]) / 2;
-    const sz = Math.max(14, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.42, 26));
-    const bgColor = it.probable
-      ? hexBlend(LEVELS[it.level].color, '#1e2535', 0.18)
-      : LEVELS[it.level].color;
-    placeIcoImg(layerSel, it.picto, cx, cy, sz, bgColor).attr('class', 'dept-picto-g');
-  });
+  if (isTtMode) {
+    // 1) Pictos de vigilance départementale classique
+    const deptPictos = new Set();
+    Object.entries(data).forEach(([name, dd]) => {
+      const it = displayItem(dd);
+      if (!it || !it.picto || !PICTO_FALLBACK[it.picto]) return;
+      deptPictos.add(name + '|' + it.picto);
+      const feat = features.find(f => (f.properties.name || f.properties.NAME) === name);
+      if (!feat) return;
+      const b  = geoPath.bounds(feat);
+      const cx = (b[0][0] + b[1][0]) / 2;
+      const cy = (b[0][1] + b[1][1]) / 2;
+      const sz = Math.max(12, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.34, 20));
+      const bgColor = it.probable
+        ? hexBlend(LEVELS[it.level].color, '#1e2535', 0.18)
+        : LEVELS[it.level].color;
+      const g = placeIcoImg(layerSel, it.picto, cx, cy, sz, bgColor)
+        .attr('class', 'dept-picto-g');
+      g.style('cursor', 'pointer')
+        .on('click', function(ev) {
+          ev.stopPropagation();
+          if (!requireAuth()) return;
+          if (multiSelectMode) {
+            if (selectedDepts.has(name)) selectedDepts.delete(name); else selectedDepts.add(name);
+            updateSelCount();
+            redrawMap();
+            return;
+          }
+          const items = getItems(data[name]);
+          const idx = items.findIndex(it =>
+            it.level === activeLevel &&
+            it.picto === (activePicto || null) &&
+            !!it.probable === !!probLevel
+          );
+          let newItems;
+          if (idx !== -1) newItems = items.filter((_, i) => i !== idx);
+          else newItems = items;
+          if (newItems.length) data[name] = { items: newItems, dv: (dd && dd.dv) || null };
+          else delete data[name];
+          redrawMap();
+        });
+    });
+
+    // 2) Pictos pour les départements touchés UNIQUEMENT par une zone infra
+    features.forEach(feat => {
+      const name = feat.properties && (feat.properties.name || feat.properties.NAME || '');
+      if (!name) return;
+      const infraInfo = infraInfoForDept(name);
+      if (!infraInfo || !infraInfo.picto) return;
+      if (!PICTO_FALLBACK[infraInfo.picto]) return;
+      // Si le département a déjà un picto vigilance classique → on n'ajoute pas de doublon
+      const hasDeptPicto = [...deptPictos].some(k => k.startsWith(name + '|'));
+      if (hasDeptPicto) return;
+
+      const b  = geoPath.bounds(feat);
+      const cx = (b[0][0] + b[1][0]) / 2;
+      const cy = (b[0][1] + b[1][1]) / 2;
+      const sz = Math.max(12, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.34, 20));
+      const bgColor = LEVELS[infraInfo.level].color;
+      const g = placeIcoImg(layerSel, infraInfo.picto, cx, cy, sz, bgColor)
+        .attr('class', 'dept-picto-g');
+      g.style('cursor', 'pointer');
+    });
+  }
 
   buildMapFilters();
   updateDVBadges();
