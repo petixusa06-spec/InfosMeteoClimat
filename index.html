@@ -1175,6 +1175,9 @@ let nextData = {}, nextActiveBand = 'r3', nextActivePhenom = 'orage';
 let svgNextEl=null, svgNextSel=null, layerNextSel=null, zoomedRegionNext = null;
 let regionFeatures = [], activeView = 'vigilance';
 
+/* ✅ Petite couronne : pas de picto sur 92, 93, 94 — le picto va sur le 75 uniquement */
+const PETITE_COURONNE_CODES = new Set(['92','93','94']);
+
 function switchView(view) {
   activeView = view;
   document.getElementById('view-vigilance').style.display = view === 'vigilance' ? 'flex' : 'none';
@@ -1976,13 +1979,16 @@ function displayItem(dd) {
   return null;
 }
 
+/* ✅ Renvoie le nom du département dont le picto doit être affiché
+   (le 75 remplace 92/93/94 pour éviter les doublons en petite couronne) */
+function pictoAnchorName(name) {
+  const code = DEPT_CODES[name];
+  if (PETITE_COURONNE_CODES.has(code)) return null;
+  return name;
+}
+
 /* ══════════════════════════════════════════════════════════
    REDRAW MAP — logique principale
-   - mode "Tt" : départements colorés selon vigilance normale +
-     override infra (dès qu'une zone touche le département)
-     + picto du phénomène infra si pas de picto vigilance classique
-   - mode phénomène précis : les départements ne prennent PAS
-     la couleur infra, seules les zones tracées restent visibles
    ══════════════════════════════════════════════════════════ */
 function redrawMap() {
   if (!layerSel) return;
@@ -2032,10 +2038,21 @@ function redrawMap() {
 
   if (isTtMode) {
     // 1) Pictos de vigilance départementale classique
+    //    ✅ On saute la petite couronne (92/93/94) — le picto va sur le 75
     const deptPictos = new Set();
+    const pictosPour75 = [];  // on collecte les pictos à mettre sur le 75
+
     Object.entries(data).forEach(([name, dd]) => {
       const it = displayItem(dd);
       if (!it || !it.picto || !PICTO_FALLBACK[it.picto]) return;
+
+      const code = DEPT_CODES[name];
+      if (PETITE_COURONNE_CODES.has(code)) {
+        // 92/93/94 : on mémorise pour le 75, mais pas d'affichage ici
+        pictosPour75.push(it);
+        return;
+      }
+
       deptPictos.add(name + '|' + it.picto);
       const feat = features.find(f => (f.properties.name || f.properties.NAME) === name);
       if (!feat) return;
@@ -2074,13 +2091,15 @@ function redrawMap() {
     });
 
     // 2) Pictos pour les départements touchés UNIQUEMENT par une zone infra
+    //    ✅ On saute aussi la petite couronne
     features.forEach(feat => {
       const name = feat.properties && (feat.properties.name || feat.properties.NAME || '');
       if (!name) return;
+      const code = DEPT_CODES[name];
+      if (PETITE_COURONNE_CODES.has(code)) return; // pas de picto infra sur 92/93/94
       const infraInfo = infraInfoForDept(name);
       if (!infraInfo || !infraInfo.picto) return;
       if (!PICTO_FALLBACK[infraInfo.picto]) return;
-      // Si le département a déjà un picto vigilance classique → on n'ajoute pas de doublon
       const hasDeptPicto = [...deptPictos].some(k => k.startsWith(name + '|'));
       if (hasDeptPicto) return;
 
@@ -2093,6 +2112,54 @@ function redrawMap() {
         .attr('class', 'dept-picto-g');
       g.style('cursor', 'pointer');
     });
+
+    // 3) Pictos regroupés sur le 75 pour les vigilances de la petite couronne
+    //    (un picto par phénomène distinct, max 4 pictos)
+    if (pictosPour75.length) {
+      const uniq = [];
+      const seen = new Set();
+      pictosPour75.forEach(it => {
+        const k = it.picto + '|' + it.level;
+        if (seen.has(k)) return;
+        seen.add(k);
+        uniq.push(it);
+      });
+      const feat75 = features.find(f => (f.properties.name || f.properties.NAME) === 'Paris');
+      if (feat75) {
+        const b = geoPath.bounds(feat75);
+        const cx = (b[0][0] + b[1][0]) / 2;
+        const cy = (b[0][1] + b[1][1]) / 2;
+        const sz = Math.max(12, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.34, 20));
+        // Affiche max 3 pictos côte à côte au-dessus du 75
+        const n = Math.min(uniq.length, 3);
+        const spacing = sz * 0.95;
+        const startX = cx - (n - 1) * spacing / 2;
+        uniq.slice(0, n).forEach((it, i) => {
+          const bgColor = it.probable
+            ? hexBlend(LEVELS[it.level].color, '#1e2535', 0.18)
+            : LEVELS[it.level].color;
+          placeIcoImg(layerSel, it.picto, startX + i * spacing, cy, sz, bgColor)
+            .attr('class', 'dept-picto-g')
+            .style('cursor', 'pointer')
+            .on('click', function(ev) {
+              ev.stopPropagation();
+              if (!requireAuth()) return;
+              // Clic sur un picto petit-couronne → on retire l'alerte de tous les 92/93/94
+              ['Hauts-de-Seine','Seine-Saint-Denis','Val-de-Marne'].forEach(nm => {
+                const dd = data[nm];
+                if (!dd) return;
+                const items = getItems(dd);
+                const idx = items.findIndex(x => x.level === it.level && x.picto === (it.picto || null) && !!x.probable === !!it.probable);
+                if (idx === -1) return;
+                const newItems = items.filter((_, i) => i !== idx);
+                if (newItems.length) data[nm] = { items: newItems, dv: dd.dv || null };
+                else delete data[nm];
+              });
+              redrawMap();
+            });
+        });
+      }
+    }
   }
 
   buildMapFilters();
