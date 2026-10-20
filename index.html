@@ -167,8 +167,6 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
 .slvl{flex:1;min-width:0;padding:4px 2px;border:1px solid var(--b1);border-radius:var(--rs);cursor:pointer;background:transparent;font-size:10px;font-family:var(--font-m);color:var(--t3);text-align:center;transition:all .12s;white-space:nowrap}
 .slvl:hover{background:var(--surf2);color:var(--t2)}
 .slvl.on{border-color:var(--b2);background:var(--surf2);color:var(--t1)}
-.dv-tog{display:flex;align-items:center;justify-content:space-between;padding:4px 2px;border-radius:var(--rs);cursor:pointer;background:transparent;border:none;width:100%;transition:all .12s;font-family:inherit}
-.dv-tog:hover{background:var(--surf2)}
 
 .act-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;border:1px solid var(--b2);border-radius:var(--rs);cursor:pointer;background:transparent;font-size:11px;font-family:var(--font-m);text-transform:uppercase;letter-spacing:.03em;color:var(--t2);transition:all .15s var(--ease);font-weight:500}
 .act-btn:hover{background:var(--surf2);color:var(--t1)}
@@ -189,7 +187,9 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
 .tip-alert-ring img{width:18px;height:18px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
 .tip-alert-txt{font-family:var(--font-b);font-size:11px;color:var(--t1)}
 .tip-alert-lvl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.03em;margin-left:2px}
+.tip-alert-badge{font-size:8px;color:#22d3ee;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.3);border-radius:3px;padding:0 4px;margin-left:3px;font-family:var(--font-m);text-transform:uppercase;letter-spacing:.04em}
 .tip-none{font-size:10px;color:var(--t3);margin-top:4px}
+.tip-sep{height:1px;background:var(--b1);margin:5px 0 4px}
 
 .leg-card{position:relative;background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);box-shadow:var(--sh-sm)}
 #leg-next,#leg-prob{display:none!important}
@@ -209,6 +209,7 @@ body.role-visitor .legend-zone .prob-level-btn.on{background:transparent!importa
 .mapf-btn.all.on{color:var(--acc2)}
 .mapf-badge{position:absolute;top:-3px;right:-3px;background:var(--acc);color:#181008;border-radius:50%;width:14px;height:14px;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:var(--font-m);box-shadow:0 0 0 1.5px var(--surf)}
 path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-dasharray:3,2}
+path.dept-infra-allowed{stroke:#22d3ee!important;stroke-width:2px!important;stroke-dasharray:5,3}
 .g-wrap{background:var(--surf);border:1px solid var(--b1);border-radius:var(--r);padding:12px 16px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--sh-sm);transition:border-color .2s var(--ease)}
 .g-wrap:hover{border-color:var(--b2)}
 .g-wrap.dept{border-left:2px solid var(--acc)}
@@ -291,7 +292,7 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
 .pp-item:hover{background:var(--surf2);color:var(--t2)}
 .pp-item svg{width:20px;height:20px;display:block}
 
-.lvl-btn:disabled,.dv-tog[disabled],[data-plk]:disabled{opacity:.32;cursor:not-allowed;filter:grayscale(.3)}
+.lvl-btn:disabled,[data-plk]:disabled{opacity:.32;cursor:not-allowed;filter:grayscale(.3)}
 
 #sess-toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-12px);background:var(--surf);border:1px solid var(--b2);border-left:2px solid var(--acc);color:var(--t1);font-size:12px;font-family:var(--font-m);padding:9px 16px;border-radius:var(--r);box-shadow:var(--sh-md);z-index:10000;opacity:0;pointer-events:none;transition:all .25s var(--ease)}
 #sess-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -311,6 +312,11 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
 .leg-chips{display:flex;flex-wrap:wrap;gap:8px 12px}
 .leg-chip{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--t2)}
 .leg-chip-ico{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(0,0,0,.35);flex-shrink:0}
+/* Selection des départements autorisés pour le tracé */
+#infra-dept-list{display:flex;flex-wrap:wrap;gap:3px;max-height:120px;overflow-y:auto;margin-top:6px;padding:4px;background:var(--bg);border-radius:var(--rs);border:1px solid var(--b1)}
+.infra-dept-chip{font-family:var(--font-m);font-size:9px;padding:3px 6px;border-radius:var(--rs);cursor:pointer;background:transparent;border:1px solid var(--b1);color:var(--t3);transition:all .12s;font-weight:600}
+.infra-dept-chip:hover{background:var(--surf2);color:var(--t2);border-color:var(--b2)}
+.infra-dept-chip.on{background:rgba(34,211,238,.15);color:#22d3ee;border-color:#22d3ee}
 </style>
 </head>
 <body>
@@ -409,19 +415,6 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
             <button class="slvl" data-sl="rouge" onclick="setSubLvl('rouge')">Rouge</button>
           </div>
         </div>
-        <div class="card">
-          <p class="stitle" style="margin-bottom:6px">Double vigilance</p>
-          <button class="dv-tog" onclick="toggleDV()">
-            <span style="font-size:11px;color:var(--t2)">Activer 2ᵉ niveau</span>
-            <div class="tog" id="dv-tog"><div class="tog-k"></div></div>
-          </button>
-          <div id="dv-opts" style="display:none;margin-top:8px">
-            <p style="font-size:10px;color:var(--t3);margin-bottom:5px">2ᵉ niveau</p>
-            <div id="dv-lvls"></div>
-            <p style="font-size:10px;color:var(--t3);margin-top:6px;margin-bottom:4px">2ᵉ phénomène <span style="opacity:.5">(opt.)</span></p>
-            <div class="pgrid" id="dv-pgrid"></div>
-          </div>
-        </div>
      <div class="card" id="infra-card">
   <p class="stitle" style="margin-bottom:6px">Vigilance infra-départementale</p>
   <div class="tog-row" onclick="toggleInfraDraw()">
@@ -432,6 +425,12 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
     1) Choisis le niveau. 2) <b style="color:var(--acc2)">Clique le rond d'un phénomène</b> en haut à droite de la carte (pas « Tt »). 3) Active le mode tracé et entoure la zone à la souris.<br>
     <span style="color:#ff9b6b">⚠ Le tracé n'est disponible que sur UN phénomène précis à la fois.</span>
   </p>
+  <p style="font-size:10px;color:var(--t3);margin-top:8px;margin-bottom:4px;line-height:1.5">
+    <b style="color:#22d3ee">Départements autorisés pour le tracé</b> — clique sur les départements de la carte pour les ajouter/retirer, ou utilise la liste ci-dessous.<br>
+    <span style="font-size:9px;opacity:.7">Si aucun n'est sélectionné → tracé clippé sur toute la France (pas de débordement sur la mer).</span>
+  </p>
+  <div id="infra-dept-list"></div>
+  <button class="rst-btn" style="margin-top:6px;margin-bottom:4px" onclick="clearInfraAllowedDepts()">✕ Retirer tous les départements autorisés</button>
   <p id="infra-count" style="font-size:10px;color:var(--t3);margin-top:6px;line-height:1.5"></p>
   <button class="rst-btn" style="margin-bottom:4px" onclick="undoInfra()">↶ Annuler la dernière zone</button>
   <button class="rst-btn" onclick="clearInfra()">✕ Effacer les zones du phénomène</button>
@@ -506,7 +505,6 @@ path.dept-selected{stroke:#22d3ee!important;stroke-width:2.5px!important;stroke-
         <div id="risk-phenom-btns" style="display:flex;flex-direction:column;gap:3px"></div>
       </div>
       <div id="risk-legend-block" style="border-radius:var(--r);overflow:hidden;border:1px solid rgba(249,115,22,.18)"></div>
-      <!-- BOUTON PUBLIER AJOUTÉ ICI -->
       <div class="edit-zone dl-zone" style="margin-top:8px">
         <button class="act-btn publish-btn" id="publish-btn-risk" onclick="publishState()" style="border-color:rgba(249,115,22,.3);color:#f97316">⇪ Publier les prévisions</button>
         <p class="publish-status" id="publish-status-risk"></p>
@@ -575,8 +573,11 @@ try {
     const fbApp = initializeApp(FIREBASE_CONFIG);
     db = getFirestore(fbApp);
     fbReady = true;
+    console.log('[Firebase] Initialisé avec succès');
   }
-} catch (e) { console.warn('Firebase non initialisé :', e); }
+} catch (e) {
+  console.error('[Firebase] Erreur d\'initialisation :', e);
+}
 
 const STATE_DOC = () => doc(db, 'vigilance', 'state');
 
@@ -585,11 +586,16 @@ window.publishState = async function() {
   const statuses = document.querySelectorAll('.publish-status');
   btns.forEach(btn => btn.disabled = true);
   statuses.forEach(s => { s.textContent = 'Publication en cours…'; s.className = 'publish-status'; });
+
+  console.log('[Publish] Début de la publication');
+
   if (!fbReady) {
-    statuses.forEach(s => { s.textContent = "Firebase non configuré"; s.className = 'publish-status err'; });
+    console.error('[Publish] Firebase non configuré — db est null');
+    statuses.forEach(s => { s.textContent = "Firebase non configuré (db=null)"; s.className = 'publish-status err'; });
     btns.forEach(btn => btn.disabled = false);
     return;
   }
+
   try {
     const payload = {
       deptData: window.deptData, neighborData: window.neighborData,
@@ -598,12 +604,20 @@ window.publishState = async function() {
       infraZones: window.infraZones,
       publishedAt: Date.now()
     };
+    console.log('[Publish] Payload prêt, envoi vers Firestore...', payload);
     await setDoc(STATE_DOC(), payload);
+    console.log('[Publish] ✓ Document écrit dans Firestore');
     statuses.forEach(s => { s.textContent = '✓ Publié — visible par tous'; s.className = 'publish-status ok'; });
     setTimeout(() => { statuses.forEach(s => { s.textContent = ''; }); }, 4000);
   } catch (e) {
-    console.error(e);
-    statuses.forEach(s => { s.textContent = 'Échec de publication'; s.className = 'publish-status err'; });
+    console.error('[Publish] ÉCHEC — détail de l\'erreur :', e);
+    console.error('[Publish] code =', e.code, '| message =', e.message);
+    let msg = 'Échec : ' + (e.code || e.message || 'erreur inconnue');
+    if (e.code === 'permission-denied') msg = 'Échec : règles Firestore bloquent l\'écriture';
+    if (e.code === 'unavailable') msg = 'Échec : Firestore indisponible (réseau ?)';
+    if (e.code === 'not-found') msg = 'Échec : projet Firestore introuvable';
+    statuses.forEach(s => { s.textContent = msg; s.className = 'publish-status err'; });
+    setTimeout(() => { statuses.forEach(s => { s.textContent = ''; }); }, 8000);
   } finally {
     btns.forEach(btn => btn.disabled = false);
   }
@@ -612,11 +626,14 @@ window.publishState = async function() {
 window.loadPublishedState = async function() {
   if (!fbReady) return null;
   try {
+    console.log('[Load] Lecture Firestore...');
     const snap = await getDoc(STATE_DOC());
-    if (!snap.exists()) return null;
+    if (!snap.exists()) { console.log('[Load] Aucun document publié'); return null; }
+    console.log('[Load] ✓ Document récupéré');
     return snap.data();
   } catch (e) {
-    console.warn('Chargement Firebase impossible :', e);
+    console.error('[Load] ÉCHEC — détail :', e);
+    console.error('[Load] code =', e.code, '| message =', e.message);
     return null;
   }
 };
@@ -674,10 +691,10 @@ function ico(name, sz) {
   const realSz = isCustom ? Math.round(sz * NEXT_PICTO_SCALE) : sz;
   const fb = resolvedUrls[name] || PICTO_FALLBACK[name] || '';
   const onerr = isCustom ? `this.onerror=null;this.width=${sz};this.height=${sz};this.src='${fb}';` : `this.onerror=null;`;
-  return `<img src="${nextIcoUrl(name)}" width="${realSz}" height="${realSz}" alt="${name}" onerror="${onerr}" style="image-rendering:auto;display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5));object-fit:contain">`;
+  return `<img src="${nextIcoUrl(name)}" width="${realSz}" height="${realSz}" alt="${name}" onerror="${onerr}" style="image-rendering:auto;display:block;object-fit:contain">`;
 }
 
-/* ── Picto SANS pastille ronde NI ombre : juste l'icône ── */
+/* ── Picto SANS pastille, SANS ombre, SANS drop-shadow ── */
 function placeIcoImg(sel, name, cx, cy, sz, bgColor) {
   const isCustom = !!NEXT_PICTO_OVERRIDE[name];
   const fb = resolvedUrls[name] || PICTO_FALLBACK[name];
@@ -692,7 +709,6 @@ function placeIcoImg(sel, name, cx, cy, sz, bgColor) {
     .attr('width', icoSize).attr('height', icoSize)
     .attr('pointer-events', 'none')
     .style('image-rendering', 'auto')
-    .style('filter', 'drop-shadow(0 1px 2px rgba(0,0,0,.65))')
     .on('error', function() {
       if (this.getAttribute('href') !== fb) {
         d3.select(this).attr('href', fb)
@@ -1164,7 +1180,6 @@ let activeLevel = 'vert', activePicto = null, probLevel = null;
 let deptData = { today: {}, tomorrow: {} };
 let neighborData = { today: {}, tomorrow: {} };
 let subVisible = false, subLvl = 'vert';
-let dvActive = false, dvLevel = 'orange', dvPicto = null;
 let zoomedDept = null, activeDay = 'today';
 let svgEl=null, svgSel=null, geoPath=null, layerSel=null;
 let features=[], pathMap={}, hatchIds={};
@@ -1177,6 +1192,9 @@ let regionFeatures = [], activeView = 'vigilance';
 
 /* ✅ Petite couronne : pas de picto sur 92, 93, 94 — le picto va sur le 75 uniquement */
 const PETITE_COURONNE_CODES = new Set(['92','93','94']);
+
+/* ✅ Départements autorisés pour le tracé infra (Set de noms de départements) */
+let infraAllowedDepts = new Set();
 
 function switchView(view) {
   activeView = view;
@@ -1540,17 +1558,6 @@ function buildSidebar() {
     c.appendChild(row);
   });
   buildPictoGrid('pgrid', k => selectPicto(k), 'pbtn');
-  const dvc = document.getElementById('dv-lvls');
-  LVL_DEFS.filter(d => d.k !== 'vert').forEach(({ k, l }) => {
-    const btn = document.createElement('button');
-    btn.className = 'lvl-btn' + (k === dvLevel ? ' on' : '');
-    btn.dataset.dvk = k;
-    btn.style.fontSize = '11px';
-    btn.innerHTML = `<span class="lvl-dot" style="background:${LEVELS[k].color}"></span>${l}`;
-    btn.onclick = () => { dvLevel = k; document.querySelectorAll('[data-dvk]').forEach(b => b.classList.toggle('on', b.dataset.dvk === k)); };
-    dvc.appendChild(btn);
-  });
-  buildPictoGrid('dv-pgrid', k => { dvPicto = dvPicto === k ? null : k; document.querySelectorAll('#dv-pgrid .pbtn').forEach(b => b.classList.toggle('on', b.dataset.ik === k)); }, 'pbtn dv-pbtn');
 }
 
 function buildPictoGrid(id, onclick, cls) {
@@ -1605,18 +1612,15 @@ function setSubLvl(l) {
   document.querySelectorAll('[data-sl]').forEach(b => b.classList.toggle('on', b.dataset.sl === l));
   if (subVisible) drawSub();
 }
-function toggleDV() {
-  dvActive = !dvActive;
-  document.getElementById('dv-tog').classList.toggle('on', dvActive);
-  document.getElementById('dv-opts').style.display = dvActive ? 'block' : 'none';
-}
 function resetAll() {
   deptData[activeDay] = {};
   neighborData[activeDay] = {};
   infraZones[activeDay] = [];
   mapPictoFilter = null;
   selectedDepts.clear();
+  infraAllowedDepts.clear();
   Object.keys(_deptPointsCache).forEach(k => delete _deptPointsCache[k]);
+  buildInfraDeptList();
   redrawMap();
   redrawAllNeighbors();
 }
@@ -1646,12 +1650,9 @@ function availableMapPictos() {
   return [...set];
 }
 
-/* ✅ Détecte si une zone infra touche un département (test multi-points)
-   pictoFilter = undefined → toutes les zones
-   pictoFilter = string    → seulement ce picto
-   pictoFilter = null      → seulement les zones sans picto
-   Retourne { level, picto } du niveau max trouvé, ou null */
-function infraInfoForDept(deptName, pictoFilter = undefined) {
+/* ✅ RETOURNE LA LISTE de tous les items infra qui touchent le département.
+   Chaque item = { level, picto }. Trié par niveau décroissant. */
+function infraItemsForDept(deptName, pictoFilter = undefined) {
   const zones = (infraZones[activeDay] || []).filter(z => {
     if (!z.level || z.level === 'vert') return false;
     if (!z.pts || z.pts.length < 3) return false;
@@ -1659,46 +1660,53 @@ function infraInfoForDept(deptName, pictoFilter = undefined) {
     if (pictoFilter === null) return !z.picto;
     return z.picto === pictoFilter;
   });
-  if (!zones.length) return null;
+  if (!zones.length) return [];
 
   const feat = features.find(f => (f.properties.name || f.properties.NAME) === deptName);
-  if (!feat) return null;
+  if (!feat) return [];
 
   const points = deptTestPoints(feat);
+  if (!points.length) return [];
 
-  let best = null;
+  const result = [];
   for (const z of zones) {
+    if (z.allowedDepts && z.allowedDepts.length && !z.allowedDepts.includes(deptName)) continue;
     const hit = points.some(p => d3.polygonContains(z.pts, p));
     if (!hit) continue;
-    if (!best || LEVEL_RANK[z.level] > LEVEL_RANK[best.level]) {
-      best = { level: z.level, picto: z.picto || null };
-    }
+    result.push({ level: z.level, picto: z.picto || null });
   }
-  return best;
+  result.sort((a, b) => LEVEL_RANK[b.level] - LEVEL_RANK[a.level]);
+  return result;
 }
 
-/* Génère ~110 points répartis sur tout le département
-   (centre, grille 7×7, contour échantillonné) */
+/* Compatibilité : retourne l'item du niveau max */
+function infraInfoForDept(deptName, pictoFilter = undefined) {
+  const items = infraItemsForDept(deptName, pictoFilter);
+  return items.length ? items[0] : null;
+}
+
+/* Génère ~110 points répartis sur tout le département */
 function deptTestPoints(feat) {
+  if (!feat || !geoPath) return [];
   const nm = feat.properties && (feat.properties.name || feat.properties.NAME || '');
   if (_deptPointsCache[nm]) return _deptPointsCache[nm];
 
   const pts = [];
-  const c = geoPath.centroid(feat);
-  pts.push(c);
-
-  const b = geoPath.bounds(feat);
-  const x0 = b[0][0], y0 = b[0][1], x1 = b[1][0], y1 = b[1][1];
-  const nx = 7, ny = 7;
-  for (let i = 0; i < nx; i++) {
-    for (let j = 0; j < ny; j++) {
-      const px = x0 + (x1 - x0) * (i + 0.5) / nx;
-      const py = y0 + (y1 - y0) * (j + 0.5) / ny;
-      pts.push([px, py]);
-    }
-  }
-
   try {
+    const c = geoPath.centroid(feat);
+    if (c && !isNaN(c[0])) pts.push(c);
+
+    const b = geoPath.bounds(feat);
+    const x0 = b[0][0], y0 = b[0][1], x1 = b[1][0], y1 = b[1][1];
+    const nx = 7, ny = 7;
+    for (let i = 0; i < nx; i++) {
+      for (let j = 0; j < ny; j++) {
+        const px = x0 + (x1 - x0) * (i + 0.5) / nx;
+        const py = y0 + (y1 - y0) * (j + 0.5) / ny;
+        pts.push([px, py]);
+      }
+    }
+
     const svgNS = 'http://www.w3.org/2000/svg';
     const pathEl = document.createElementNS(svgNS, 'path');
     const d = geoPath(feat);
@@ -1719,10 +1727,35 @@ function deptTestPoints(feat) {
       }
     }
     document.body.removeChild(tmpSvg);
-  } catch (e) { /* fallback silencieux */ }
+  } catch (e) { console.warn('deptTestPoints échec pour', nm, e); }
 
   _deptPointsCache[nm] = pts;
   return pts;
+}
+
+/* ✅ Construit la liste des départements dans la sidebar (chips) */
+function buildInfraDeptList() {
+  const wrap = document.getElementById('infra-dept-list');
+  if (!wrap) return;
+  const allDepts = features.map(f => f.properties && (f.properties.name || f.properties.NAME)).filter(Boolean).sort();
+  if (!allDepts.length) { wrap.innerHTML = '<span style="font-size:9px;color:var(--t3)">Carte non chargée…</span>'; return; }
+  wrap.innerHTML = allDepts.map(nm => {
+    const code = DEPT_CODES[nm] || '';
+    const on = infraAllowedDepts.has(nm) ? ' on' : '';
+    return `<button class="infra-dept-chip${on}" data-dept="${escHtml(nm)}" onclick="toggleInfraAllowedDept('${escHtml(nm).replace(/'/g,"\\'")}')">${code || nm.slice(0,4)}</button>`;
+  }).join('');
+}
+
+function toggleInfraAllowedDept(nm) {
+  if (infraAllowedDepts.has(nm)) infraAllowedDepts.delete(nm);
+  else infraAllowedDepts.add(nm);
+  buildInfraDeptList();
+  redrawMap();
+}
+function clearInfraAllowedDepts() {
+  infraAllowedDepts.clear();
+  buildInfraDeptList();
+  redrawMap();
 }
 
 /* ✅ RESTRICTION : le mode tracé n'est activable que sur UN phénomène précis */
@@ -1782,6 +1815,9 @@ function updateInfraCount() {
   if (!el) return;
   const n = visibleInfraZones().length;
   const cnt = n ? n + (n > 1 ? ' zones affichées' : ' zone affichée') : 'Aucune zone affichée';
+  const allowed = infraAllowedDepts.size
+    ? `<span style="color:#22d3ee">Tracé limité à ${infraAllowedDepts.size} département(s)</span><br>`
+    : `<span style="color:#22d3ee">Tracé clippé sur toute la France (pas de débordement mer)</span><br>`;
 
   let hint = '';
   if (infraDrawMode) {
@@ -1796,11 +1832,11 @@ function updateInfraCount() {
       hint = `<span style="color:var(--t3)">ℹ️ Plusieurs vigilances actives : choisis un phénomène précis sur la carte avant d'activer le mode tracé.</span><br>`;
     }
   }
-  el.innerHTML = hint + cnt;
+  el.innerHTML = allowed + hint + cnt;
 }
 
 /* ══════════════════════════════════════════════════════════
-   DESSIN DES ZONES INFRA — dégradé net, pas de picto
+   DESSIN DES ZONES INFRA — clip PAR ZONE (figé au moment du tracé)
    ══════════════════════════════════════════════════════════ */
 function drawInfra() {
   if (!svgSel) return;
@@ -1817,13 +1853,6 @@ function drawInfra() {
   const zones = visibleInfraZones().slice().sort((a, b) => LEVEL_RANK[a.level] - LEVEL_RANK[b.level]);
   if (!zones.length) { updateInfraCount(); return; }
 
-  const clip = defs.append('clipPath').attr('id', 'infra-france-clip');
-  features.forEach(f => {
-    const nm = f.properties && (f.properties.name || f.properties.NAME || '');
-    if (pathMap[nm]) clip.append('path').attr('d', pathMap[nm]);
-  });
-  const clipped = g.append('g').attr('clip-path', 'url(#infra-france-clip)');
-
   zones.forEach(z => {
     try {
       if (!z.pts || z.pts.length < 3) return;
@@ -1834,11 +1863,26 @@ function drawInfra() {
       const size = Math.sqrt((Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)));
       const sd = Math.max(0.8, Math.min(2.2, size * 0.022));
 
+      // ── Clip individuel de la zone : basé sur ses allowedDepts figés ──
+      let clipAttr = '';
+      if (z.allowedDepts && z.allowedDepts.length > 0) {
+        const clipId = uid + '-clip';
+        const clipEl = defs.append('clipPath').attr('id', clipId);
+        z.allowedDepts.forEach(nm => {
+          if (pathMap[nm]) clipEl.append('path').attr('d', pathMap[nm]);
+        });
+        clipAttr = `url(#${clipId})`;
+      }
+
+      // Groupe clippé pour cette zone
+      const zGroup = g.append('g');
+      if (clipAttr) zGroup.attr('clip-path', clipAttr);
+
       const fCore = defs.append('filter').attr('id', uid + '-c').attr('filterUnits', 'userSpaceOnUse')
         .attr('x', -W).attr('y', -H).attr('width', W * 3).attr('height', H * 3);
       fCore.append('feGaussianBlur').attr('stdDeviation', sd * 0.3).attr('result', 'b');
 
-      const core = clipped.append('path').attr('class', 'infra-zone').attr('d', d)
+      const core = zGroup.append('path').attr('class', 'infra-zone').attr('d', d)
         .attr('fill', lv.color).attr('opacity', 1).attr('filter', 'url(#' + uid + '-c)');
       if (interactive) {
         core.attr('pointer-events', 'visiblePainted').style('cursor', 'pointer')
@@ -1853,10 +1897,11 @@ function drawInfra() {
     } catch (e) { console.warn('Zone infra ignorée :', e); }
   });
 
+  // Frontières visibles par-dessus (non clippées, pour voir tous les contours)
   features.forEach(f => {
     const nm = f.properties && (f.properties.name || f.properties.NAME || '');
     if (!pathMap[nm]) return;
-    clipped.append('path').attr('d', pathMap[nm]).attr('fill', 'none')
+    g.append('path').attr('d', pathMap[nm]).attr('fill', 'none')
       .attr('stroke', 'rgba(0,0,0,.55)').attr('stroke-width', 0.7).attr('pointer-events', 'none');
   });
 
@@ -1894,9 +1939,15 @@ function infraStartDraw(event) {
     live.remove();
     infraDrawing = false;
     if (infraPts.length >= 4) {
+      // ✅ Si aucun département sélectionné → on fige sur TOUS les départements (clip France entière)
+      let allowedSnapshot = [...infraAllowedDepts];
+      if (allowedSnapshot.length === 0) {
+        allowedSnapshot = features.map(f => f.properties && (f.properties.name || f.properties.NAME)).filter(Boolean);
+      }
       infraZones[activeDay].push({
         id: Date.now().toString(36) + Math.random().toString(16).slice(2, 6),
         level, picto,
+        allowedDepts: allowedSnapshot,
         pts: infraPts.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10])
       });
       drawInfra();
@@ -1979,16 +2030,8 @@ function displayItem(dd) {
   return null;
 }
 
-/* ✅ Renvoie le nom du département dont le picto doit être affiché
-   (le 75 remplace 92/93/94 pour éviter les doublons en petite couronne) */
-function pictoAnchorName(name) {
-  const code = DEPT_CODES[name];
-  if (PETITE_COURONNE_CODES.has(code)) return null;
-  return name;
-}
-
 /* ══════════════════════════════════════════════════════════
-   REDRAW MAP — logique principale
+   REDRAW MAP — 1 seul picto infra par département (le niveau max)
    ══════════════════════════════════════════════════════════ */
 function redrawMap() {
   if (!layerSel) return;
@@ -1999,8 +2042,8 @@ function redrawMap() {
     .attr('fill', d => {
       const n = d.properties && (d.properties.name || d.properties.NAME || '');
       if (isTtMode) {
-        const infraInfo = infraInfoForDept(n);
-        if (infraInfo) return LEVELS[infraInfo.level].color;
+        const infraItems = infraItemsForDept(n);
+        if (infraItems.length) return LEVELS[infraItems[0].level].color;
       }
       const it = displayItem(data[n]);
       if (!it) return DFILL;
@@ -2010,6 +2053,7 @@ function redrawMap() {
     .attr('stroke', function(d) {
       const n = d.properties && (d.properties.name || d.properties.NAME || '');
       if (multiSelectMode && selectedDepts.has(n)) return null;
+      if (infraAllowedDepts.has(n)) return '#22d3ee';
       const it = displayItem(data[n]);
       if (it && it.probable) return LEVELS[it.level].color;
       if (n === zoomedDept) return '#fff';
@@ -2018,6 +2062,7 @@ function redrawMap() {
     .attr('stroke-width', d => {
       const n = d.properties && (d.properties.name || d.properties.NAME || '');
       if (multiSelectMode && selectedDepts.has(n)) return null;
+      if (infraAllowedDepts.has(n)) return 2;
       const it = displayItem(data[n]);
       if (it && it.probable) return 2;
       if (n === zoomedDept) return 2.5;
@@ -2026,6 +2071,7 @@ function redrawMap() {
     .attr('stroke-dasharray', d => {
       const n = d.properties && (d.properties.name || d.properties.NAME || '');
       if (multiSelectMode && selectedDepts.has(n)) return null;
+      if (infraAllowedDepts.has(n)) return '5,3';
       const it = displayItem(data[n]);
       return (it && it.probable) ? '4,3' : 'none';
     })
@@ -2037,10 +2083,8 @@ function redrawMap() {
   layerSel.selectAll('.dept-picto-g,.dept-multi-badge').remove();
 
   if (isTtMode) {
-    // 1) Pictos de vigilance départementale classique
-    //    ✅ On saute la petite couronne (92/93/94) — le picto va sur le 75
     const deptPictos = new Set();
-    const pictosPour75 = [];  // on collecte les pictos à mettre sur le 75
+    const pictosPour75 = [];
 
     Object.entries(data).forEach(([name, dd]) => {
       const it = displayItem(dd);
@@ -2048,7 +2092,6 @@ function redrawMap() {
 
       const code = DEPT_CODES[name];
       if (PETITE_COURONNE_CODES.has(code)) {
-        // 92/93/94 : on mémorise pour le 75, mais pas d'affichage ici
         pictosPour75.push(it);
         return;
       }
@@ -2059,7 +2102,7 @@ function redrawMap() {
       const b  = geoPath.bounds(feat);
       const cx = (b[0][0] + b[1][0]) / 2;
       const cy = (b[0][1] + b[1][1]) / 2;
-      const sz = Math.max(12, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.34, 20));
+      const sz = Math.max(10, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.26, 15));
       const bgColor = it.probable
         ? hexBlend(LEVELS[it.level].color, '#1e2535', 0.18)
         : LEVELS[it.level].color;
@@ -2084,119 +2127,81 @@ function redrawMap() {
           let newItems;
           if (idx !== -1) newItems = items.filter((_, i) => i !== idx);
           else newItems = items;
-          if (newItems.length) data[name] = { items: newItems, dv: (dd && dd.dv) || null };
+          if (newItems.length) data[name] = { items: newItems };
           else delete data[name];
           redrawMap();
         });
     });
 
-    // 2) Pictos pour les départements touchés UNIQUEMENT par une zone infra
-    //    ✅ On saute aussi la petite couronne
+    // Pictos infra sur départements sans picto vigilance
+    // ✅ 1 seul picto = celui du niveau max parmi toutes les zones infra touchant le département
     features.forEach(feat => {
       const name = feat.properties && (feat.properties.name || feat.properties.NAME || '');
       if (!name) return;
       const code = DEPT_CODES[name];
-      if (PETITE_COURONNE_CODES.has(code)) return; // pas de picto infra sur 92/93/94
-      const infraInfo = infraInfoForDept(name);
-      if (!infraInfo || !infraInfo.picto) return;
-      if (!PICTO_FALLBACK[infraInfo.picto]) return;
+      if (PETITE_COURONNE_CODES.has(code)) return;
+
+      const infraItems = infraItemsForDept(name);
+      if (!infraItems.length) return;
+
+      // Le premier item est déjà le niveau max
+      const topItem = infraItems[0];
+      if (!topItem.picto || !PICTO_FALLBACK[topItem.picto]) return;
+
       const hasDeptPicto = [...deptPictos].some(k => k.startsWith(name + '|'));
       if (hasDeptPicto) return;
 
       const b  = geoPath.bounds(feat);
       const cx = (b[0][0] + b[1][0]) / 2;
       const cy = (b[0][1] + b[1][1]) / 2;
-      const sz = Math.max(12, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.34, 20));
-      const bgColor = LEVELS[infraInfo.level].color;
-      const g = placeIcoImg(layerSel, infraInfo.picto, cx, cy, sz, bgColor)
-        .attr('class', 'dept-picto-g');
-      g.style('cursor', 'pointer');
+      const sz = Math.max(10, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.26, 15));
+      const bgColor = LEVELS[topItem.level].color;
+      placeIcoImg(layerSel, topItem.picto, cx, cy, sz, bgColor)
+        .attr('class', 'dept-picto-g')
+        .style('cursor', 'pointer');
     });
 
-    // 3) Pictos regroupés sur le 75 pour les vigilances de la petite couronne
-    //    (un picto par phénomène distinct, max 4 pictos)
+    // Pictos regroupés sur le 75 (petite couronne)
+    // ✅ 1 seul picto = celui du niveau max parmi les items des 92/93/94
     if (pictosPour75.length) {
-      const uniq = [];
-      const seen = new Set();
-      pictosPour75.forEach(it => {
-        const k = it.picto + '|' + it.level;
-        if (seen.has(k)) return;
-        seen.add(k);
-        uniq.push(it);
-      });
-      const feat75 = features.find(f => (f.properties.name || f.properties.NAME) === 'Paris');
-      if (feat75) {
-        const b = geoPath.bounds(feat75);
-        const cx = (b[0][0] + b[1][0]) / 2;
-        const cy = (b[0][1] + b[1][1]) / 2;
-        const sz = Math.max(12, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.34, 20));
-        // Affiche max 3 pictos côte à côte au-dessus du 75
-        const n = Math.min(uniq.length, 3);
-        const spacing = sz * 0.95;
-        const startX = cx - (n - 1) * spacing / 2;
-        uniq.slice(0, n).forEach((it, i) => {
-          const bgColor = it.probable
-            ? hexBlend(LEVELS[it.level].color, '#1e2535', 0.18)
-            : LEVELS[it.level].color;
-          placeIcoImg(layerSel, it.picto, startX + i * spacing, cy, sz, bgColor)
+      const topP75 = maxItem(pictosPour75);
+      if (topP75 && topP75.picto && PICTO_FALLBACK[topP75.picto]) {
+        const feat75 = features.find(f => (f.properties.name || f.properties.NAME) === 'Paris');
+        if (feat75) {
+          const b = geoPath.bounds(feat75);
+          const cx = (b[0][0] + b[1][0]) / 2;
+          const cy = (b[0][1] + b[1][1]) / 2;
+          const sz = Math.max(10, Math.min((Math.min(b[1][0]-b[0][0], b[1][1]-b[0][1])) * 0.26, 15));
+          const bgColor = topP75.probable
+            ? hexBlend(LEVELS[topP75.level].color, '#1e2535', 0.18)
+            : LEVELS[topP75.level].color;
+          placeIcoImg(layerSel, topP75.picto, cx, cy, sz, bgColor)
             .attr('class', 'dept-picto-g')
             .style('cursor', 'pointer')
             .on('click', function(ev) {
               ev.stopPropagation();
               if (!requireAuth()) return;
-              // Clic sur un picto petit-couronne → on retire l'alerte de tous les 92/93/94
               ['Hauts-de-Seine','Seine-Saint-Denis','Val-de-Marne'].forEach(nm => {
                 const dd = data[nm];
                 if (!dd) return;
                 const items = getItems(dd);
-                const idx = items.findIndex(x => x.level === it.level && x.picto === (it.picto || null) && !!x.probable === !!it.probable);
+                const idx = items.findIndex(x => x.level === topP75.level && x.picto === (topP75.picto || null) && !!x.probable === !!topP75.probable);
                 if (idx === -1) return;
                 const newItems = items.filter((_, i) => i !== idx);
-                if (newItems.length) data[nm] = { items: newItems, dv: dd.dv || null };
+                if (newItems.length) data[nm] = { items: newItems };
                 else delete data[nm];
               });
               redrawMap();
             });
-        });
+        }
       }
     }
   }
 
   buildMapFilters();
-  updateDVBadges();
   updateLeg();
   updateAlertTicker();
   drawInfra();
-}
-
-function updateDVBadges() {
-  if (!layerSel) return;
-  layerSel.selectAll('.dv-badge').remove();
-  const data = curData();
-  Object.entries(data).forEach(([name, dd]) => {
-    if (!dd.dv) return;
-    const feat = features.find(f => (f.properties.name || f.properties.NAME) === name);
-    if (!feat) return;
-    const b  = geoPath.bounds(feat);
-    const cx = (b[0][0]+b[1][0])/2, cy = (b[0][1]+b[1][1])/2;
-    const w2 = b[1][0]-b[0][0], h2 = b[1][1]-b[0][1];
-    const s  = Math.max(9, Math.min(Math.min(w2,h2) * 0.32, 15));
-    const bx = cx+w2*0.25, by = cy-h2*0.25;
-    const g = layerSel.append('g').attr('class','dv-badge').attr('pointer-events','none')
-      .attr('filter','url(#dvShadow)');
-    g.append('rect')
-      .attr('x', bx-s/2).attr('y', by-s/2).attr('width', s).attr('height', s)
-      .attr('rx', s*0.3).attr('ry', s*0.3)
-      .attr('fill', LEVELS[dd.dv.level].color)
-      .attr('stroke', 'rgba(15,17,23,.5)').attr('stroke-width', 1);
-    if (dd.dv.picto && PICTO_FALLBACK[dd.dv.picto]) {
-      const isz = s*0.85;
-      placeIcoImg(g, dd.dv.picto, bx, by, isz, LEVELS[dd.dv.level].color);
-    } else {
-      g.append('text').attr('x',bx).attr('y',by+0.5).attr('text-anchor','middle').attr('dominant-baseline','central')
-        .attr('font-size',s*0.62).attr('font-weight',700).attr('fill','white').text('2');
-    }
-  });
 }
 
 function drawSub() {
@@ -2284,7 +2289,7 @@ function applyToSelection() {
     const items = getItems(dd);
     const dup = items.some(it => it.level===activeLevel && it.picto===(activePicto||null) && !!it.probable===wantProbable);
     const newItems = dup ? items : [...items, { level: activeLevel, picto: activePicto||null, probable: wantProbable }];
-    data[nm] = { items: newItems, dv: dd.dv || null };
+    data[nm] = { items: newItems };
   });
   redrawMap();
 }
@@ -2604,9 +2609,6 @@ async function buildFranceMap() {
     .style('display','block').style('width','100%').style('height','100%');
   svgEl = svg.node(); svgSel = svg;
   svg.append('rect').attr('width',W).attr('height',H).attr('fill','#5B7DAA');
-  const defs0 = svg.append('defs');
-  defs0.append('filter').attr('id','dvShadow').attr('x','-60%').attr('y','-60%').attr('width','220%').attr('height','220%')
-    .append('feDropShadow').attr('dx',0).attr('dy',0.6).attr('stdDeviation',1).attr('flood-color','#000').attr('flood-opacity',0.5);
 
   const nbLayer = svg.append('g').attr('class','neighbor-layer');
   if (_worldTopo) {
@@ -2628,12 +2630,15 @@ async function buildFranceMap() {
     .on('mousemove', function(event, d) {
       const nm = d.properties&&(d.properties.name||d.properties.NAME||'Département');
       const items = getItems(curData()[nm]);
+      const infraItems = infraItemsForDept(nm);
+
       tip.style.display = 'block';
       const r = mapDiv.getBoundingClientRect();
       tip.style.left = (event.clientX-r.left+14)+'px';
       tip.style.top  = (event.clientY-r.top-36)+'px';
       const code = DEPT_CODES[nm] || '';
       let html = `<div class="tip-hdr"><span class="tip-name">${nm}</span>${code?`<span class="tip-code">${code}</span>`:''}</div>`;
+
       if (items.length) {
         html += `<div class="tip-alerts">` + items.map(it => {
           const lv = LEVELS[it.level];
@@ -2642,14 +2647,28 @@ async function buildFranceMap() {
             <span class="tip-alert-txt">${it.picto||'—'}<span class="tip-alert-lvl">${it.probable?'~ ':''}${lv.label}</span></span>
           </div>`;
         }).join('') + `</div>`;
-      } else { html += `<div class="tip-none">Pas d'alerte</div>`; }
+      } else if (!infraItems.length) {
+        html += `<div class="tip-none">Pas d'alerte</div>`;
+      }
+
+      if (infraItems.length) {
+        html += `<div class="tip-sep"></div>`;
+        html += `<div class="tip-alerts">` + infraItems.map(it => {
+          const lv = LEVELS[it.level];
+          return `<div class="tip-alert">
+            <span class="tip-alert-ring" style="background:${lv.color}">${it.picto?ico(it.picto,17):''}</span>
+            <span class="tip-alert-txt">${it.picto? (PHENOM_LABEL_FR[it.picto]||it.picto) : '—'}<span class="tip-alert-lvl">${lv.label}</span><span class="tip-alert-badge">infra</span></span>
+          </div>`;
+        }).join('') + `</div>`;
+      }
+
       tip.innerHTML = html;
-      if (nm !== zoomedDept && !(multiSelectMode && selectedDepts.has(nm))) d3.select(this).attr('stroke','rgba(255,255,255,.6)').attr('stroke-width',1.2);
+      if (nm !== zoomedDept && !(multiSelectMode && selectedDepts.has(nm)) && !infraAllowedDepts.has(nm)) d3.select(this).attr('stroke','rgba(255,255,255,.6)').attr('stroke-width',1.2);
     })
     .on('mouseleave', function(event, d) {
       tip.style.display = 'none';
       const nm = d.properties&&(d.properties.name||d.properties.NAME||'');
-      if (nm !== zoomedDept && !(multiSelectMode && selectedDepts.has(nm))) d3.select(this).attr('stroke',DSTROKE).attr('stroke-width',0.6);
+      if (nm !== zoomedDept && !(multiSelectMode && selectedDepts.has(nm)) && !infraAllowedDepts.has(nm)) d3.select(this).attr('stroke',DSTROKE).attr('stroke-width',0.6);
     })
     .on('click', function(event, d) {
       if (infraReady()) return;
@@ -2662,19 +2681,13 @@ async function buildFranceMap() {
         return;
       }
       const data = curData(); const dd = data[nm];
-      if (dvActive) {
-        if (!dd) return;
-        if (dd.dv && dd.dv.level===dvLevel && dd.dv.picto===(dvPicto||null)) delete dd.dv;
-        else dd.dv = { level:dvLevel, picto:dvPicto||null };
-        updateDVBadges(); return;
-      }
       const isProb = !!probLevel;
       const items = getItems(dd);
       const idx = items.findIndex(it => it.level===activeLevel && it.picto===(activePicto||null) && !!it.probable===isProb);
       let newItems;
       if (idx !== -1) newItems = items.filter((_,i) => i!==idx);
       else newItems = [...items, { level:activeLevel, picto:activePicto||null, probable:isProb }];
-      if (newItems.length) data[nm] = { items:newItems, dv:(dd&&dd.dv)||null };
+      if (newItems.length) data[nm] = { items:newItems };
       else delete data[nm];
       redrawMap();
     })
@@ -2691,6 +2704,7 @@ async function buildFranceMap() {
   infraProj = proj;
   svgEl.addEventListener('pointerdown', infraStartDraw);
 
+  buildInfraDeptList();
   redrawMap();
   renderGauges(null);
 }
