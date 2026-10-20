@@ -594,7 +594,16 @@ function cleanForFirestore(obj) {
   }
   return obj;
 }
-
+function serializeInfra(z) {
+  const out = { today: [], tomorrow: [] };
+  for (const day of ['today', 'tomorrow']) {
+    out[day] = ((z && z[day]) || []).map(zone => ({
+      ...zone,
+      pts: (zone.pts || []).map(p => ({ x: p[0], y: p[1] }))
+    }));
+  }
+  return out;
+}
 window.publishState = async function() {
   const btns = document.querySelectorAll('.publish-btn');
   const statuses = document.querySelectorAll('.publish-status');
@@ -619,7 +628,7 @@ window.publishState = async function() {
       nextData: window.nextData,
       gaugeData: window.gaugeData,
       riskData: window.riskData,
-      infraZones: window.infraZones,
+      infraZones: serializeInfra(window.infraZones),
       publishedAt: Date.now()
     });
 
@@ -2588,7 +2597,16 @@ async function applyPublishedState() {
       if (remote.neighborData) neighborData = remote.neighborData;
       if (remote.gaugeData)    Object.assign(gaugeData, remote.gaugeData);
       if (remote.riskData)     riskData     = remote.riskData;
-      if (remote.infraZones)   infraZones   = remote.infraZones;
+      if (remote.infraZones) {
+  const r = { today: [], tomorrow: [] };
+  for (const day of ['today', 'tomorrow']) {
+    r[day] = (remote.infraZones[day] || []).map(zone => ({
+      ...zone,
+      pts: (zone.pts || []).map(p => Array.isArray(p) ? p : [p.x, p.y])
+    }));
+  }
+  infraZones = r;
+}
       setTimeout(() => {
         try {
           redrawMap && redrawMap();
