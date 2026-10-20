@@ -581,6 +581,20 @@ try {
 
 const STATE_DOC = () => doc(db, 'vigilance', 'state');
 
+/* ✅ Nettoie récursivement les valeurs undefined (cause principale de l'erreur invalid-argument) */
+function cleanForFirestore(obj) {
+  if (Array.isArray(obj)) return obj.map(cleanForFirestore);
+  if (obj instanceof Date) return obj;
+  if (obj && typeof obj === 'object') {
+    const out = {};
+    for (const k in obj) {
+      if (obj[k] !== undefined) out[k] = cleanForFirestore(obj[k]);
+    }
+    return out;
+  }
+  return obj;
+}
+
 window.publishState = async function() {
   const btns = document.querySelectorAll('.publish-btn');
   const statuses = document.querySelectorAll('.publish-status');
@@ -597,14 +611,30 @@ window.publishState = async function() {
   }
 
   try {
-    const payload = {
-      deptData: window.deptData, neighborData: window.neighborData,
-      probData: window.probData, nextData: window.nextData,
-      gaugeData: window.gaugeData, riskData: window.riskData,
+    // ✅ Nettoyage récursif des undefined avant envoi
+    const payload = cleanForFirestore({
+      deptData: window.deptData,
+      neighborData: window.neighborData,
+      probData: window.probData,
+      nextData: window.nextData,
+      gaugeData: window.gaugeData,
+      riskData: window.riskData,
       infraZones: window.infraZones,
       publishedAt: Date.now()
-    };
-    console.log('[Publish] Payload prêt, envoi vers Firestore...', payload);
+    });
+
+    // ✅ Vérification de la taille (limite Firestore : 1 MiB par document)
+    const payloadStr = JSON.stringify(payload);
+    const sizeBytes = new Blob([payloadStr]).size;
+    console.log('[Publish] Taille estimée du payload :', sizeBytes, 'octets');
+    if (sizeBytes > 1000000) {
+      console.error('[Publish] Payload trop volumineux pour Firestore (>1 Mo)');
+      statuses.forEach(s => { s.textContent = 'Échec : données trop volumineuses (>1 Mo)'; s.className = 'publish-status err'; });
+      btns.forEach(btn => btn.disabled = false);
+      return;
+    }
+
+    console.log('[Publish] Payload nettoyé, envoi vers Firestore...');
     await setDoc(STATE_DOC(), payload);
     console.log('[Publish] ✓ Document écrit dans Firestore');
     statuses.forEach(s => { s.textContent = '✓ Publié — visible par tous'; s.className = 'publish-status ok'; });
@@ -616,6 +646,7 @@ window.publishState = async function() {
     if (e.code === 'permission-denied') msg = 'Échec : règles Firestore bloquent l\'écriture';
     if (e.code === 'unavailable') msg = 'Échec : Firestore indisponible (réseau ?)';
     if (e.code === 'not-found') msg = 'Échec : projet Firestore introuvable';
+    if (e.code === 'invalid-argument') msg = 'Échec : données invalides (voir console F12)';
     statuses.forEach(s => { s.textContent = msg; s.className = 'publish-status err'; });
     setTimeout(() => { statuses.forEach(s => { s.textContent = ''; }); }, 8000);
   } finally {
@@ -2134,7 +2165,6 @@ function redrawMap() {
     });
 
     // Pictos infra sur départements sans picto vigilance
-    // ✅ 1 seul picto = celui du niveau max parmi toutes les zones infra touchant le département
     features.forEach(feat => {
       const name = feat.properties && (feat.properties.name || feat.properties.NAME || '');
       if (!name) return;
@@ -2144,7 +2174,6 @@ function redrawMap() {
       const infraItems = infraItemsForDept(name);
       if (!infraItems.length) return;
 
-      // Le premier item est déjà le niveau max
       const topItem = infraItems[0];
       if (!topItem.picto || !PICTO_FALLBACK[topItem.picto]) return;
 
@@ -2161,8 +2190,7 @@ function redrawMap() {
         .style('cursor', 'pointer');
     });
 
-    // Pictos regroupés sur le 75 (petite couronne)
-    // ✅ 1 seul picto = celui du niveau max parmi les items des 92/93/94
+    // Pictos regroupés sur le 75
     if (pictosPour75.length) {
       const topP75 = maxItem(pictosPour75);
       if (topP75 && topP75.picto && PICTO_FALLBACK[topP75.picto]) {
