@@ -1701,7 +1701,6 @@ function infraLine() {
 
 /* Liste des phénomènes actuellement présents sur la carte */
 function availableMapPictos() {
-  const zones = infraZones[activeDay] || [];
   const zones = liveMode ? [] : (infraZones[activeDay] || []);
   const items = [
     ...Object.values(curData()).flatMap(getItems),
@@ -2360,7 +2359,6 @@ function drawSub() {
 function buildMapFilters() {
   const wrap = document.getElementById('map-filters');
   if (!wrap) return;
-  const zones = infraZones[activeDay] || [];
   const zones = liveMode ? [] : (infraZones[activeDay] || []);
   const items = [
     ...Object.values(curData()).flatMap(getItems),
@@ -2420,7 +2418,6 @@ function applyGaugeToSelection() {
 function updateLeg() {
   const el = document.getElementById('leg');
   const data = curData(), nbData = neighborData[activeDay] || {};
-  const zones = infraZones[activeDay] || [];
   const zones = liveMode ? [] : (infraZones[activeDay] || []);
   const vals = [
     ...Object.values(data).flatMap(getItems),
