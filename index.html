@@ -334,6 +334,7 @@ path.dept-infra-allowed{stroke:#22d3ee!important;stroke-width:2px!important;stro
         <span class="brand-tag">CARTE VIGILANCE MÉTÉO FRANCE · BULLETIN NATIONAL</span>
       </div>
       <span class="live-pill"><i></i>EN DIRECT</span>
+      <span class="live-pill" id="live-mf-badge" style="display:none;color:#22d3ee;background:rgba(34,211,238,.1);border-color:rgba(34,211,238,.3)"><i style="background:#22d3ee;box-shadow:0 0 6px #22d3ee"></i>VIGILANCE MÉTÉO-FRANCE</span>
     </div>
     <div class="hdr-controls" style="display:flex;align-items:center;gap:12px">
       <div class="view-tabs">
@@ -434,6 +435,14 @@ path.dept-infra-allowed{stroke:#22d3ee!important;stroke-width:2px!important;stro
   <p id="infra-count" style="font-size:10px;color:var(--t3);margin-top:6px;line-height:1.5"></p>
   <button class="rst-btn" style="margin-bottom:4px" onclick="undoInfra()">↶ Annuler la dernière zone</button>
   <button class="rst-btn" onclick="clearInfra()">✕ Effacer les zones du phénomène</button>
+</div>
+        <div class="card" id="live-card">
+  <p class="stitle" style="margin-bottom:6px">Vigilance Météo-France</p>
+  <div class="tog-row" onclick="toggleLive()">
+    <span style="font-size:11px;color:var(--t2)">Mode direct</span>
+    <div class="tog" id="live-tog"><div class="tog-k"></div></div>
+  </div>
+  <p id="live-status" style="font-size:10px;color:var(--t3);margin-top:7px;line-height:1.5">Désactivé : ta carte manuelle est affichée.</p>
 </div>
         <p class="hint">Clic = appliquer · Dbl-clic = zoom</p>
         <button class="rst-btn" onclick="resetAll()">↺ Réinitialiser</button>
@@ -604,6 +613,16 @@ function serializeInfra(z) {
   }
   return out;
 }
+  window.setLiveMode = async function(on) {
+  if (!fbReady) return false;
+  try { await setDoc(doc(db, 'vigilance', 'live'), { enabled: !!on, updatedAt: Date.now() }); return true; }
+  catch (e) { console.error('[Live]', e); return false; }
+};
+window.getLiveMode = async function() {
+  if (!fbReady) return false;
+  try { const s = await getDoc(doc(db, 'vigilance', 'live')); return s.exists() && !!s.data().enabled; }
+  catch (e) { return false; }
+};
 window.publishState = async function() {
   const btns = document.querySelectorAll('.publish-btn');
   const statuses = document.querySelectorAll('.publish-status');
@@ -1001,6 +1020,7 @@ async function renderNeighborMap(code) {
       d3.select(this).attr('fill', nbColorFor(d.properties.name)).attr('stroke','rgba(230,235,240,.35)').attr('stroke-width',0.2);
     })
     .on('click', function(event, d) {
+      if (liveMode) { showToast('Mode direct actif : désactive-le pour modifier la carte.', 3500); return; }
       if (infraReady()) return;
       if (!requireAuth()) return;
       const nm = d.properties.name;
@@ -1672,6 +1692,7 @@ const _deptPointsCache = {};
 
 function infraReady() { return infraDrawMode && !!mapPictoFilter; }
 function visibleInfraZones() {
+  if (liveMode) return [];
   return (infraZones[activeDay] || []).filter(z => !z.picto || z.picto === mapPictoFilter);
 }
 function infraLine() {
@@ -1681,6 +1702,7 @@ function infraLine() {
 /* Liste des phénomènes actuellement présents sur la carte */
 function availableMapPictos() {
   const zones = infraZones[activeDay] || [];
+  const zones = liveMode ? [] : (infraZones[activeDay] || []);
   const items = [
     ...Object.values(curData()).flatMap(getItems),
     ...Object.values(neighborData[activeDay] || {}).flatMap(getItems),
@@ -1693,6 +1715,7 @@ function availableMapPictos() {
 /* ✅ RETOURNE LA LISTE de tous les items infra qui touchent le département.
    Chaque item = { level, picto }. Trié par niveau décroissant. */
 function infraItemsForDept(deptName, pictoFilter = undefined) {
+  if (liveMode) return [];
   const zones = (infraZones[activeDay] || []).filter(z => {
     if (!z.level || z.level === 'vert') return false;
     if (!z.pts || z.pts.length < 3) return false;
@@ -2055,7 +2078,62 @@ function hexBlend(hex1, hex2, t) {
   const mix = (a,b) => Math.round(a + (b-a)*t);
   return '#' + [mix(r1,r2), mix(g1,g2), mix(b1,b2)].map(v=>v.toString(16).padStart(2,'0')).join('');
 }
-function curData() { return deptData[activeDay]; }
+const LIVE_URL = 'https://vigilance-proxy.petixusa06.workers.dev/';
+let liveMode = false, liveDeptData = { today: {}, tomorrow: {} };
+const LIVE_PICTO = {1:'vent',2:'pluies',3:'orage',4:'inondation',5:'neige',6:'chaleur',7:'froid',8:'avalanches',9:'vagues'};
+const LIVE_LEVEL = {2:'jaune',3:'orange',4:'rouge'};
+const CODE_TO_DEPT = Object.fromEntries(Object.entries(DEPT_CODES).map(([n, c]) => [c, n]));
+
+async function fetchLive() {
+  const r = await fetch(LIVE_URL, { cache: 'no-store' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const j = await r.json();
+  const out = { today: {}, tomorrow: {} };
+  for (const day of ['today', 'tomorrow']) {
+    for (const [code, list] of Object.entries(j[day] || {})) {
+      const items = list
+        .filter(([ph, col]) => LIVE_LEVEL[col] && LIVE_PICTO[ph])
+        .map(([ph, col]) => ({ level: LIVE_LEVEL[col], picto: LIVE_PICTO[ph], probable: false }));
+      if (!items.length) continue;
+      const targets = code === '75' ? ['75', '92', '93', '94'] : [code];
+      targets.forEach(c => { const n = CODE_TO_DEPT[c]; if (n) out[day][n] = { items }; });
+    }
+  }
+  liveDeptData = out;
+}
+
+async function applyLiveMode(on) {
+  if (on) {
+    try { await fetchLive(); liveMode = true; }
+    catch (e) { liveMode = false; showToast('Vigilance Météo-France indisponible pour le moment.', 4000); }
+  } else { liveMode = false; }
+  document.getElementById('live-tog')?.classList.toggle('on', liveMode);
+  const st = document.getElementById('live-status');
+  if (st) st.textContent = liveMode
+    ? 'Actif : la carte affiche la vigilance officielle Météo-France (maj. toutes les 5 min).'
+    : 'Désactivé : ta carte manuelle est affichée.';
+  const b = document.getElementById('live-mf-badge');
+  if (b) b.style.display = liveMode ? 'inline-flex' : 'none';
+  redrawMap();
+}
+
+async function toggleLive() {
+  if (!requireAuth()) return;
+  const want = !liveMode;
+  const ok = await window.setLiveMode(want);
+  if (!ok) { showToast('Impossible de changer le mode (Firebase).', 3500); return; }
+  await applyLiveMode(want);
+}
+
+async function initLive() {
+  applyLiveMode(await window.getLiveMode());
+  setInterval(async () => {
+    const on = await window.getLiveMode();
+    if (on) await applyLiveMode(true); else if (liveMode) await applyLiveMode(false);
+  }, 300000);
+}
+
+function curData() { return liveMode ? liveDeptData[activeDay] : deptData[activeDay]; }
 
 function displayItem(dd) {
   const items = getItems(dd);
@@ -2283,6 +2361,7 @@ function buildMapFilters() {
   const wrap = document.getElementById('map-filters');
   if (!wrap) return;
   const zones = infraZones[activeDay] || [];
+  const zones = liveMode ? [] : (infraZones[activeDay] || []);
   const items = [
     ...Object.values(curData()).flatMap(getItems),
     ...zones.map(z => ({ level: z.level, picto: z.picto || null }))
@@ -2342,6 +2421,7 @@ function updateLeg() {
   const el = document.getElementById('leg');
   const data = curData(), nbData = neighborData[activeDay] || {};
   const zones = infraZones[activeDay] || [];
+  const zones = liveMode ? [] : (infraZones[activeDay] || []);
   const vals = [
     ...Object.values(data).flatMap(getItems),
     ...Object.values(nbData).flatMap(getItems),
@@ -2758,6 +2838,7 @@ async function buildFranceMap() {
 (async () => {
   await _publishedStateReady;
   await buildFranceMap();
+  await initLive();
 })();
 
 buildSidebar();
