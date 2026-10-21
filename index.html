@@ -2129,7 +2129,7 @@ async function initLive() {
   setInterval(async () => {
     const on = await window.getLiveMode();
     if (on) await applyLiveMode(true); else if (liveMode) await applyLiveMode(false);
-  }, 300000);
+  }, 86400000);
 }
 
 function curData() { return liveMode ? liveDeptData[activeDay] : deptData[activeDay]; }
