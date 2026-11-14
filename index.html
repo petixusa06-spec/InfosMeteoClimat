@@ -1697,9 +1697,26 @@ function visibleInfraZones() {
   return (infraZones[activeDay] || []).filter(z => !z.picto || z.picto === mapPictoFilter);
 }
 function infraLine() {
-  return d3.line().x(d => d[0]).y(d => d[1]).curve(d3.curveCatmullRomClosed);
+  return d3.line().x(d => d[0]).y(d => d[1]).curve(d3.curveBasisClosed);
 }
 
+/* Lissage de Chaikin : adoucit une polyligne fermée */
+function chaikin(pts, iterations = 2, closed = true) {
+  let p = pts.map(pt => pt.slice());
+  for (let it = 0; it < iterations; it++) {
+    const out = [];
+    const n = p.length;
+    const limit = closed ? n : n - 1;
+    for (let i = 0; i < limit; i++) {
+      const a = p[i], b = p[(i + 1) % n];
+      out.push([a[0]*0.75 + b[0]*0.25, a[1]*0.75 + b[1]*0.25]);
+      out.push([a[0]*0.25 + b[0]*0.75, a[1]*0.25 + b[1]*0.75]);
+    }
+    if (!closed) { out.unshift(p[0]); out.push(p[n-1]); }
+    p = out;
+  }
+  return p;
+}
 /* Liste des phénomènes actuellement présents sur la carte */
 function availableMapPictos() {
   const zones = liveMode ? [] : (infraZones[activeDay] || []);
@@ -1924,7 +1941,7 @@ function drawInfra() {
       const d = infraLine()(z.pts);
       const xs = z.pts.map(p => p[0]), ys = z.pts.map(p => p[1]);
       const size = Math.sqrt((Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)));
-      const sd = Math.max(0.8, Math.min(2.2, size * 0.022));
+      const sd = Math.max(1.2, Math.min(3.0, size * 0.03));
 
       // ── Clip individuel de la zone : basé sur ses allowedDepts figés ──
       let clipAttr = '';
@@ -1943,7 +1960,7 @@ function drawInfra() {
 
       const fCore = defs.append('filter').attr('id', uid + '-c').attr('filterUnits', 'userSpaceOnUse')
         .attr('x', -W).attr('y', -H).attr('width', W * 3).attr('height', H * 3);
-      fCore.append('feGaussianBlur').attr('stdDeviation', sd * 0.3).attr('result', 'b');
+      fCore.append('feGaussianBlur').attr('stdDeviation', sd * 0.5).attr('result', 'b');
 
       const core = zGroup.append('path').attr('class', 'infra-zone').attr('d', d)
         .attr('fill', lv.color).attr('opacity', 1).attr('filter', 'url(#' + uid + '-c)');
@@ -1984,34 +2001,66 @@ function infraStartDraw(event) {
   const picto = mapPictoFilter, level = activeLevel;
   const col = (LEVELS[level] || LEVELS.vert).color;
   const layerNode = svgSel.select('.infra-layer').node();
-  infraPts = [d3.pointer(event, layerNode)];
+
+  const raw = d3.pointer(event, layerNode);
+  infraPts = [raw.slice()];
+  let smooth = raw.slice();              // position lissée courante
+  const ALPHA    = 0.35;                 // 0 = très lissé, 1 = brut
+  const MIN_DIST = 3.5;                  // px minimum entre 2 points gardés
+
   const live = svgSel.select('.infra-layer').append('path')
     .attr('class', 'infra-live').attr('fill', col).attr('fill-opacity', .25)
     .attr('stroke', col).attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
+
   const move = ev => {
     const p = d3.pointer(ev, layerNode);
-    const l = infraPts[infraPts.length - 1];
-    if (Math.hypot(p[0] - l[0], p[1] - l[1]) < 2) return;
-    infraPts.push(p);
+
+    // 1) Filtre passe-bas : on lisse chaque nouveau point
+    smooth[0] += (p[0] - smooth[0]) * ALPHA;
+    smooth[1] += (p[1] - smooth[1]) * ALPHA;
+
+    const last = infraPts[infraPts.length - 1];
+
+    // 2) Distance minimale avant d'ajouter un point
+    if (Math.hypot(smooth[0] - last[0], smooth[1] - last[1]) < MIN_DIST) return;
+
+    // 3) Anti-redondance : si 3 points quasi alignés → on remplace le dernier
+    if (infraPts.length >= 2) {
+      const a = infraPts[infraPts.length - 2], b = last;
+      const cross = Math.abs((smooth[0]-a[0])*(b[1]-a[1]) - (smooth[1]-a[1])*(b[0]-a[0]));
+      const base  = Math.hypot(b[0]-a[0], b[1]-a[1]) || 1;
+      if (cross / base < 0.8) {
+        infraPts[infraPts.length - 1] = smooth.slice();
+        live.attr('d', infraLine()(infraPts));
+        return;
+      }
+    }
+    infraPts.push(smooth.slice());
     live.attr('d', infraLine()(infraPts));
   };
+
   const up = () => {
     window.removeEventListener('pointermove', move);
     window.removeEventListener('pointerup', up);
     window.removeEventListener('pointercancel', up);
     live.remove();
     infraDrawing = false;
+
     if (infraPts.length >= 4) {
-      // ✅ Si aucun département sélectionné → on fige sur TOUS les départements (clip France entière)
+      // 4) Lissage final de Chaikin (2 passes) pour un contour net
+      const smoothed = chaikin(infraPts, 2, true);
+
       let allowedSnapshot = [...infraAllowedDepts];
       if (allowedSnapshot.length === 0) {
-        allowedSnapshot = features.map(f => f.properties && (f.properties.name || f.properties.NAME)).filter(Boolean);
+        allowedSnapshot = features
+          .map(f => f.properties && (f.properties.name || f.properties.NAME))
+          .filter(Boolean);
       }
       infraZones[activeDay].push({
         id: Date.now().toString(36) + Math.random().toString(16).slice(2, 6),
         level, picto,
         allowedDepts: allowedSnapshot,
-        pts: infraPts.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10])
+        pts: smoothed.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10])
       });
       drawInfra();
       redrawMap();
