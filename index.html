@@ -2745,12 +2745,14 @@ async function buildFranceMap() {
   fondLayer.selectAll('image')
       .data(tiles, d => d[2])
       .join('image')
-      .attr('href', d => `https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/${d[2]}/${d[1]}/${d[0]}`)
+     .attr('href', d => 
+    `https://data.geopf.fr/wmts?service=WMTS&format=image/png&version=1.0.0&request=GetTile&style=normal&tilematrixset=PM&tilematrix=${d[2]}&tilerow=${d[1]}&tilecol=${d[0]}&layer=IGNF_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW`
+)
       .attr('x', d => d[0] * tiles.scale)
       .attr('y', d => d[1] * tiles.scale)
       .attr('width', tiles.scale + 1)
       .attr('height', tiles.scale + 1)
-      .attr('opacity', 0.65)
+      .attr('opacity', 0.5)
       .style('pointer-events', 'none');
 
   const nbLayer = svg.append('g').attr('class','neighbor-layer');
