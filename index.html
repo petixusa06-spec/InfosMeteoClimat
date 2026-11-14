@@ -2753,7 +2753,7 @@ async function buildFranceMap() {
   // 4. Image de relief de la France, teintée en vert, en multiply par-dessus le vert
   //    → assombrit le vert là où il y a du relief, laisse le vert clair là où c'est plat.
   //    L'image est calée exactement sur la même projection que tes départements.
-  const reliefUrl = 'https://cdn.jsdelivr.net/gh/username/repo/relief-france-vert.webp'; // ← à remplacer
+  const reliefUrl = 'https://imgur.com/wjoyBKg'; // ← à remplacer
   fondLayer.append('g')
       .attr('mask', `url(#${franceMaskId})`)
       .style('mix-blend-mode', 'multiply')
