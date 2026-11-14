@@ -2164,7 +2164,7 @@ function redrawMap() {
         if (infraItems.length) return LEVELS[infraItems[0].level].color;
       }
       const it = displayItem(data[n]);
-      if (!it) return DFILL;
+      if (!it) return 'transparent';
       if (it.probable) return hexBlend(LEVELS[it.level].color, '#1e2535', 0.18);
       return LEVELS[it.level].color;
     })
@@ -2732,27 +2732,44 @@ async function buildFranceMap() {
     .attr('preserveAspectRatio', 'xMidYMid slice')
     .style('display','block').style('width','100%').style('height','100%');
   svgEl = svg.node(); svgSel = svg;
-  // ── FOND : relief + mer ──
+   // ── FOND : mer + relief vert ombré ──
   const fondLayer = svg.append('g').attr('class', 'fond-layer').style('pointer-events', 'none');
+
+  // 1. Mer (bleu foncé) — visible uniquement hors France
   fondLayer.append('rect').attr('width', W).attr('height', H).attr('fill', '#1a2d47');
 
+  // 2. Masque de la France : on ne veut le relief QUE sur la France
+  const franceMaskId = 'france-mask-relief';
+  const defsFond = svg.select('defs').empty() ? svg.append('defs') : svg.select('defs');
+  const franceMask = defsFond.append('mask').attr('id', franceMaskId);
+  franceMask.append('rect').attr('width', W).attr('height', H).attr('fill', 'black');
+  franceMask.append('g').selectAll('path').data(features).join('path')
+      .attr('d', d => geoPath(d)).attr('fill', 'white');
+
+  // 3. Fond vert de la France (la couleur de base de ta carte)
+  const franceGroup = fondLayer.append('g').attr('mask', `url(#${franceMaskId})`);
+  franceGroup.append('rect').attr('width', W).attr('height', H).attr('fill', DFILL);
+
+  // 4. Relief IGN en multiply par-dessus le vert : ça assombrit le vert là où il y a du relief
   const tile = d3.tile()
       .size([W, H])
       .scale(proj.scale() * 2 * Math.PI)
       .translate([proj.translate()[0], proj.translate()[1]]);
 
   const tiles = tile();
-  fondLayer.selectAll('image')
+  const reliefGroup = fondLayer.append('g')
+      .attr('mask', `url(#${franceMaskId})`)
+      .style('mix-blend-mode', 'multiply')
+      .style('opacity', 0.55);
+
+  reliefGroup.selectAll('image')
       .data(tiles, d => d[2])
       .join('image')
-     .attr('href', d => 
-    `https://data.geopf.fr/wmts?service=WMTS&format=image/png&version=1.0.0&request=GetTile&style=normal&tilematrixset=PM&tilematrix=${d[2]}&tilerow=${d[1]}&tilecol=${d[0]}&layer=IGNF_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW`
-)
+      .attr('href', d => `https://data.geopf.fr/wmts?service=WMTS&format=image/png&version=1.0.0&request=GetTile&style=normal&tilematrixset=PM&tilematrix=${d[2]}&tilerow=${d[1]}&tilecol=${d[0]}&layer=IGNF_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW`)
       .attr('x', d => d[0] * tiles.scale)
       .attr('y', d => d[1] * tiles.scale)
       .attr('width', tiles.scale + 1)
       .attr('height', tiles.scale + 1)
-      .attr('opacity', 0.5)
       .style('pointer-events', 'none');
 
   const nbLayer = svg.append('g').attr('class','neighbor-layer');
@@ -2771,7 +2788,7 @@ async function buildFranceMap() {
   layerSel.selectAll('path.dept').data(features).join('path')
     .attr('class','dept')
     .attr('d', d => { const pd = geoPath(d); const nm = d.properties&&(d.properties.name||d.properties.NAME||''); if(nm) pathMap[nm]=pd; return pd; })
-    .attr('fill', DFILL).attr('stroke', DSTROKE).attr('stroke-width', 0.2).style('cursor','pointer')
+    .attr('fill', 'transparent').attr('stroke', 'rgba(0,0,0,.75)').attr('stroke-width', 0.6).style('cursor','pointer')
     .on('mousemove', function(event, d) {
       const nm = d.properties&&(d.properties.name||d.properties.NAME||'Département');
       const items = getItems(curData()[nm]);
