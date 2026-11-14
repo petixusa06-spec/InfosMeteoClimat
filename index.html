@@ -1767,8 +1767,6 @@ function infraItemsForDept(deptName, pictoFilter = undefined) {
   }
   return Object.values(maxByPicto).sort((a, b) => LEVEL_RANK[b.level] - LEVEL_RANK[a.level]);
 }
-  return result;
-}
 
 /* Compatibilité : retourne l'item du niveau max */
 function infraInfoForDept(deptName, pictoFilter = undefined) {
