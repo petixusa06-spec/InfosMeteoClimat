@@ -1914,6 +1914,7 @@ function drawInfra() {
   const isVisitor = (document.body.className || '').indexOf('role-visitor') !== -1;
   const interactive = infraReady() && !isVisitor;
   const zones = visibleInfraZones().slice().sort((a, b) => LEVEL_RANK[a.level] - LEVEL_RANK[b.level]);
+  
   if (!zones.length) { updateInfraCount(); return; }
 
   zones.forEach(z => {
@@ -1922,11 +1923,8 @@ function drawInfra() {
       const lv = LEVELS[z.level] || LEVELS.vert;
       const uid = 'infra-' + z.id;
       const d = infraLine()(z.pts);
-      const xs = z.pts.map(p => p[0]), ys = z.pts.map(p => p[1]);
-      const size = Math.sqrt((Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)));
-      const sd = Math.max(0.8, Math.min(2.2, size * 0.022));
-
-      // ── Clip individuel de la zone : basé sur ses allowedDepts figés ──
+      
+      // --- CLIP EXISTANT (Pour s'arrêter net aux frontières) ---
       let clipAttr = '';
       if (z.allowedDepts && z.allowedDepts.length > 0) {
         const clipId = uid + '-clip';
@@ -1937,16 +1935,28 @@ function drawInfra() {
         clipAttr = `url(#${clipId})`;
       }
 
-      // Groupe clippé pour cette zone
       const zGroup = g.append('g');
       if (clipAttr) zGroup.attr('clip-path', clipAttr);
 
-      const fCore = defs.append('filter').attr('id', uid + '-c').attr('filterUnits', 'userSpaceOnUse')
-        .attr('x', -W).attr('y', -H).attr('width', W * 3).attr('height', H * 3);
-      fCore.append('feGaussianBlur').attr('stdDeviation', sd * 0.3).attr('result', 'b');
+      // --- CRÉATION DU FLOU (Aérographe) ---
+      const filterId = uid + '-blur';
+      const blurFilter = defs.append('filter')
+        .attr('id', filterId)
+        .attr('x', '-50%').attr('y', '-50%')
+        .attr('width', '200%').attr('height', '200%');
+      
+      // C'est ce chiffre (12) qui gère le flou. 
+      // Si tu veux que ça "bave" plus loin, augmente (ex: 20). 
+      // Si tu veux que ça soit plus net, baisse (ex: 5).
+      blurFilter.append('feGaussianBlur').attr('stdDeviation', 12); 
 
-      const core = zGroup.append('path').attr('class', 'infra-zone').attr('d', d)
-        .attr('fill', lv.color).attr('opacity', 1).attr('filter', 'url(#' + uid + '-c)');
+      // --- DESSIN DE LA ZONE FLOUTÉE ---
+      const core = zGroup.append('path')
+        .attr('class', 'infra-zone')
+        .attr('d', d)
+        .attr('fill', lv.color)
+        .attr('filter', `url(#${filterId})`);
+
       if (interactive) {
         core.attr('pointer-events', 'visiblePainted').style('cursor', 'pointer')
           .on('click', function(ev) {
@@ -1956,11 +1966,15 @@ function drawInfra() {
             drawInfra();
             redrawMap();
           });
-      } else { core.attr('pointer-events', 'none'); }
-    } catch (e) { console.warn('Zone infra ignorée :', e); }
+      } else { 
+        core.attr('pointer-events', 'none'); 
+      }
+    } catch (e) { 
+      console.warn('Zone infra ignorée :', e); 
+    }
   });
 
-  // Frontières visibles par-dessus (non clippées, pour voir tous les contours)
+  // --- DESSIN DES FRONTIÈRES PAR-DESSUS (Pour que les traits noirs soient nets) ---
   features.forEach(f => {
     const nm = f.properties && (f.properties.name || f.properties.NAME || '');
     if (!pathMap[nm]) return;
