@@ -1697,8 +1697,7 @@ function visibleInfraZones() {
   return (infraZones[activeDay] || []).filter(z => !z.picto || z.picto === mapPictoFilter);
 }
 function infraLine() {
-  // La tension à 0.5 donne des courbes plus amples, idéal pour effacer les tremblements
-  return d3.line().x(d => d[0]).y(d => d[1]).curve(d3.curveCatmullRomClosed.alpha(0.8));
+  return d3.line().x(d => d[0]).y(d => d[1]).curve(d3.curveCatmullRomClosed);
 }
 
 /* Liste des phénomènes actuellement présents sur la carte */
@@ -1902,60 +1901,52 @@ function updateInfraCount() {
 /* ══════════════════════════════════════════════════════════
    DESSIN DES ZONES INFRA — clip PAR ZONE (figé au moment du tracé)
    ══════════════════════════════════════════════════════════ */
+function drawInfra() {
+  if (!svgSel) return;
+  const g = svgSel.select('.infra-layer');
+  if (g.empty()) return;
+  g.selectAll('*').remove();
+  let defs = svgSel.select('defs');
+  if (defs.empty()) defs = svgSel.append('defs');
+  defs.selectAll('[id^="infra-"]').remove();
+
+  const [,, W, H] = svgEl.getAttribute('viewBox').split(' ').map(Number);
+  const isVisitor = (document.body.className || '').indexOf('role-visitor') !== -1;
+  const interactive = infraReady() && !isVisitor;
+  const zones = visibleInfraZones().slice().sort((a, b) => LEVEL_RANK[a.level] - LEVEL_RANK[b.level]);
+  if (!zones.length) { updateInfraCount(); return; }
+
   zones.forEach(z => {
     try {
       if (!z.pts || z.pts.length < 3) return;
       const lv = LEVELS[z.level] || LEVELS.vert;
       const uid = 'infra-' + z.id;
       const d = infraLine()(z.pts);
-      
-      // --- CALCUL DU CENTRE POUR LE DÉGRADÉ ---
       const xs = z.pts.map(p => p[0]), ys = z.pts.map(p => p[1]);
-      const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-      const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+      const size = Math.sqrt((Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)));
+      const sd = Math.max(0.8, Math.min(2.2, size * 0.022));
 
-      // --- CRÉATION DU DÉGRADÉ RADIAL (sans flou) ---
-      const gradId = uid + '-grad';
-      const grad = defs.append('radialGradient')
-        .attr('id', gradId)
-        .attr('cx', '50%').attr('cy', '50%').attr('r', '50%');
-
-      // Si c'est orange/rouge : Centre Orange -> Bord Jaune
-      if (z.level === 'orange' || z.level === 'rouge') {
-        grad.append('stop').attr('offset', '0%').attr('stop-color', LEVELS[z.level].color);
-        grad.append('stop').attr('offset', '50%').attr('stop-color', LEVELS[z.level].color);
-        grad.append('stop').attr('offset', '100%').attr('stop-color', LEVELS['jaune'].color);
-      } 
-      // Si c'est jaune : Centre Jaune -> Bord Vert
-      else {
-        grad.append('stop').attr('offset', '0%').attr('stop-color', LEVELS[z.level].color);
-        grad.append('stop').attr('offset', '60%').attr('stop-color', LEVELS[z.level].color);
-        grad.append('stop').attr('offset', '100%').attr('stop-color', LEVELS['vert'].color);
-      }
-
-      // --- GESTION DU CLIP ET DU MASQUE ---
-      let clipAttr = `url(#${maskId})`; // On utilise le masque France de l'étape 1
-      
-      // Si tu as sélectionné des départements spécifiques
-      if (z.allowedDepts && z.allowedDepts.length > 0 && z.allowedDepts.length < features.length) {
+      // ── Clip individuel de la zone : basé sur ses allowedDepts figés ──
+      let clipAttr = '';
+      if (z.allowedDepts && z.allowedDepts.length > 0) {
         const clipId = uid + '-clip';
         const clipEl = defs.append('clipPath').attr('id', clipId);
         z.allowedDepts.forEach(nm => {
           if (pathMap[nm]) clipEl.append('path').attr('d', pathMap[nm]);
         });
-        clipAttr = `url(#${clipId})`; 
+        clipAttr = `url(#${clipId})`;
       }
 
-      const zGroup = g.append('g').attr('clip-path', clipAttr);
+      // Groupe clippé pour cette zone
+      const zGroup = g.append('g');
+      if (clipAttr) zGroup.attr('clip-path', clipAttr);
 
-      // --- DESSIN DE LA ZONE ---
+      const fCore = defs.append('filter').attr('id', uid + '-c').attr('filterUnits', 'userSpaceOnUse')
+        .attr('x', -W).attr('y', -H).attr('width', W * 3).attr('height', H * 3);
+      fCore.append('feGaussianBlur').attr('stdDeviation', sd * 0.3).attr('result', 'b');
+
       const core = zGroup.append('path').attr('class', 'infra-zone').attr('d', d)
-        .attr('fill', `url(#${gradId})`)
-        .attr('stroke', `url(#${gradId})`) // Même couleur sur le bord pour lisser
-        .attr('stroke-width', 2)           
-        .attr('stroke-linejoin', 'round');
-
-      // Interactivité (pour pouvoir supprimer la zone en cliquant dessus)
+        .attr('fill', lv.color).attr('opacity', 1).attr('filter', 'url(#' + uid + '-c)');
       if (interactive) {
         core.attr('pointer-events', 'visiblePainted').style('cursor', 'pointer')
           .on('click', function(ev) {
@@ -1965,12 +1956,8 @@ function updateInfraCount() {
             drawInfra();
             redrawMap();
           });
-      } else { 
-        core.attr('pointer-events', 'none'); 
-      }
-    } catch (e) { 
-      console.warn('Zone infra ignorée :', e); 
-    }
+      } else { core.attr('pointer-events', 'none'); }
+    } catch (e) { console.warn('Zone infra ignorée :', e); }
   });
 
   // Frontières visibles par-dessus (non clippées, pour voir tous les contours)
@@ -1998,14 +1985,13 @@ function infraStartDraw(event) {
   const col = (LEVELS[level] || LEVELS.vert).color;
   const layerNode = svgSel.select('.infra-layer').node();
   infraPts = [d3.pointer(event, layerNode)];
-    const live = svgSel.select('.infra-layer').append('path')
-    .attr('class', 'infra-live').attr('fill', col).attr('fill-opacity', .4)
-    .attr('stroke', col).attr('stroke-width', 2).attr('stroke-linejoin', 'round')
-    .attr('stroke-linecap', 'round');
+  const live = svgSel.select('.infra-layer').append('path')
+    .attr('class', 'infra-live').attr('fill', col).attr('fill-opacity', .25)
+    .attr('stroke', col).attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
   const move = ev => {
     const p = d3.pointer(ev, layerNode);
     const l = infraPts[infraPts.length - 1];
-    if (Math.hypot(p[0] - l[0], p[1] - l[1]) < 3) return;
+    if (Math.hypot(p[0] - l[0], p[1] - l[1]) < 2) return;
     infraPts.push(p);
     live.attr('d', infraLine()(infraPts));
   };
