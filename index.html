@@ -559,7 +559,6 @@ path.dept-infra-allowed{stroke:#22d3ee!important;stroke-width:2px!important;stro
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3-tile@0.0.4/build/d3-tile.js"></script>
 <script type="module">
 /* ═══════════════════════════════════════════════════════════════════
    SYNCHRONISATION FIREBASE
@@ -2164,7 +2163,7 @@ function redrawMap() {
         if (infraItems.length) return LEVELS[infraItems[0].level].color;
       }
       const it = displayItem(data[n]);
-      if (!it) return 'transparent';
+      if (!it) return DFILL;
       if (it.probable) return hexBlend(LEVELS[it.level].color, '#1e2535', 0.18);
       return LEVELS[it.level].color;
     })
@@ -2708,17 +2707,7 @@ async function applyPublishedState() {
   });
 }
 const _publishedStateReady = applyPublishedState();
-const RELIEF = {
-  url: 'https://i.imgur.com/wjoyBKg.png',
-  shadow: 0.55,    // 0→1 : intensité des ombres (mélange vert → noir)
-  light: 0.45,     // 0→1 : intensité des lumières (mélange vert → blanc)
-  contrast: 1.5,   // 1 = neutre, >1 = relief plus marqué
-  opacity: 1,
-  // Ajustement fin du cadrage (en unités du viewBox 600×430)
-  dx: 0, dy: 0,    // décalage
-  sx: 1, sy: 1     // échelle largeur / hauteur
-};
-const RELIEF_DEBUG = false; // true = image brute à 50% pour régler le calage
+
 async function buildFranceMap() {
   const mapDiv = document.getElementById('map');
   const tip    = document.getElementById('tip');
@@ -2742,49 +2731,7 @@ async function buildFranceMap() {
     .attr('preserveAspectRatio', 'xMidYMid slice')
     .style('display','block').style('width','100%').style('height','100%');
   svgEl = svg.node(); svgSel = svg;
-  // ── FOND : mer + vert vigilance + relief teinté par ce même vert ──
-  const fondLayer = svg.append('g').attr('class', 'fond-layer').style('pointer-events', 'none');
-  fondLayer.append('rect').attr('width', W).attr('height', H).attr('fill', '#1a2d47');
-
-  const defsFond = svg.select('defs').empty() ? svg.append('defs') : svg.select('defs');
-  const franceMask = defsFond.append('mask').attr('id', 'france-mask-relief');
-  franceMask.append('rect').attr('width', W).attr('height', H).attr('fill', 'black');
-  franceMask.append('g').selectAll('path').data(features).join('path')
-    .attr('d', d => geoPath(d)).attr('fill', 'white');
-
-  const franceGroup = fondLayer.append('g').attr('mask', 'url(#france-mask-relief)');
-  franceGroup.append('rect').attr('width', W).attr('height', H).attr('fill', DFILL);
-
-  // Filtre : gris → dégradé (ombre / vert vigilance / lumière)
-  const rgb = hex => [1, 3, 5].map(i => (parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(4));
-  const cShadow = rgb(hexBlend(DFILL, '#000000', RELIEF.shadow));
-  const cMid    = rgb(DFILL);
-  const cLight  = rgb(hexBlend(DFILL, '#ffffff', RELIEF.light));
-
-  const flt = defsFond.append('filter').attr('id', 'relief-tint')
-    .attr('color-interpolation-filters', 'sRGB')
-    .attr('x', 0).attr('y', 0).attr('width', 1).attr('height', 1);
-  flt.append('feColorMatrix').attr('type', 'matrix')
-    .attr('values', '0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0 0 0 1 0');
-  const ct1 = flt.append('feComponentTransfer');
-  ['R', 'G', 'B'].forEach(c => ct1.append('feFunc' + c)
-    .attr('type', 'linear').attr('slope', RELIEF.contrast).attr('intercept', 0.5 - 0.5 * RELIEF.contrast));
-  const ct2 = flt.append('feComponentTransfer');
-  ['R', 'G', 'B'].forEach((c, i) => ct2.append('feFunc' + c)
-    .attr('type', 'table').attr('tableValues', `${cShadow[i]} ${cMid[i]} ${cLight[i]}`));
-
-  // Cadrage : l'image épouse exactement la boîte englobante des départements
-  const bb = geoPath.bounds({ type: 'FeatureCollection', features });
-  franceGroup.append('image')
-    .attr('href', RELIEF.url)
-    .attr('x', bb[0][0] + RELIEF.dx)
-    .attr('y', bb[0][1] + RELIEF.dy)
-    .attr('width',  (bb[1][0] - bb[0][0]) * RELIEF.sx)
-    .attr('height', (bb[1][1] - bb[0][1]) * RELIEF.sy)
-    .attr('preserveAspectRatio', 'none')
-    .attr('filter', RELIEF_DEBUG ? null : 'url(#relief-tint)')
-    .attr('opacity', RELIEF_DEBUG ? 0.5 : RELIEF.opacity)
-    .style('pointer-events', 'none');
+  svg.append('rect').attr('width',W).attr('height',H).attr('fill','#5B7DAA');
 
   const nbLayer = svg.append('g').attr('class','neighbor-layer');
   if (_worldTopo) {
@@ -2802,7 +2749,7 @@ async function buildFranceMap() {
   layerSel.selectAll('path.dept').data(features).join('path')
     .attr('class','dept')
     .attr('d', d => { const pd = geoPath(d); const nm = d.properties&&(d.properties.name||d.properties.NAME||''); if(nm) pathMap[nm]=pd; return pd; })
-    .attr('fill', 'transparent').attr('stroke', 'rgba(0,0,0,.75)').attr('stroke-width', 0.6).style('cursor','pointer')
+    .attr('fill', DFILL).attr('stroke', DSTROKE).attr('stroke-width', 0.2).style('cursor','pointer')
     .on('mousemove', function(event, d) {
       const nm = d.properties&&(d.properties.name||d.properties.NAME||'Département');
       const items = getItems(curData()[nm]);
