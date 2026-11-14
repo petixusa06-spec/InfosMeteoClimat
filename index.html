@@ -317,7 +317,6 @@ path.dept-infra-allowed{stroke:#22d3ee!important;stroke-width:2px!important;stro
 .infra-dept-chip{font-family:var(--font-m);font-size:9px;padding:3px 6px;border-radius:var(--rs);cursor:pointer;background:transparent;border:1px solid var(--b1);color:var(--t3);transition:all .12s;font-weight:600}
 .infra-dept-chip:hover{background:var(--surf2);color:var(--t2);border-color:var(--b2)}
 .infra-dept-chip.on{background:rgba(34,211,238,.15);color:#22d3ee;border-color:#22d3ee}
-<script src="https://cdn.jsdelivr.net/npm/d3-tile@0.0.4/build/d3-tile.js"></script>
 </style>
 </head>
 <body>
@@ -560,6 +559,7 @@ path.dept-infra-allowed{stroke:#22d3ee!important;stroke-width:2px!important;stro
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-tile@0.0.4/build/d3-tile.js"></script>
 <script type="module">
 /* ═══════════════════════════════════════════════════════════════════
    SYNCHRONISATION FIREBASE
@@ -2748,9 +2748,8 @@ const tiles = tile();
 fondLayer.selectAll('image')
     .data(tiles, d => d[2]) // On identifie chaque tuile par son niveau de zoom
     .join('image')
-    .attr('xlink:href', d => 
-        // L'URL officielle d'Esri pour le relief ombré
-        `https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/${d[2]}/${d[1]}/${d[0]}`
+    .attr('href', d => 
+    `https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/${d[2]}/${d[1]}/${d[0]}`
     )
     .attr('x', d => d[0] * tiles.scale)
     .attr('y', d => d[1] * tiles.scale)
@@ -2758,6 +2757,7 @@ fondLayer.selectAll('image')
     .attr('height', tiles.scale + 1)
     .attr('opacity', 0.65) // <-- IMPORTANT : rend le relief semi-transparent pour voir la mer en dessous
     .style('pointer-events', 'none'); // Empêche le relief de bloquer les clics sur tes départements
+  const fondLayer = svg.append('g').attr('class', 'fond-layer').style('pointer-events', 'none');
 
   const nbLayer = svg.append('g').attr('class','neighbor-layer');
   if (_worldTopo) {
