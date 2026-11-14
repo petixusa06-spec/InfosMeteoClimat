@@ -1756,6 +1756,17 @@ function infraItemsForDept(deptName, pictoFilter = undefined) {
     result.push({ level: z.level, picto: z.picto || null });
   }
   result.sort((a, b) => LEVEL_RANK[b.level] - LEVEL_RANK[a.level]);
+  
+  // ✅ ON NE GARDE QUE LE MAX PAR PHÉNOMÈNE
+  const maxByPicto = {};
+  for (const it of result) {
+    const key = it.picto || '__none__';
+    if (!maxByPicto[key] || LEVEL_RANK[it.level] > LEVEL_RANK[maxByPicto[key].level]) {
+      maxByPicto[key] = it;
+    }
+  }
+  return Object.values(maxByPicto).sort((a, b) => LEVEL_RANK[b.level] - LEVEL_RANK[a.level]);
+}
   return result;
 }
 
