@@ -2732,32 +2732,26 @@ async function buildFranceMap() {
     .attr('preserveAspectRatio', 'xMidYMid slice')
     .style('display','block').style('width','100%').style('height','100%');
   svgEl = svg.node(); svgSel = svg;
-// 1. Créer un groupe pour le fond (relief + mer)
-const fondLayer = svg.append('g').attr('class', 'fond-layer');
-// Ajouter un rectangle de fond bleu marine (pour la mer) SOUS le relief
-fondLayer.append('rect').attr('width', W).attr('height', H).attr('fill', '#1a2d47');
-
-// 2. Configurer le système de tuiles
-const tile = d3.tile()
-    .size([W, H])
-    .scale(proj.scale() * 2 * Math.PI) // Lien magique entre ta projection et les tuiles
-    .translate([proj.translate()[0], proj.translate()[1]]);
-
-// 3. Charger les tuiles de relief "World Hillshade" d'Esri (gratuit, pas de clé API)
-const tiles = tile();
-fondLayer.selectAll('image')
-    .data(tiles, d => d[2]) // On identifie chaque tuile par son niveau de zoom
-    .join('image')
-    .attr('href', d => 
-    `https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/${d[2]}/${d[1]}/${d[0]}`
-    )
-    .attr('x', d => d[0] * tiles.scale)
-    .attr('y', d => d[1] * tiles.scale)
-    .attr('width', tiles.scale + 1) // +1 évite les lignes blanches entre les tuiles
-    .attr('height', tiles.scale + 1)
-    .attr('opacity', 0.65) // <-- IMPORTANT : rend le relief semi-transparent pour voir la mer en dessous
-    .style('pointer-events', 'none'); // Empêche le relief de bloquer les clics sur tes départements
+  // ── FOND : relief + mer ──
   const fondLayer = svg.append('g').attr('class', 'fond-layer').style('pointer-events', 'none');
+  fondLayer.append('rect').attr('width', W).attr('height', H).attr('fill', '#1a2d47');
+
+  const tile = d3.tile()
+      .size([W, H])
+      .scale(proj.scale() * 2 * Math.PI)
+      .translate([proj.translate()[0], proj.translate()[1]]);
+
+  const tiles = tile();
+  fondLayer.selectAll('image')
+      .data(tiles, d => d[2])
+      .join('image')
+      .attr('href', d => `https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/${d[2]}/${d[1]}/${d[0]}`)
+      .attr('x', d => d[0] * tiles.scale)
+      .attr('y', d => d[1] * tiles.scale)
+      .attr('width', tiles.scale + 1)
+      .attr('height', tiles.scale + 1)
+      .attr('opacity', 0.65)
+      .style('pointer-events', 'none');
 
   const nbLayer = svg.append('g').attr('class','neighbor-layer');
   if (_worldTopo) {
