@@ -2753,17 +2753,17 @@ async function buildFranceMap() {
   // 4. Image de relief de la France, teintée en vert, en multiply par-dessus le vert
   //    → assombrit le vert là où il y a du relief, laisse le vert clair là où c'est plat.
   //    L'image est calée exactement sur la même projection que tes départements.
-  const reliefUrl = 'https://imgur.com/wjoyBKg'; // ← à remplacer
+  const reliefUrl = 'https://i.imgur.com/wjoyBKg.png';
   fondLayer.append('g')
       .attr('mask', `url(#${franceMaskId})`)
-      .style('mix-blend-mode', 'multiply')
-      .style('opacity', 0.85)
+      .style('opacity', 0.8)
       .append('image')
       .attr('href', reliefUrl)
       .attr('x', 0).attr('y', 0)
       .attr('width', W).attr('height', H)
       .attr('preserveAspectRatio', 'none')
-      .style('pointer-events', 'none');
+      .style('pointer-events', 'none')
+      .style('mix-blend-mode', 'screen');
 
   const nbLayer = svg.append('g').attr('class','neighbor-layer');
   if (_worldTopo) {
