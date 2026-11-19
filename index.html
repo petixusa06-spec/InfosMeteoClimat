@@ -2927,6 +2927,80 @@ const apiData = [
 
 // Ensuite, vous pouvez l'utiliser directement
 console.log("Données API chargées :", apiData);
+  function chargerVigilanceMeteoFrance() {
+  // Correspondances entre les IDs Météo-France et ton code
+  const PHENOM_ID_MAP = {
+    '1': 'vent',      // Vent violent
+    '2': 'pluies',    // Pluie-inondation
+    '3': 'orage',     // Orages
+    '4': 'inondation',// Inondation
+    '5': 'neige',     // Neige-verglas
+    '6': 'chaleur',   // Canicule
+    '7': 'froid',     // Grand froid
+    '8': 'avalanches',// Avalanches
+    '9': 'vagues'     // Vagues-submersion
+  };
+  const LEVEL_ID_MAP = { 1: 'vert', 2: 'jaune', 3: 'orange', 4: 'rouge' };
+
+  // Récupérer le premier produit (il n'y en a qu'un)
+  const product = Array.isArray(apiData) ? apiData[0] : apiData;
+  if (!product || !product.periods) return;
+
+  // On traite les deux périodes (aujourd'hui et demain)
+  const days = ['today', 'tomorrow'];
+  
+  product.periods.forEach((period, index) => {
+    if (index > 1) return; // On ne garde que J et J+1
+    const day = days[index];
+    const timelaps = period.timelaps?.domain_ids || [];
+
+    timelaps.forEach(domain => {
+      const rawCode = domain.domain_id;
+      if (!rawCode) return;
+
+      // On ne garde que les vrais départements (2 chiffres) et on ignore les zones côtières (ex: 0610)
+      // et les zones nationales (FRA, 3010, 3410, etc.)
+      let code = rawCode;
+      if (rawCode.length > 2 && !rawCode.endsWith('10')) return; // Ignore les zones spéciales
+      if (rawCode.length === 4 && rawCode.endsWith('10')) code = rawCode.slice(0, 2); // 0610 -> 06
+      
+      // On cherche le code département dans DEPT_CODES (qui associe nom -> code)
+      const deptName = Object.keys(DEPT_CODES).find(n => DEPT_CODES[n] === code);
+      if (!deptName) return;
+
+      // On parcourt les phénomènes
+      domain.phenomenon_items?.forEach(phenom => {
+        const picto = PHENOM_ID_MAP[phenom.phenomenon_id];
+        if (!picto) return;
+
+        // On prend le niveau max du phénomène (color_id)
+        let maxColor = 0;
+        phenom.timelaps_items?.forEach(tl => {
+          if (tl.color_id > maxColor) maxColor = tl.color_id;
+        });
+        // Si pas de timelaps, on utilise phenomenon_max_color_id
+        if (maxColor === 0) maxColor = phenom.phenomenon_max_color_id || 0;
+
+        const level = LEVEL_ID_MAP[maxColor];
+        if (!level || level === 'vert') return; // On ignore le vert
+
+        // Ajouter dans deptData
+        if (!deptData[day][deptName]) deptData[day][deptName] = { items: [] };
+        deptData[day][deptName].items.push({ level, picto, probable: false });
+      });
+    });
+  });
+
+  console.log("✅ Vigilance Météo-France chargée !", deptData);
+  
+  // Redessiner la carte avec les vraies données
+  if (typeof redrawMap === 'function') redrawMap();
+  if (typeof redrawAllNeighbors === 'function') redrawAllNeighbors();
+  if (typeof updateLeg === 'function') updateLeg();
+}
+
+// Lancer la conversion au démarrage
+chargerVigilanceMeteoFrance();
 </script>
 </body>
 </html>
