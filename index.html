@@ -2146,15 +2146,32 @@ async function fetchLive() {
   const r = await fetch(LIVE_URL, { cache: 'no-store' });
   if (!r.ok) throw new Error('HTTP ' + r.status);
   const j = await r.json();
+  const product = (Array.isArray(j) ? j[0] : j).product;
+  if (!product || !product.periods) throw new Error('Format inattendu');
+
   const out = { today: {}, tomorrow: {} };
-  for (const day of ['today', 'tomorrow']) {
-    for (const [code, list] of Object.entries(j[day] || {})) {
-      const items = list
-        .filter(([ph, col]) => LIVE_LEVEL[col] && LIVE_PICTO[ph])
-        .map(([ph, col]) => ({ level: LIVE_LEVEL[col], picto: LIVE_PICTO[ph], probable: false }));
-      if (!items.length) continue;
-      const targets = code === '75' ? ['75', '92', '93', '94'] : [code];
-      targets.forEach(c => { const n = CODE_TO_DEPT[c]; if (n) out[day][n] = { items }; });
+  const dayOf = { J: 'today', J1: 'tomorrow' };
+
+  for (const period of product.periods) {
+    const day = dayOf[period.echeance];
+    if (!day) continue;
+
+    for (const dom of (period.timelaps?.domain_ids || [])) {
+      const id = String(dom.domain_id);
+      let code;
+      if (/^(\d{2}|2A|2B)$/.test(id)) code = id;               // département
+      else if (/^(\d{2}|2A|2B)10$/.test(id)) code = id.slice(0, 2); // zone côtière (ex. 0610 → 06)
+      else continue;                                            // FRA, etc.
+
+      const name = CODE_TO_DEPT[code];
+      if (!name) continue;
+
+      for (const ph of dom.phenomenon_items || []) {
+        const picto = LIVE_PICTO[ph.phenomenon_id];
+        const level = LIVE_LEVEL[ph.phenomenon_max_color_id]; // 2 jaune, 3 orange, 4 rouge (1 = vert ignoré)
+        if (!picto || !level) continue;
+        (out[day][name] ||= { items: [] }).items.push({ level, picto, probable: false });
+      }
     }
   }
   liveDeptData = out;
